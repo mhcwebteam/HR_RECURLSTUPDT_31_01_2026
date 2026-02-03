@@ -1,3 +1,5 @@
+
+
 // import React, { useState, useEffect } from 'react';
 // import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment } from '@mui/material';
 // import { DataGrid } from '@mui/x-data-grid';
@@ -8,6 +10,7 @@
 // import { useNavigate } from 'react-router-dom';
 // import { API_BASE_URL } from '../Config/Config.jsx';
 // import DocUpload from './DocUpload.jsx';
+// import History from './History.jsx';
 
 // const JoiningReportList = () => {
 //   const [joiningData, setJoiningData] = useState([]);
@@ -16,8 +19,8 @@
 //   const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
 
 //   const [selectedRow, setSelectedRow] = useState(null);
-// const [openDocModal, setOpenDocModal] = useState(false);
-
+//   const [openDocModal, setOpenDocModal] = useState(false);
+//   const [openHistoryModal, setOpenHistoryModal] = useState(false);
 
 //   const navigate = useNavigate();
 //   const [Token, useToken] = useState(() => {
@@ -26,52 +29,71 @@
 //   })
 
 //   //----------------------------JoiningDataStart------------------------//
-//   const joinData = async () => {
-//     try {
-//       const response = await axios.get(
-//         `${API_BASE_URL}/verify-getData`,
-//         {
-//           headers: {
-//             "Content-Type": "application/json",
-//             "Accept": "application/json",
-//             "Authorization": `Bearer ${Token.token}`,
-//           },
-//         }
-//       );
-//       const apiData = response.data.data;
+// const joinData = async () => {
+//   try {
+//     const response = await axios.get(
+//       `${API_BASE_URL}/emp-verify-data`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           "Accept": "application/json",
+//           "Authorization": `Bearer ${Token.token}`,
+//         },
+//       }
+//     );
 
-//       const formattedRows = apiData
-//         .filter(item => item.joiningDate && item.joiningDate !== '')
-//         .map((item, index) => ({
-//           id: item.verification_id || index,
-//           CHILD_CASEID: item.CHILD_CASEID,
-//           employee_name: item.NAME,
-//           email: item.EMAIL,
-//           phone: item.PHONE_NUMBER,
-//           department: item.DEPT,
-//           location: item.PLANT,
-//           joining_date: item.joiningDate,
-//           current_ctc: item.CURRENT_CTC,
-//           expected_ctc: item.EXP_CTC,
-//           offered_ctc: item.OFFER_CTC ?? 'Pending',
-//           joining_status: 'Joined',
-//           offer_letter: item.OfferLetterFlag ?? 'Pending',
-//           bgv_status: item.verification_status ?? 'Pending',
-//           documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
-//           current_stage: item.CURRENT_TASK,
-//           hr_owner: item.CURRENT_USER,
-//           created_at: item.created_at,
-//         }));
-//       console.log("formattedRows:", formattedRows);
-//       setJoiningData(formattedRows);
-//       setFilteredData(formattedRows);
-//     } catch (error) {
-//       console.error("Error in fetching joining data", error);
-//     }
-//   };
-//   //----------------------------JoiningDataEnd---------------------------//
+    
+//     const apiData = response.data.data;
 
-//   //------------------------------useEffect------------------------------//
+//     console.log(apiData,": API Data");
+
+//     // Filter only items with valid joining dates
+//     const formattedRows = apiData
+//       .filter(item => {
+//         // Check if joiningDate exists and is not null/empty
+//         const hasJoiningDate = item.joiningDate && 
+//                               item.joiningDate !== '' && 
+//                               item.joiningDate !== null &&
+//                               item.joiningDate !== undefined &&
+//                               item.joiningDate !== 'null';
+        
+//         // Also check if it's a valid date string (not just whitespace)
+//         const isValidDateString = item.joiningDate && 
+//                                  item.joiningDate.toString().trim() !== '';
+        
+//         return hasJoiningDate && isValidDateString;
+//       })
+//       .map((item, index) => ({
+//         id: item.verification_id || index,
+//         CHILD_CASEID: item.child_caseid,
+//         employee_name: item.name,
+//         email: item.email,
+//         phone: item.phone_number,
+//         department: item.DEPT,
+//         location: item.PLANT,
+//         joining_date: item.joiningDate,
+//         current_ctc: item.CURRENT_CTC,
+//         expected_ctc: item.EXP_CTC,
+//         offered_ctc: item.OFFER_CTC ?? 'Pending',
+//         joining_status: 'Joined',
+//         offer_letter: item.OfferLetterFlag ?? 'Pending',
+//         bgv_status: item.verification_status ?? 'Pending',
+//         documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+//         current_stage: item.CURRENT_TASK,
+//         hr_owner: item.CURRENT_USER,
+//         created_at: item.created_at,
+//         // Store the entire item for History modal
+//         fullData: item,
+//       }));
+    
+//     console.log("Filtered formattedRows (with joining dates):", formattedRows);
+//     setJoiningData(formattedRows);
+//     setFilteredData(formattedRows);
+//   } catch (error) {
+//     console.error("Error in fetching joining data", error);
+//   }
+// };
+
 //   useEffect(() => {
 //     if (Token.token) {
 //       joinData();
@@ -103,20 +125,31 @@
 //     setFilteredData(filtered);
 //   };
 
-// const handleDocUploadClick = (rowData) => {
-//   setSelectedRow(rowData);
-//   setOpenDocModal(true);
- 
-// };
+//   const handleDocUploadClick = (rowData) => {
+//     setSelectedRow(rowData);
+//     setOpenDocModal(true);
+//   };
 
-// const handleCloseModal = () => {
-//   setOpenDocModal(false);
-//   setSelectedRow(null);
-// };
+//   const handleHistoryClick = (rowData) => {
+//     setSelectedRow(rowData);
+//     setOpenHistoryModal(true);
+//   };
+
+//   const handleCloseModal = () => {
+//     setOpenDocModal(false);
+//     setSelectedRow(null);
+//   };
+
+//   const handleCloseHistoryModal = () => {
+//     setOpenHistoryModal(false);
+//     setSelectedRow(null);
+//   };
 
 //   const handleDocApprovalClick = (rowData) => {
 //     navigate('/DocApproval', { state: { rowData } });
 //   };
+
+//   console.log()
 
 //   const columns = [
 //     {
@@ -133,35 +166,38 @@
 //       ),
 //     },
 
-//    {
-//   field: 'doc_upload',
-//   headerName: 'Doc Upload',
-//   flex: 0.8,
-//   minWidth: 100,
-//   sortable: false,
-//   renderCell: (params) => (
-//     <Button
-//       size="small"
-//       variant="outlined"
-//       startIcon={<VisibilityIcon />}
-//       onClick={() => handleDocUploadClick(params.row)}
-//       sx={{
-//         fontSize: '10px',
-//         padding: '4px 8px',
-//         borderRadius: '6px',
-//         textTransform: 'capitalize',
-//         borderColor: '#667eea',
-//         color: '#667eea',
-//         '&:hover': {
-//           borderColor: '#5a67d8',
-//           backgroundColor: 'rgba(102, 126, 234, 0.04)',
-//         },
-//       }}
-//     >
-//       View
-//     </Button>
-//   ),
-// },
+//     {
+//       field: 'doc_upload',
+//       headerName: 'Doc Upload',
+//       flex: 0.8,
+//       minWidth: 100,
+//       sortable: false,
+//       renderCell: (params) => (
+//         <Button
+//           size="small"
+//           variant="outlined"
+//           startIcon={<VisibilityIcon />}
+//           onClick={() => handleDocUploadClick(params.row)}
+//           sx={{
+//             fontSize: '10px',
+//             padding: '4px 8px',
+//             borderRadius: '6px',
+//             textTransform: 'capitalize',
+//             borderColor: '#667eea',
+//             color: '#667eea',
+//             '&:hover': {
+//               borderColor: '#5a67d8',
+//               backgroundColor: 'rgba(102, 126, 234, 0.04)',
+//             },
+//           }}
+//         >
+//           View
+//         </Button>
+//       ),
+//     },
+
+
+    
 //     {
 //       field: 'CHILD_CASEID',
 //       headerName: 'Case ID',
@@ -258,79 +294,7 @@
 //         />
 //       ),
 //     },
-//     {
-//       field: 'current_ctc',
-//       headerName: 'Current CTC',
-//       flex: 0.8,
-//       minWidth: 100,
-//       renderCell: (params) => (
-//         <Box sx={{ color: '#374151' }}>
-//           {params.value}
-//         </Box>
-//       ),
-//     },
-//     {
-//       field: 'expected_ctc',
-//       headerName: 'Expected CTC',
-//       flex: 0.8,
-//       minWidth: 100,
-//       renderCell: (params) => (
-//         <Box sx={{ color: '#374151' }}>
-//           {params.value}
-//         </Box>
-//       ),
-//     },
-//     {
-//       field: 'offered_ctc',
-//       headerName: 'Offered CTC',
-//       flex: 0.8,
-//       minWidth: 100,
-//       renderCell: (params) => (
-//         <Box sx={{ color: '#374151' }}>
-//           {params.value}
-//         </Box>
-//       ),
-//     },
-//     {
-//       field: 'offer_letter',
-//       headerName: 'Offer Letter',
-//       flex: 0.8,
-//       minWidth: 100,
-//       renderCell: (params) => (
-//         <Chip
-//           size="small"
-//           label={params.value}
-//           sx={{
-//             backgroundColor: params.value === 'Sent' ? '#10b981' : '#f59e0b',
-//             color: 'white',
-//             fontWeight: 600,
-//             fontSize: '11px',
-//             height: '24px',
-//           }}
-//         />
-//       ),
-//     },
-//     {
-//       field: 'bgv_status',
-//       headerName: 'BGV Status',
-//       flex: 0.8,
-//       minWidth: 100,
-//       renderCell: (params) => (
-//         <Chip
-//           size="small"
-//           label={params.value}
-//           sx={{
-//             backgroundColor:
-//               params.value === 'Approved' ? '#10b981' :
-//                 params.value === 'Pending' ? '#f59e0b' : '#9ca3af',
-//             color: 'white',
-//             fontWeight: 600,
-//             fontSize: '11px',
-//             height: '24px',
-//           }}
-//         />
-//       ),
-//     },
+
 //     {
 //       field: 'documents_status',
 //       headerName: 'Docs Status',
@@ -350,40 +314,20 @@
 //         />
 //       ),
 //     },
+
 //     {
-//       field: 'current_stage',
-//       headerName: 'Current Stage',
-//       flex: 1,
-//       minWidth: 120,
-//       renderCell: (params) => (
-//         <Box sx={{ color: '#374151' }}>
-//           {params.value}
-//         </Box>
-//       ),
-//     },
-//     {
-//       field: 'hr_owner',
-//       headerName: 'HR Owner',
-//       flex: 1,
-//       minWidth: 120,
-//       renderCell: (params) => (
-//         <Box sx={{ color: '#374151' }}>
-//           {params.value}
-//         </Box>
-//       ),
-//     },
-//     {
-//       field: 'actions',
-//       headerName: 'Actions',
+//       field: 'history',
+//       headerName: 'History',
 //       flex: 1,
 //       minWidth: 140,
 //       sortable: false,
-//       renderCell: () => (
+//       renderCell: (params) => (
 //         <Box sx={{ display: 'flex', gap: 1 }}>
 //           <Button
 //             size="small"
 //             variant="outlined"
 //             startIcon={<VisibilityIcon />}
+//             onClick={() => handleHistoryClick(params.row)}
 //             sx={{
 //               fontSize: '10px',
 //               padding: '4px 8px',
@@ -399,60 +343,10 @@
 //           >
 //             View
 //           </Button>
-//           <Button
-//             size="small"
-//             variant="contained"
-//             startIcon={<EditIcon />}
-//             sx={{
-//               fontSize: '10px',
-//               padding: '4px 8px',
-//               borderRadius: '6px',
-//               textTransform: 'capitalize',
-//               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-//               boxShadow: '0 2px 6px rgba(102, 126, 234, 0.3)',
-//               '&:hover': {
-//                 background: 'linear-gradient(135deg, #5a67d8 0%, #6a42a0 100%)',
-//                 transform: 'translateY(-1px)',
-//                 boxShadow: '0 4px 10px rgba(102, 126, 234, 0.4)',
-//               },
-//             }}
-//           >
-//             Edit
-//           </Button>
 //         </Box>
 //       ),
 //     },
-//     {
-//       field: 'doc_approval',
-//       headerName: 'Doc Approval',
-//       flex: 0.8,
-//       minWidth: 100,
-//       sortable: false,
-//       renderCell: (params) => (
-//         <Button
-//           size="small"
-//           variant="contained"
-//           onClick={() => handleDocApprovalClick(params.row)}
-//           sx={{
-//             fontSize: '10px',
-//             padding: '4px 12px',
-//             borderRadius: '6px',
-//             textTransform: 'capitalize',
-//             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-//             color: 'white',
-//             fontWeight: 600,
-//             boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
-//             '&:hover': {
-//               background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-//               transform: 'translateY(-1px)',
-//               boxShadow: '0 4px 10px rgba(16, 185, 129, 0.4)',
-//             },
-//           }}
-//         >
-//           Approve
-//         </Button>
-//       ),
-//     },
+
 //   ];
 
 //   return (
@@ -470,7 +364,7 @@
 //         border: '1px solid #e2e8f0',
 //       }}>
 //         {/* Search bar and Add button */}
-//         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+//         {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
 //           <Box sx={{ flex: 1, maxWidth: '400px' }}>
 //             <TextField
 //               variant="outlined"
@@ -543,7 +437,7 @@
 //               + Add Joining
 //             </Button>
 //           </Box>
-//         </Box>
+//         </Box> */}
 
 //         <Box sx={{
 //           width: "100%",
@@ -596,60 +490,80 @@
 //         </Box>
 //       </Paper>
 
-//        {openDocModal && selectedRow && (
-//       <div style={{
-//         position: 'fixed',
-//         top: 0,
-//         left: 0,
-//         right: 0,
-//         bottom: 0,
-//         backgroundColor: 'rgba(0,0,0,0.5)',
-//         display: 'flex',
-//         justifyContent: 'center',
-//         alignItems: 'center',
-//         zIndex: 9999,
-//         padding: '20px'
-//       }}>
+//       {/* DocUpload Modal */}
+//       {openDocModal && selectedRow && (
 //         <div style={{
-//           background: 'white',
-//           borderRadius: '12px',
-//           width: '90%',
-//           maxWidth: '1000px',
-//           maxHeight: '90vh',
-//           overflow: 'auto',
-//           position: 'relative'
+//           position: 'fixed',
+//           top: 0,
+//           left: 0,
+//           right: 0,
+//           bottom: 0,
+//           backgroundColor: 'rgba(0,0,0,0.5)',
+//           display: 'flex',
+//           justifyContent: 'center',
+//           alignItems: 'center',
+//           zIndex: 9999,
+//           padding: '20px'
 //         }}>
-//           {/* Close button */}
-//           <button
-//             onClick={handleCloseModal}
-//             style={{
-//               position: 'absolute',
-//               top: '15px',
-//               right: '15px',
-//               background: 'none',
-//               border: 'none',
-//               fontSize: '24px',
-//               cursor: 'pointer',
-//               color: '#6b7280',
-//               zIndex: 10
-//             }}
-//           >
-//             ×
-//           </button>
-          
-//           {/* DocUpload component */}
-//           <DocUpload 
-//             rowData={selectedRow}
-//             onClose={handleCloseModal}
-//           />
+//           <div style={{
+//             background: 'white',
+//             borderRadius: '12px',
+//             width: '90%',
+//             maxWidth: '1000px',
+//             maxHeight: '90vh',
+//             overflow: 'auto',
+//             position: 'relative'
+//           }}>
+//             <button
+//               onClick={handleCloseModal}
+//               style={{
+//                 position: 'absolute',
+//                 top: '15px',
+//                 right: '15px',
+//                 border: 'none',
+//                 fontSize: '32px',
+//                 cursor: 'pointer',
+//                 color: '#ffffff',
+//                 zIndex: 10,
+//                 borderRadius: '50%',
+//                 width: '40px',
+//                 height: '40px',
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 justifyContent: 'center',
+//                 fontWeight: 'bold',
+//                 transition: 'all 0.2s'
+//               }}
+//             >
+//               ×
+//             </button>
+
+//             <DocUpload
+//               rowData={selectedRow}
+//               onClose={handleCloseModal}
+//             />
+//           </div>
 //         </div>
-//       </div>
-//     )}
+//       )}
+
+//       {/* History Modal */}
+//       {openHistoryModal && selectedRow && (
+//         <History
+//           open={openHistoryModal}
+//           onClose={handleCloseHistoryModal}
+//           data={selectedRow.fullData}
+//           onStatusChange={() => {
+//             // Refresh data after status change
+//             joinData();
+//           }}
+//         />
+//       )}
 //     </Box>
 //   );
 // };
 
 // export default JoiningReportList;
+
 
 
 import React, { useState, useEffect } from 'react';
@@ -658,6 +572,8 @@ import { DataGrid } from '@mui/x-data-grid';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
+import DescriptionIcon from '@mui/icons-material/Description';
+import HistoryIcon from '@mui/icons-material/History';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../Config/Config.jsx';
@@ -681,70 +597,70 @@ const JoiningReportList = () => {
   })
 
   //----------------------------JoiningDataStart------------------------//
-const joinData = async () => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/emp-verify-data`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${Token.token}`,
-        },
-      }
-    );
+  const joinData = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/emp-verify-data`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${Token.token}`,
+          },
+        }
+      );
 
-    
-    const apiData = response.data.data;
 
-    console.log(apiData,": API Data");
+      const apiData = response.data.data;
 
-    // Filter only items with valid joining dates
-    const formattedRows = apiData
-      .filter(item => {
-        // Check if joiningDate exists and is not null/empty
-        const hasJoiningDate = item.joiningDate && 
-                              item.joiningDate !== '' && 
-                              item.joiningDate !== null &&
-                              item.joiningDate !== undefined &&
-                              item.joiningDate !== 'null';
-        
-        // Also check if it's a valid date string (not just whitespace)
-        const isValidDateString = item.joiningDate && 
-                                 item.joiningDate.toString().trim() !== '';
-        
-        return hasJoiningDate && isValidDateString;
-      })
-      .map((item, index) => ({
-        id: item.verification_id || index,
-        CHILD_CASEID: item.child_caseid,
-        employee_name: item.name,
-        email: item.email,
-        phone: item.phone_number,
-        department: item.DEPT,
-        location: item.PLANT,
-        joining_date: item.joiningDate,
-        current_ctc: item.CURRENT_CTC,
-        expected_ctc: item.EXP_CTC,
-        offered_ctc: item.OFFER_CTC ?? 'Pending',
-        joining_status: 'Joined',
-        offer_letter: item.OfferLetterFlag ?? 'Pending',
-        bgv_status: item.verification_status ?? 'Pending',
-        documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
-        current_stage: item.CURRENT_TASK,
-        hr_owner: item.CURRENT_USER,
-        created_at: item.created_at,
-        // Store the entire item for History modal
-        fullData: item,
-      }));
-    
-    console.log("Filtered formattedRows (with joining dates):", formattedRows);
-    setJoiningData(formattedRows);
-    setFilteredData(formattedRows);
-  } catch (error) {
-    console.error("Error in fetching joining data", error);
-  }
-};
+      console.log(apiData, ": API Data");
+
+      // Filter only items with valid joining dates
+      const formattedRows = apiData
+        .filter(item => {
+          // Check if joiningDate exists and is not null/empty
+          const hasJoiningDate = item.joiningDate &&
+            item.joiningDate !== '' &&
+            item.joiningDate !== null &&
+            item.joiningDate !== undefined &&
+            item.joiningDate !== 'null';
+
+          // Also check if it's a valid date string (not just whitespace)
+          const isValidDateString = item.joiningDate &&
+            item.joiningDate.toString().trim() !== '';
+
+          return hasJoiningDate && isValidDateString;
+        })
+        .map((item, index) => ({
+          id: item.verification_id || index,
+          CHILD_CASEID: item.child_caseid,
+          employee_name: item.name,
+          email: item.email,
+          phone: item.phone_number,
+          department: item.DEPT,
+          location: item.PLANT,
+          joining_date: item.joiningDate,
+          current_ctc: item.CURRENT_CTC,
+          expected_ctc: item.EXP_CTC,
+          offered_ctc: item.OFFER_CTC ?? 'Pending',
+          joining_status: 'Joined',
+          offer_letter: item.OfferLetterFlag ?? 'Pending',
+          bgv_status: item.verification_status ?? 'Pending',
+          documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+          current_stage: item.CURRENT_TASK,
+          hr_owner: item.CURRENT_USER,
+          created_at: item.created_at,
+          // Store the entire item for History modal
+          fullData: item,
+        }));
+
+      console.log("Filtered formattedRows (with joining dates):", formattedRows);
+      setJoiningData(formattedRows);
+      setFilteredData(formattedRows);
+    } catch (error) {
+      console.error("Error in fetching joining data", error);
+    }
+  };
 
   useEffect(() => {
     if (Token.token) {
@@ -827,19 +743,21 @@ const joinData = async () => {
       renderCell: (params) => (
         <Button
           size="small"
-          variant="outlined"
-          startIcon={<VisibilityIcon />}
+          variant="contained"
+          startIcon={<DescriptionIcon />}
           onClick={() => handleDocUploadClick(params.row)}
           sx={{
             fontSize: '10px',
-            padding: '4px 8px',
-            borderRadius: '6px',
+            padding: '4px 10px',
+            borderRadius: '8px',
             textTransform: 'capitalize',
-            borderColor: '#667eea',
-            color: '#667eea',
+            backgroundColor: '#10b981',
+            fontWeight: 600,
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
             '&:hover': {
-              borderColor: '#5a67d8',
-              backgroundColor: 'rgba(102, 126, 234, 0.04)',
+              backgroundColor: '#059669',
+              boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
+              transform: 'translateY(-1px)',
             },
           }}
         >
@@ -849,7 +767,7 @@ const joinData = async () => {
     },
 
 
-    
+
     {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
@@ -977,19 +895,21 @@ const joinData = async () => {
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             size="small"
-            variant="outlined"
-            startIcon={<VisibilityIcon />}
+            variant="contained"
+            startIcon={<HistoryIcon />}
             onClick={() => handleHistoryClick(params.row)}
             sx={{
               fontSize: '10px',
-              padding: '4px 8px',
-              borderRadius: '6px',
+              padding: '4px 10px',
+              borderRadius: '8px',
               textTransform: 'capitalize',
-              borderColor: '#667eea',
-              color: '#667eea',
+              backgroundColor: '#8b5cf6',
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(139, 92, 246, 0.2)',
               '&:hover': {
-                borderColor: '#5a67d8',
-                backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                backgroundColor: '#7c3aed',
+                boxShadow: '0 4px 6px rgba(139, 92, 246, 0.3)',
+                transform: 'translateY(-1px)',
               },
             }}
           >
@@ -1015,8 +935,7 @@ const joinData = async () => {
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
         border: '1px solid #e2e8f0',
       }}>
-        {/* Search bar and Add button */}
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Box sx={{ flex: 1, maxWidth: '400px' }}>
             <TextField
               variant="outlined"
@@ -1068,28 +987,8 @@ const joinData = async () => {
             }}>
               {filteredData.length} joining reports
             </Typography>
-            <Button
-              variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 16px',
-                borderRadius: '8px',
-                textTransform: 'capitalize',
-                fontWeight: 600,
-                boxShadow: '0 2px 6px rgba(102, 126, 234, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #5a67d8 0%, #6a42a0 100%)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 10px rgba(102, 126, 234, 0.4)',
-                },
-              }}
-            >
-              + Add Joining
-            </Button>
           </Box>
-        </Box> */}
+        </Box>
 
         <Box sx={{
           width: "100%",
@@ -1166,7 +1065,7 @@ const joinData = async () => {
             overflow: 'auto',
             position: 'relative'
           }}>
-            <button
+            {/* <button
               onClick={handleCloseModal}
               style={{
                 position: 'absolute',
@@ -1188,7 +1087,7 @@ const joinData = async () => {
               }}
             >
               ×
-            </button>
+            </button> */}
 
             <DocUpload
               rowData={selectedRow}

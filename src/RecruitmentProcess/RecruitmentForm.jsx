@@ -74,10 +74,12 @@ const RecruitmentForm = () => {
   const [errors, setErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
   const [HrData, setHrData] = useState([]);
+
   const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
 
   useEffect(() => {
-    if (!userToken?.token) return;
+
+if(!userToken.token) return null
 
     const Recuritment = async () => {
       try {
@@ -87,10 +89,12 @@ const RecruitmentForm = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${userToken.token}`,
+               Authorization: `Bearer ${userToken.token}`,
             },
           }
         );
+
+    console.log(response,"responded for akkkkkkkkkkk");
 
         setHrData(response.data)
         console.log("NOTE FOR APPROVAL API DATA:", response.data);
@@ -100,7 +104,7 @@ const RecruitmentForm = () => {
     };
 
     Recuritment();
-  }, [userToken?.token]);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -562,18 +566,23 @@ const RecruitmentForm = () => {
         data,
         {
           headers: {
-            Authorization: `Bearer ${userToken.token}`,
+            // Authorization: `Bearer ${userToken.token}`,
             "Content-Type": "multipart/form-data",
           },
         }
       );
 
       if (response.data.success) {
-        await Swal.fire({
-          title: "Success",
-          text: "Data saved successfully",
-          icon: "success",
-        });
+    
+
+            await Swal.fire({
+            
+              title: "Success",
+              text: "Data saved successfully",
+              timer: 500,
+              showConfirmButton: false,
+            });
+        
         resetForm();
       } else {
         await Swal.fire("Failed", response.data.message, "error");
@@ -654,7 +663,7 @@ const RecruitmentForm = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* ================= BASIC INFORMATION ================= */}
           <div className="bg-white rounded-md shadow p-4 border-l-4 border-blue-500">
-            <h2 className="text-lg font-bold mb-3">Basic Information</h2>
+            <h2 className="text-lg font-bold mb-3">Basic Information66666666666666</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <InputField

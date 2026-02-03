@@ -1,25 +1,16 @@
-
-
-
-
-
-
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Search, Eye, TrendingUp, Users, FileText, ChevronLeft, ChevronRight,
-  Filter, Download, RefreshCw, Mail, ShieldCheck, DollarSign,
-  UserCheck, ClipboardCheck, FileSignature
-} from 'lucide-react';
+import { Search, Eye, TrendingUp, Users, FileText, ChevronLeft, ChevronRight, Filter, Download, RefreshCw, UserCheck, ClipboardList, Clock } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config';
 import { useNavigate } from 'react-router-dom';
 
-const HrInbox = () => {
+const AssignedTasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [processFilter, setProcessFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
-  const [hrData, setHrData] = useState([]);
+  const [taskData, setTaskData] = useState([]);
+
   const navigate = useNavigate();
 
   const token = useMemo(() => {
@@ -27,31 +18,29 @@ const HrInbox = () => {
     return info?.token;
   }, []);
 
-  const hrAprvlFetchData = async () => {
+  const fetchTaskAssignments = async () => {
     if (!token) {
       console.warn('No token found');
       return;
     }
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/hr-Aprvl-Data`, {
+      const res = await fetch(`${API_BASE_URL}/overAll-TskAs-GetDt`, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
       });
 
-
-
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       const data = await res.json();
 
-      console.log("ajiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", data);
-      setHrData(data?.HrAprvlData || []);
+      console.log('Task Assignment Data:', data);
+      setTaskData(data?.TaskAsgnDt || []);
     } catch (err) {
-      console.error('Error fetching HR approvals', err);
+      console.error('Error fetching task assignments', err);
     } finally {
       setLoading(false);
     }
@@ -59,171 +48,105 @@ const HrInbox = () => {
 
   useEffect(() => {
     if (token) {
-      hrAprvlFetchData();
+      fetchTaskAssignments();
     }
   }, [token]);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, processFilter]);
+  }, [searchTerm, statusFilter]);
+
   const handleViewDetails = (row) => {
-    if (!row?.Recruit_Process) return;
-    navigate(`/RecruitmentProcess?process=${row.Recruit_Process}`);
+    if (!row?.case_id) return;
+    navigate(`/TaskDetails?caseId=${row.case_id}`);
   };
 
   const filteredRows = useMemo(() => {
-    let data = [...hrData];
+    let data = [...taskData];
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       data = data.filter(
         (row) =>
-          (row.Child_CaseId || '').toLowerCase().includes(term) ||
-          (row.Recruit_Process || '').toLowerCase().includes(term)
+          (row.case_id || '').toLowerCase().includes(term) ||
+          (row.assigned_to || '').toLowerCase().includes(term) ||
+          (row.assigned_by || '').toLowerCase().includes(term) ||
+          (row.current_task || '').toLowerCase().includes(term)
       );
     }
-    if (processFilter !== 'all') {
-      data = data.filter((row) => {
-        const process = (row.Recruit_Process || '').toLowerCase();
-        return process.includes(processFilter.toLowerCase());
-      });
+    if (statusFilter !== 'all') {
+      data = data.filter((row) => row.status === statusFilter);
     }
     return data;
-  }, [hrData, searchTerm, processFilter]);
+  }, [taskData, searchTerm, statusFilter]);
 
   const stats = useMemo(() => {
     return {
-      total: hrData.length,
-      recruitmentMail: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('recruitment mail')
-      ).length,
-      verification: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('verification')
-      ).length,
-      salaryStackup: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('salary stack') ||
-        (i.Recruit_Process || '').toLowerCase().includes('salary')
-      ).length,
-      candidateApproval: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('candidate approval')
-      ).length,
-      noteForApproval: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('note for approval')
-      ).length,
-      offerLetter: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('offer letter')
-      ).length,
+      total: taskData.length,
+      pending: taskData.filter((i) => i.status === 'Pending').length,
+      completed: taskData.filter((i) => i.status === 'Completed').length,
     };
-  }, [hrData]);
+  }, [taskData]);
+
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-
-  console.log(paginatedRows,"ajithku");
-
   const totalPages = Math.ceil(filteredRows.length / pageSize);
   const safeTotalPages = Math.max(1, totalPages);
 
-
-  // Add this helper function after the getStageLabel function
-  const getProcessStyle = (process) => {
-    if (!process) return 'bg-gray-100 text-gray-700 border border-gray-200';
-
-    const processLower = process.toLowerCase();
-
-    if (processLower.includes('candidate approval')) {
-      return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
-    }
-    if (processLower.includes('salary stack') || processLower.includes('salary')) {
-      return 'bg-gradient-to-r from-pink-100 to-pink-50 text-pink-700 border border-pink-300';
-    }
-    if (processLower.includes('verification')) {
-      return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
-    }
-    if (processLower.includes('recruitment mail')) {
-      return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
-    }
-    if (processLower.includes('note for approval')) {
-      return 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 border border-green-300';
-    }
-    if (processLower.includes('offer letter')) {
-      return 'bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-700 border border-indigo-300';
-    }
-
-    // Default color for other processes
-    return 'bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border border-slate-300';
+  const getStatusStyle = (status) => {
+    if (!status) return 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300';
+    if (status === 'Pending') return 'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-300';
+    if (status === 'Completed') return 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-300';
+    if (status === 'In Progress') return 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-300';
+    return 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300';
   };
+
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
       <div className="w-full px-1 py-0.1">
-        {/* Header Section - Compressed */}
-        <div className="mb-2"> 
+        {/* Header Section */}
+      <div className="mb-2">  {/* Change mb-5 to mb-2 */}
           <div className="flex items-center justify-between flex-wrap gap-3">
-            {/* Header Section */}
-            <div className="w-full px-1 py-0.1">
-              {/* Header Section */}
-              <div className="mb-1">
-                <div className="bg-gradient-to-r from-purple-50 to-white rounded-lg px-4 py-2 shadow-sm border border-purple-200 flex justify-center items-center w-full">
-                  <h1 className="text-xl font-bold" style={{ color: '#49225b' }}>
-                    HR Approval Inbox
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Header Section */}
+<div className="w-full px-1 py-0.1">
+  {/* Header Section */}
+  <div className="mb-1">
+    <div className="bg-gradient-to-r from-purple-50 to-white rounded-lg px-4 py-2 shadow-sm border border-purple-200 flex justify-center items-center w-full">
+      <h1 className="text-xl font-bold" style={{ color: '#49225b' }}>
+       Assigned Tasks
+      </h1>
+    </div>
+  </div>
+  </div> </div>
         </div>
 
-        {/* Stats Cards - Enhanced */}
-
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-3">  
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
           <StatCard
-            title="Total Approvals"
+            title="Total Assigned"
             value={stats.total}
-            icon={<Users className="w-5 h-5" />}
+            icon={<ClipboardList className="w-4 h-4" />}
             color="blue"
           />
           <StatCard
-            title="Recruitment Mail"
-            value={stats.recruitmentMail}
-            icon={<Mail className="w-5 h-5" />}
+            title="Pending Tasks"
+            value={stats.pending}
+            icon={<Clock className="w-4 h-4" />}
             color="purple"
           />
           <StatCard
-            title="Verification"
-            value={stats.verification}
-            icon={<ShieldCheck className="w-5 h-5" />}
+            title="Completed Tasks"
+            value={stats.completed}
+            icon={<UserCheck className="w-4 h-4" />}
             color="emerald"
-          />
-          <StatCard
-            title="Salary Stackup"
-            value={stats.salaryStackup}
-            icon={<DollarSign className="w-5 h-5" />}
-            color="orange"
-          />
-          <StatCard
-            title="Candidate Aprvl"
-            value={stats.candidateApproval}
-            icon={<UserCheck className="w-5 h-5" />}
-            color="pink"
-          />
-          <StatCard
-            title="Note for Approval"
-            value={stats.noteForApproval}
-            icon={<ClipboardCheck className="w-5 h-5" />}
-            color="cyan"
-          />
-          <StatCard
-            title="Offer Letter"
-            value={stats.offerLetter}
-            icon={<FileSignature className="w-5 h-5" />}
-            color="indigo"
           />
         </div>
 
-        {/* Main Table Card - Enhanced */}
+        {/* Main Table Card */}
         <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:border-gray-300 transition-all duration-300">
-          {/* Filters Bar - Enhanced */}
+          {/* Filters Bar */}
           <div className="px-4 py-3 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 group">
@@ -232,7 +155,7 @@ const HrInbox = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by Case ID or Recruitment Process..."
+                  placeholder="Search by Case ID, Assigned To, Assigned By, or Task..."
                   className="w-full pl-9 pr-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs hover:border-blue-300 hover:shadow-md bg-white"
                 />
               </div>
@@ -241,17 +164,14 @@ const HrInbox = () => {
                 <div className="relative group">
                   <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                   <select
-                    value={processFilter}
-                    onChange={(e) => setProcessFilter(e.target.value)}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
                     className="pl-8 pr-7 py-2 border-2 border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none cursor-pointer text-xs font-medium hover:border-blue-300 hover:shadow-md transition-all"
                   >
-                    <option value="all">All Processes</option>
-                    <option value="recruitment mail">Recruitment Mail</option>
-                    <option value="verification">Verification</option>
-                    <option value="salary">Salary Stackup</option>
-                    <option value="candidate approval">Candidate Approval</option>
-                    <option value="note for approval">Note for Approval</option>
-                    <option value="offer letter">Offer Letter</option>
+                    <option value="all">All Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                    <option value="In Progress">In Progress</option>
                   </select>
                 </div>
 
@@ -264,14 +184,14 @@ const HrInbox = () => {
             </div>
           </div>
 
-          {/* Table Content - Enhanced */}
+          {/* Table Content */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex flex-col items-center justify-center" style={{ height: '520px' }}>
               <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
-              <p className="text-gray-600 text-sm font-medium">Loading approvals...</p>
+              <p className="text-gray-600 text-sm font-medium">Loading task assignments...</p>
             </div>
           ) : filteredRows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex flex-col items-center justify-center" style={{ height: '520px' }}>
               <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mb-3 shadow-inner">
                 <Search className="w-7 h-7 text-gray-400" />
               </div>
@@ -280,19 +200,20 @@ const HrInbox = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+             <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
                         { key: 'sno', label: 'S.No', width: 'w-12' },
                         { key: 'caseId', label: 'Case ID', width: 'w-32' },
-                        { key: 'plant', label: 'Plant', width: 'w-38' },
-                        { key: 'department', label: 'Department', width: 'w-24' },
-                        { key: 'designation', label: 'Designation', width: 'w-24' },
-                        { key: 'created', label: 'Created', width: 'w-32' },
-                        { key: 'updated', label: 'Updated', width: 'w-32' },
-                        { key: 'process', label: 'Recruitment Process', width: 'w-48' },
+                        { key: 'plant', label: 'Plant', width: 'w-32' },
+                         { key: 'department', label: 'Department', width: 'w-32' },
+                        { key: 'designation', label: 'Designation', width: 'w-32' },
+                        { key: 'assignedBy', label: 'Assigned By', width: 'w-32' },
+                        { key: 'assignedTo', label: 'Assigned To', width: 'w-32' },
+                        { key: 'status', label: 'Status', width: 'w-28' },
+                        { key: 'assignedDate', label: 'Assigned Date', width: 'w-32' },
                       ].map((col) => (
                         <th
                           key={col.key}
@@ -306,7 +227,7 @@ const HrInbox = () => {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {paginatedRows.map((row, index) => (
                       <tr
-                        key={row.all_apprvls_hr_Id}
+                        key={row.task_assignment_id}
                         className="hover:bg-gradient-to-r hover:from-blue-50 hover:via-indigo-50 hover:to-blue-50 transition-all duration-200 group hover:shadow-md"
                       >
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
@@ -314,60 +235,57 @@ const HrInbox = () => {
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                            {row.Child_CaseId || 'N/A'}
+                            {row.case_id || 'N/A'}
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900 ">
+                          <span className="text-xs font-bold text-gray-900">
                             {row.plant || 'N/A'}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900 ">
+                         <td className="px-3 py-2">
+                          <span className="text-xs font-bold text-gray-900">
                             {row.department || 'N/A'}
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900 ">
+                          <span className="text-xs font-bold text-gray-900">
                             {row.designation || 'N/A'}
                           </span>
                         </td>
-
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
-                          {row.created_at
-                            ? new Date(row.created_at).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            })
-                            : 'N/A'}
+                        <td className="px-3 py-2">
+                          <span className="text-xs font-bold text-gray-900">
+                            {row.assigned_by || 'N/A'}
+                          </span>
                         </td>
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
-                          {row.updated_at
-                            ? new Date(row.updated_at).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            })
-                            : 'N/A'}
+                        <td className="px-3 py-2">
+                          <span className="text-xs font-bold text-gray-900">
+                            {row.assigned_to || 'N/A'}
+                          </span>
                         </td>
                         <td className="px-3 py-2">
                           <button
-                            onClick={() => handleViewDetails(row)}
-                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getProcessStyle(row.Recruit_Process)}`}
-                            title="click here"
+                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getStatusStyle(row.status)}`}
                           >
-                            {row.Recruit_Process || 'N/A'}
+                            {row.status || 'N/A'}
                           </button>
                         </td>
-
+                        <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+                          {row.assigned_date
+                            ? new Date(row.assigned_date).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })
+                            : 'N/A'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Pagination - Enhanced */}
+              {/* Pagination */}
               <div className="px-4 py-3 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -389,7 +307,7 @@ const HrInbox = () => {
                       }}
                       className="px-2.5 py-1 border-2 border-gray-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none hover:border-blue-300 hover:shadow-md transition-all bg-white"
                     >
-                      <option value={5} > 5 per page</option>
+                      <option value={5}>5 per page</option>
                       <option value={10}>10 per page</option>
                       <option value={20}>20 per page</option>
                       <option value={50}>50 per page</option>
@@ -454,38 +372,6 @@ const StatCard = ({ title, value, icon, color }) => {
       border: 'border-emerald-200',
       hoverBorder: 'hover:border-emerald-400',
       hoverShadow: 'hover:shadow-emerald-200/50'
-    },
-    orange: {
-      bgGradient: 'from-orange-50 via-orange-100 to-orange-50',
-      text: 'text-orange-700',
-      iconBg: 'from-orange-100 to-orange-200',
-      border: 'border-orange-200',
-      hoverBorder: 'hover:border-orange-400',
-      hoverShadow: 'hover:shadow-orange-200/50'
-    },
-    pink: {
-      bgGradient: 'from-pink-50 via-pink-100 to-pink-50',
-      text: 'text-pink-700',
-      iconBg: 'from-pink-100 to-pink-200',
-      border: 'border-pink-200',
-      hoverBorder: 'hover:border-pink-400',
-      hoverShadow: 'hover:shadow-pink-200/50'
-    },
-    cyan: {
-      bgGradient: 'from-cyan-50 via-cyan-100 to-cyan-50',
-      text: 'text-cyan-700',
-      iconBg: 'from-cyan-100 to-cyan-200',
-      border: 'border-cyan-200',
-      hoverBorder: 'hover:border-cyan-400',
-      hoverShadow: 'hover:shadow-cyan-200/50'
-    },
-    indigo: {
-      bgGradient: 'from-indigo-50 via-indigo-100 to-indigo-50',
-      text: 'text-indigo-700',
-      iconBg: 'from-indigo-100 to-indigo-200',
-      border: 'border-indigo-200',
-      hoverBorder: 'hover:border-indigo-400',
-      hoverShadow: 'hover:shadow-indigo-200/50'
     }
   };
 
@@ -493,23 +379,17 @@ const StatCard = ({ title, value, icon, color }) => {
 
   return (
     <div className={`bg-gradient-to-br ${colors.bgGradient} rounded-xl p-2 border-2 ${colors.border} ${colors.hoverBorder} shadow-md hover:shadow-xl ${colors.hoverShadow} transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer group`}>
-      {/* Change p-3 to p-2 */}
-
       {/* Title - First Row */}
       <p className={`text-xs font-bold ${colors.text} mb-1`}>{title}</p>
-      {/* Change mb-2 to mb-1 */}
 
       {/* Count and Icon - Second Row */}
       <div className="flex items-center justify-between gap-2">
         <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1 shadow-sm flex-1 text-center`}>
-          {/* Change p-1.5 to p-1 */}
           <p className={`text-base font-bold ${colors.text}`}>
-            {/* Change text-lg to text-base */}
             {value}
           </p>
         </div>
         <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1.5 shadow-sm`}>
-          {/* Change p-2 to p-1.5 */}
           <div className={colors.text}>{icon}</div>
         </div>
       </div>
@@ -517,13 +397,4 @@ const StatCard = ({ title, value, icon, color }) => {
   );
 };
 
-export default HrInbox;
-
-
-
-
-
-
-
-
-
+export default AssignedTasks;

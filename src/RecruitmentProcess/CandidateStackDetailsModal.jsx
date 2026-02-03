@@ -106,7 +106,7 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
 
 const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
-  console.log(data,"dddddddddddddddddddddddddd");
+
   const [activeTab, setActiveTab] = useState('personal'); // 'personal', 'company', 'salary'
 
   const [token, userToken] = useState(() => {

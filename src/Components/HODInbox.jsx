@@ -17,6 +17,8 @@ import { API_BASE_URL } from '../Config/Config.jsx';
 const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedName, setSelectedName] = useState('');
+
+
   
   const handleClick = (event) => {
     event.stopPropagation(); 
@@ -28,50 +30,135 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
     setAnchorEl(null);
   };
 
+
   const handleSelect = async (employee) => {
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/task-Assign-StoreData`,
-        {
-          case_id: row.CHILD_CASEID,
-          assigned_to: employee.Emp_Name,
-          legacy_id: employee.Legacy_Id,
-          current_task: "HR",
-          status: "Pending"
+    
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Send Email',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#6b7280',
+  });
+
+  
+  if (!result.isConfirmed) return;
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/task-Assign-StoreData`,
+      {
+        case_id: row.CHILD_CASEID,
+        assigned_to: employee.Emp_Name,
+        legacy_id: employee.Legacy_Id,
+        current_task: "HR",
+        status: "Pending",
+      },
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${userToken.token}`,
         },
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${userToken.token}`,
-          },
-        }
-      );
-
-      const message = response.data?.message || `Case assigned to ${employee.Emp_Name}`;
-      
-      setSelectedName(employee.Emp_Name);
-      handleClose();
-
-      Swal.fire({
-        title: 'Assigned!',
-        text: message,
-        icon: 'success',
-        confirmButtonColor: '#10b981',
-      });
-
-      if (onAssignmentComplete) {
-        await onAssignmentComplete();
       }
-    } catch (error) {
-      console.error("Assignment failed:", error.response?.data || error);
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || 'Assignment failed',
-        icon: 'error',
-        confirmButtonColor: '#ef4444',
-      });
+    );
+
+    const message =
+      response.data?.message || `Case assigned to ${employee.Emp_Name}`;
+
+    setSelectedName(employee.Emp_Name);
+    handleClose();
+
+    // ✅ Success alert
+    await Swal.fire({
+      icon: "success",
+      title: "Assigned!",
+      text: message,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    // ✅ Refresh parent data
+    if (onAssignmentComplete) {
+      await onAssignmentComplete();
     }
-  };
+  } catch (error) {
+    console.error("Assignment failed:", error.response?.data || error);
+
+    Swal.fire({
+      title: 'Error',
+      text: error.response?.data?.message || 'Assignment failed',
+      icon: 'error',
+      confirmButtonColor: '#ef4444',
+    });
+  }
+};
+
+  // const handleSelect = async (employee) => {
+
+  //      const result = await Swal.fire({
+  //         title: 'Are you sure?',
+  //       text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
+  //         icon: 'warning',
+  //         showCancelButton: true,
+  //         confirmButtonText: 'Yes, Send Email',
+  //         cancelButtonText: 'Cancel',
+  //         confirmButtonColor: '#10b981',
+  //         cancelButtonColor: '#6b7280',
+  //       });
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/task-Assign-StoreData`,
+  //       {
+  //         case_id: row.CHILD_CASEID,
+  //         assigned_to: employee.Emp_Name,
+  //         legacy_id: employee.Legacy_Id,
+  //         current_task: "HR",
+  //         status: "Pending"
+  //       },
+  //       {
+  //         headers: {
+  //           Accept: "application/json",
+  //           Authorization: `Bearer ${userToken.token}`,
+  //         },
+  //       }
+  //     );
+
+  //     const message = response.data?.message || `Case assigned to ${employee.Emp_Name}`;
+      
+  //     setSelectedName(employee.Emp_Name);
+  //     handleClose();
+
+  //   //   Swal.fire({
+  //   //     title: 'Assigned!',
+  //   //     text: message,
+  //   //     icon: 'success',
+  //   //     confirmButtonColor: '#10b981',
+  //   //   });
+  //    await Swal.fire({
+  //     icon: "Assigned",
+  //     title: message,
+  //     text: " Assigned successfully",
+  //     timer: 1500,
+  //     showConfirmButton: false,
+  //   });
+
+    
+  //     if (onAssignmentComplete) {
+  //       await onAssignmentComplete();
+  //     }
+  //   } catch (error) {
+  //     console.error("Assignment failed:", error.response?.data || error);
+  //     Swal.fire({
+  //       title: 'Error',
+  //       text: error.response?.data?.message || 'Assignment failed',
+  //       icon: 'error',
+  //       confirmButtonColor: '#ef4444',
+  //     });
+  //   }
+  // };
 
   return (
     <div>
@@ -243,6 +330,8 @@ const HODInbox = () => {
     }
 
     setSubmitting(prev => ({ ...prev, [caseId]: true }));
+
+
     const payload2 = {
       email: email,
       child_caseId: caseId,
@@ -260,16 +349,21 @@ const HODInbox = () => {
           },
         }
       );
-      console.log(response, "pay1");
+   
 
       if (response.data) {
-        Swal.fire({
-          title: 'Success!',
-          text: 'Onboarding form link sent to employee email!',
-          icon: 'success',
-          confirmButtonText: 'OK',
-        });
+   
+
+              await Swal.fire({
+                      icon: "success",
+                      text: 'Onboarding form link sent to employee email!',
+                    
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
         setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
+
+        
       }
     } catch (error) {
       console.error('Email send error:', error);

@@ -47,8 +47,6 @@ const OfferLetter = () => {
   const [ofrList,setOfferLetterData]=useState([]);
 
 
-  console.log('hioiiiiiiiiiiiiiiiiiiiiiiiiiii');
-
 
   const [token] = useState(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -64,7 +62,7 @@ const OfferLetter = () => {
     }));
   };
   
-  //----------------handleOfferLterEmail-----------------//
+ 
   const handleOfferLterEmail=async(rowData)=>
 
 
@@ -108,11 +106,16 @@ const date_only = joiningDates
          console.log("ofrMailSendofrMailSendofrMailSendofrMailSend",ofrMailSend);
       if (ofrMailSend.data.message) 
         {
-           await Swal.fire({
-             title: "Success",
-             text: "Mail Sent successfully",
-             icon: "success",
-           });
+       
+
+    await Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Mail Sent successfully",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+           
          } else {
            await Swal.fire("Failed", response.data.message, "error");
          }

@@ -130,7 +130,7 @@ return useQuery({
           }
         })
 
-    console.log(response,"ajithhhhhhhhhh22222222222222222222222222");
+  
    
       return response.data;
     },

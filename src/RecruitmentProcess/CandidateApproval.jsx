@@ -91,6 +91,8 @@ const CandidateApproval = () => {
 
 
 
+  
+
   const candidAprvlGetData = async () => {
 
     try {

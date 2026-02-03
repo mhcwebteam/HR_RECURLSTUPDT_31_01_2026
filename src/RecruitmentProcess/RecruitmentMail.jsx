@@ -48,6 +48,8 @@ useEffect(() => {
 
   const Recuritment = async () => {
     try {
+
+      
       const response = await axios.get(
         `${API_BASE_URL}/task-Assign-GtDta`,
         {
@@ -191,9 +193,13 @@ useEffect(() => {
       if (response.data) {
         Swal.fire({
           title: 'Success!',
-          text: 'Onboarding form link sent to employee email!',
-          icon: 'success',
-          confirmButtonText: 'OK',
+          icon: "success",
+                      text: 'Onboarding form link sent to employee email!',
+                    
+                      timer: 1500,
+                      showConfirmButton: false,
+     
+    
         });
         setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
       }

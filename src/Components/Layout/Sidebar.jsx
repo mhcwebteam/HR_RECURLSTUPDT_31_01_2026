@@ -1,10 +1,10 @@
 
 
 import React, { useState, useContext } from 'react';
-import { Home, Users, LogOut, ChevronRight, FileKey2 } from 'lucide-react';
+import { Home, Users, LogOut, ChevronRight, FileKey2, ClipboardList } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MyContext } from "../../App";
-
+import logo from "../../../src/asset/imagesmy.png"
 
 
 
@@ -20,11 +20,11 @@ const Sidebar = () => {
 
   const menuItems = [
     // { path: '/Manpower', icon: Users, label: 'Manpower', gradient: 'from-purple-400 to-pink-400', hoverGradient: 'from-purple-500 to-pink-500'},
-        {path:'/HrInbox', icon: Home, label:"HrInbox" ,gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500'},
+        {path:'/HrInbox', icon: Home, label:"HR Inbox" ,gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500'},
     { path: '/RecruitmentProcess', icon: FileKey2, label: 'Recruitments', gradient: 'from-violet-400 to-purple-400', hoverGradient: 'from-violet-500 to-purple-500' },
     { path: '/onBoarding', icon: Home, label: 'Onboarding', gradient: 'from-fuchsia-400 to-purple-400', hoverGradient: 'from-fuchsia-500 to-purple-500' },
      { path: '/PendingMRFS', icon: Home, label: 'PendingMRFS', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
-
+{ path: '/AssignedTasks', icon: ClipboardList , label: 'AssignedTasks', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
   ];
 
   return (
@@ -54,7 +54,7 @@ const Sidebar = () => {
             <div className='w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 via-fuchsia-400 to-pink-400 flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 relative'>
               <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
                 <img
-                  src="/images/imagesmy.png"
+                  src={logo}
                   alt="Logo"
                   className="h-12 w-12 rounded-full object-cover"
                 />

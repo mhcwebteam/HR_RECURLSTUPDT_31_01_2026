@@ -138,7 +138,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
           title: 'Success!',
           text: 'Verification completed successfully!',
           icon: 'success',
-          confirmButtonText: 'OK',
+      
         });
         setRemarks('');
         onClose();
@@ -149,7 +149,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
         title: 'Error!',
         text: 'Failed to update verification. Please try again.',
         icon: 'error',
-        confirmButtonText: 'OK',
+      
       });
     }
   };
@@ -188,7 +188,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
           title: 'Rejected!',
           text: 'Record has been rejected successfully.',
           icon: 'success',
-          confirmButtonText: 'OK',
+       
         });
         setRemarks('');
         onClose();
@@ -199,7 +199,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
         title: 'Error!',
         text: 'Failed to reject record. Please try again.',
         icon: 'error',
-        confirmButtonText: 'OK',
+      
       });
     }
   };
@@ -241,7 +241,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
         icon: 'success',
         title: 'Approved!',
         text: 'Document has been approved successfully.',
-        timer: 2000,
+        timer: 500,
         showConfirmButton: false,
       });
     } catch (error) {

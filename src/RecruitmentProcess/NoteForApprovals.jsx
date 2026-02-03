@@ -92,7 +92,10 @@ const NoteForApprovals = () => {
 
 
 const handleNtFrApprove = async (row) => {
-  alert(133);
+
+
+  alert(1222222222222);
+
   try {
     // 🔵 Loading Swal
     Swal.fire({
@@ -103,28 +106,28 @@ const handleNtFrApprove = async (row) => {
     });
 
     // 🔵 Approve API
-    await axios.post(
-      `${API_BASE_URL}/Note-For-AprvlUpdt`,
-      { caseId: row.CHILD_CASEID },
-      {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token.token}`,
-        },
-      }
-    );
+    // await axios.post(
+    //   `${API_BASE_URL}/Note-For-AprvlUpdt`,
+    //   { caseId: row.CHILD_CASEID },
+    //   {
+    //     headers: {
+    //       Accept: "application/json",
+    //       Authorization: `Bearer ${token.token}`,
+    //     },
+    //   }
+    // );
 
     // 🟢 Success Swal (WAIT till shown)
     await Swal.fire({
       icon: "success",
       title: "Approved Successfully",
       text: "Note for approval updated successfully",
-      timer: 1500,
+      timer: 500,
       showConfirmButton: false,
     });
 
     // 🟢 Refresh table data AFTER Swal
-    await noteFrAprvlData();
+    // await noteFrAprvlData();
 
     // 🟢 Close modal
     setApproveModalOpen(false);
@@ -157,7 +160,7 @@ const handleNtFrApprove = async (row) => {
         verification_id: row.id,
         approver_role: role,
       };
-      console.log("Assign Approver Payload:", payload);
+    
 
 
             const response = await axios.post(
@@ -172,7 +175,6 @@ const handleNtFrApprove = async (row) => {
         }
       );
 
-      alert(`${role} assigned successfully`);
       noteFrAprvlData(); // refresh list
     } catch (err) {
       console.error("Approver Assign Error", err);
@@ -487,7 +489,7 @@ token?.Is_Employee === 2 &&
           <MenuItem value="" disabled>
             <em>Select Approver</em>
           </MenuItem>
-          <MenuItem value="HOD">HR / HOD</MenuItem>
+          <MenuItem value="HOD"> HOD</MenuItem>
           <MenuItem value="DIRECTOR">Director</MenuItem>
           <MenuItem value="EVC">EVC</MenuItem>
         </TextField>

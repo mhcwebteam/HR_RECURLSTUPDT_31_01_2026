@@ -33,34 +33,20 @@ const Verification = () =>
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  // const { personalData } = useContext(ContextData);
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
 
 
 const [personalData, setPersonalData] = useState([]);
 
 
-// "overallDocments_aprvl": "1",
-//  "verification_status": 1,
-//  "verification_status": "1",
 
-
-useEffect(() => {
-  if (!userToken?.token) return;
 
   const EmpVerify = async () => {
+    if (!userToken?.token) return;
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/emp-verify-data`,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-          },
-        }
-      );
-
-      console.log(response,":jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj");
-
+      const response = await axios.get(`${API_BASE_URL}/emp-verify-data`, {
+        headers: { Authorization: `Bearer ${userToken.token}` },
+      });
       setPersonalData(response.data?.data || []);
     } catch (err) {
       console.error("Error fetching verify data", err);
@@ -68,13 +54,11 @@ useEffect(() => {
     }
   };
 
-  EmpVerify();
-}, [userToken?.token]);
+  useEffect(() => {
+    EmpVerify(); // Call EmpVerify within useEffect
+  }, [userToken?.token]);
 
 
-
-
-console.log("responseresponseresponseresponseresponseresponseresponseresponseresponseresponseresponse",personalData);
   
   const filteredData = useMemo(() => 
   {
@@ -172,7 +156,13 @@ console.log("responseresponseresponseresponseresponseresponseresponseresponseres
     setModalOpen(true);
   };
   const handleStatusChange = (updateData) => {
-    console.log('Status updated:', updateData);
+    setPersonalData(prevData => 
+    prevData.map(item => 
+      item.child_caseid === updateData.id 
+        ? { ...item, verification_status: "1" } 
+        : item
+    )
+  );
   };
 
   const formatDate = (dateString) => {
@@ -505,6 +495,7 @@ minWidth: 70,
         data={selectedUser}
         setSelectedUser = {setSelectedUser}
         onStatusChange={handleStatusChange}
+        refersh = {EmpVerify}
       />
     </Box>
   );
