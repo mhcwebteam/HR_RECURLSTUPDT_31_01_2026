@@ -34,7 +34,7 @@ import { ContextData } from '../Context/ContextData';
 import {API_BASE_URL} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
 
-const OfferLetter = () => {
+const OfferApproved = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
@@ -63,50 +63,27 @@ const OfferLetter = () => {
   };
   
  
-  const handleOfferLterEmail=async(rowData)=>
+  const handleOfferLterEmail=async (rowData)  =>
 
 
   {
     try
-
     {
-      const date_only = joiningDates[rowData.CHILD_CASEID];
-    
-    if (!date_only) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Missing Information',
-        text: 'Please select a joining date before sending the offer letter.',
-        confirmButtonColor: '#f59e0b'
-      });
-      return;
-    }
+      const confirm = await Swal.fire({
+          title: "Are you sure?",
+          text: "You want to Send this Mail",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, Send",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#2563eb",
+        });
+        if (!confirm.isConfirmed) return;
 
-    // 🔵 Show confirmation dialog
-    const confirm = await Swal.fire({
-      title: "Confirm Send Email",
-      text: `Send offer letter to ${rowData.FIRST_NAME} ${rowData.LAST_NAME}?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Send Email",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#10b981",
-      cancelButtonColor: "#6b7280",
-    });
 
-    if (!confirm.isConfirmed) return;
-
-    // Show loading state
-    Swal.fire({
-      title: 'Sending Email...',
-      text: 'Please wait while we send the offer letter',
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-   
+const date_only = joiningDates
+  ? Object.values(joiningDates)[0]
+  : null;
 
 
 
@@ -117,8 +94,6 @@ const OfferLetter = () => {
           EMAIL     :rowData.EMAIL,
           joiningDate: date_only,
         }
-
-        
       const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
         {
         headers:
@@ -128,7 +103,7 @@ const OfferLetter = () => {
            "Authorization":`Bearer ${token.token}`
          }})
 
-       
+         console.log("ofrMailSendofrMailSendofrMailSendofrMailSend",ofrMailSend);
       if (ofrMailSend.data.message) 
         {
        
@@ -136,23 +111,13 @@ const OfferLetter = () => {
     await Swal.fire({
       icon: "success",
       title: "Success",
-      text: `Offer letter has been sent to ${rowData.EMAIL}`,
-
+      text: "Mail Sent successfully",
       timer: 1500,
       showConfirmButton: false,
     });
-
-    if(fetchOfrData) {
-     await  fetchOfrData()
-    }
-
-
            
          } else {
-
            await Swal.fire("Failed", response.data.message, "error");
-
-
          }
        } catch (error) {
          console.error(error);
@@ -164,7 +129,7 @@ const OfferLetter = () => {
        }
   }
   
-  //---------------Fetch the Offer Letter from Api--------------//
+
   const fetchOfrData = async()=>
 
    
@@ -182,9 +147,7 @@ const OfferLetter = () => {
       })
       setOfferLetterData(ofrdata.data.evcVerifiedData || []);
 
-
-      console.log("ofrdataofrdataofrdataofrdata",ofrdata);
-
+   console.log("ofrdataofrdataofrdata",ofrdata);
     }
     catch(err)
     {
@@ -192,7 +155,6 @@ const OfferLetter = () => {
     }
   }
   
-  //useEffect Calling here ----
    useEffect(() => {
 
     if (token?.token) {
@@ -203,7 +165,7 @@ const OfferLetter = () => {
 
   }, [token]);
 
-  //---------------------View the Offer Letter from Backend--------------------//
+
   const handleViewOfferLetter = (user) => 
   {
     setOfferLetterOpen(true);
@@ -334,24 +296,17 @@ const OfferLetter = () => {
         </Box>
       ),
     },
- 
-
-
- {
-  field: 'FIRST_NAME',
-  headerName: 'Name',
-  flex: 1,
-  minWidth: 140,
-  valueGetter: (value, row) =>
-    `${row?.FIRST_NAME ?? ''} ${row?.LAST_NAME ?? ''}`,
-  renderCell: (params) => (
-    <Box sx={{ fontWeight: 600, color: '#1f2937' }}>
-      {params.value}
-    </Box>
-  ),
-}
-,
-
+    {
+      field: 'NAME',
+      headerName: 'Name',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 600, color: '#1f2937' }}>
+          {params.value}
+        </Box>
+      ),
+    },
     {
       field: 'EMAIL',
       headerName: 'Email',
@@ -466,35 +421,19 @@ const OfferLetter = () => {
       minWidth: 120,
       renderCell: (params) => getStatusChip(params.value),
     },
+
+
+
     {
-      field: 'Date of Joining',
+      field: 'joiningDate',
       headerName: 'Date of Joining',
       flex: 1.3,
       minWidth: 170,
+      
       renderCell: (params) => (
-        <TextField
-          size="small"
-          type="date"
-          placeholder="Enter Date"
-          value={joiningDates[params.row.CHILD_CASEID] || ''}
-          onChange={(e) => handleJoiningDateChange(params.row.CHILD_CASEID, e.target.value)}
-          sx={{
-            width: '100%',
-            '& .MuiOutlinedInput-root': {
-              fontSize: '12px',
-              height: '32px',
-              '& fieldset': {
-                borderColor: '#d1d5db',
-              },
-              '&:hover fieldset': {
-                borderColor: '#667eea',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#667eea',
-              },
-            },
-          }}
-        />
+        <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
+          {params.value}
+        </Box>
       ),
     },
     {
@@ -715,4 +654,4 @@ const OfferLetter = () => {
   );
 };
 
-export default OfferLetter;
+export default OfferApproved;

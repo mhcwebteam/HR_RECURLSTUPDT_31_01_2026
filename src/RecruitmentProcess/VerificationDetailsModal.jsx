@@ -59,48 +59,126 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
 
 
 
-const handleSubmit = async () => {
+// const handleSubmit = async () => {
+//   try {
+//     const payload = {
+//       child_caseId: data.CHILD_CASEID,
+//       remarks,
+//     };
+    
+//     const response =
+
+//      await axios.post(`${API_BASE_URL}/verify-update`, payload, {
+//       headers: {
+//         Authorization: `Bearer ${userToken.token}`,
+//         'Content-Type': 'application/json',
+//       },
+//     });
+
+
+//     if (response.data) {
+
+
+//       // ✅ Call onStatusChange to update parent state with verification_status: "1"
+//       if (onStatusChange) {
+//         onStatusChange({
+//           id: data.CHILD_CASEID,  // This should match the id used in handleStatusChange
+//           verification_status: "1"
+//         });
+//       }
+      
+//   Swal.fire({
+//     icon: 'success',
+//     title: 'Success!',
+//     text: 'Verification updated successfully!',
+//     timer: 1500,
+//     showConfirmButton: false,
+//   });
+
+
+//          if (refersh) {
+        
+//             await refersh();
+         
+//         }
+//       setRemarks('');
+//       onClose();
+//     }
+//   } catch (error) {
+//     console.error('Error submitting form:', error);
+//     Swal.fire({
+//       title: 'Error!',
+//       text: 'Failed to update verification. Please try again.',
+//       icon: 'error',
+//     });
+//   }
+// };
+
+
+ const handleSubmit = async () => {
+  // ✅ CHECK IF AT LEAST ONE DOCUMENT IS APPROVED
+  const hasApprovedDoc = Object.values(approvedDocs).some(status => status === true);
+  
+  if (!hasApprovedDoc) {
+    await Swal.fire({
+      title: "Approval Required",
+      text: "Please approve at least one document before submitting!",
+      icon: "warning",
+      confirmButtonColor: "#3085d6",
+    });
+    return;
+  }
+
+  // ✅ CONFIRMATION ALERT BEFORE SUBMISSION
+  const result = await Swal.fire({
+    title: "Confirm Submission",
+    text: "Are you sure you want to submit this verification?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#10b981",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Submit!",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
   try {
     const payload = {
       child_caseId: data.CHILD_CASEID,
       remarks,
     };
     
-    const response =
-
-     await axios.post(`${API_BASE_URL}/verify-update`, payload, {
+    const response = await axios.post(`${API_BASE_URL}/verify-update`, payload, {
       headers: {
         Authorization: `Bearer ${userToken.token}`,
         'Content-Type': 'application/json',
       },
     });
 
-
     if (response.data) {
-
-
       // ✅ Call onStatusChange to update parent state with verification_status: "1"
       if (onStatusChange) {
         onStatusChange({
-          id: data.CHILD_CASEID,  // This should match the id used in handleStatusChange
+          id: data.CHILD_CASEID,
           verification_status: "1"
         });
       }
       
-  Swal.fire({
-    icon: 'success',
-    title: 'Success!',
-    text: 'Verification updated successfully!',
-    timer: 1500,
-    showConfirmButton: false,
-  });
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Verification updated successfully!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
-
-         if (refersh) {
-        
-            await refersh();
-         
-        }
+      if (refersh) {
+        await refersh();
+      }
+      
       setRemarks('');
       onClose();
     }
@@ -113,9 +191,6 @@ const handleSubmit = async () => {
     });
   }
 };
-
-
- 
 
   const handleApprove = async (Document_Id, Verify_Id, title) => {
     const result = await Swal.fire({
@@ -423,7 +498,7 @@ const handleSubmit = async () => {
                     {doc.marks && doc.marks !== 'N/A' && (
                       <div className="text-center">
                         <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
-                          Marks: {doc.marks}%
+                          Marks: {doc.marks}
                         </span>
                       </div>
                     )}
@@ -491,7 +566,7 @@ const handleSubmit = async () => {
               Cancel
             </button>
             <button
-              onClick={() => handleSubmit()}
+              // onClick={() => handleSubmit()}
               className="px-5 py-2 rounded-lg font-semibold text-sm text-white bg-red-500 hover:bg-red-600 transition-all"
             >
               Reject

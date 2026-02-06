@@ -61,7 +61,10 @@ useEffect(() => {
         }
       );
 
-      setHrData(response.data)
+
+    
+
+      setHrData(response.data);
       console.log("NOTE FOR APPROVAL API DATA:", response.data);
     } catch (err) {
       console.error("Error fetching approval data", err);
@@ -75,34 +78,75 @@ useEffect(() => {
 
 
 
+useEffect(() => {
+  if (Array.isArray(HrData?.TaskAssignmentData)) {
 
+    const filtered = HrData.TaskAssignmentData
+      .filter(row => {
+   
 
-
-  useEffect(() => {
-    if (Array.isArray(HrData?.TaskAssignmentData) && HrData?.TaskAssignmentData?.length > 0) {
-      const shortlistedData = HrData?.TaskAssignmentData?.filter(row => {
-        const status = row.ACTION_STATUS || row.STATUS || row.CUR_STATUS;
-        return status?.toUpperCase() === 'pending';
-      });
-
-      const rowsWithId = shortlistedData.map((row, index) => ({
+        return (
+      
+          row.verifyEmail !== "sent"  
+        );
+      })
+      .map((row, index) => ({
         ...row,
-        id: row.CASEID || `row_${index}`,
+        id: row.case_id || `row_${index}`,
       }));
 
-      
+    setData(filtered);
+    setFilteredData(filtered);
+  } else {
+    setData([]);
+    setFilteredData([]);
+  }
 
-      console.log(shortlistedData,"Filtered HR Data:", rowsWithId);
-      setData(HrData?.TaskAssignmentData);
-      setFilteredData(HrData?.TaskAssignmentData);
-      setLoading(false);
-    } else {
-      console.log("HrData is empty or not an array");
-      setData([]);
-      setFilteredData([]);
-      setLoading(false);
-    }
-  }, [HrData]);
+  setLoading(false);
+}, [HrData]);
+
+
+
+
+
+
+//   useEffect(() => {
+//     if (Array.isArray(HrData?.TaskAssignmentData) && HrData?.TaskAssignmentData?.length > 0) {
+
+//       console.log("HrData?.TaskAssignmentData)HrData?.TaskAssignmentData)",HrData?.TaskAssignmentData)
+
+
+//       // const shortlistedData = HrData?.TaskAssignmentData?.filter(row => {
+//       //   const status = row.ACTION_STATUS || row.STATUS || row.CUR_STATUS;
+//       //   return status?.toUpperCase() === 'pending';
+//       // });
+
+//       // const rowsWithId = shortlistedData.map((row, index) => ({
+//       //   ...row,
+//       //   id: row.CASEID || `row_${index}`,
+//       // }));
+
+  
+//       setData(HrData?.TaskAssignmentData);
+//       setFilteredData(HrData?.TaskAssignmentData);
+
+// //      setFilteredData(prev =>
+// //   prev.map(row =>
+// //     row.case_id === updatedCaseId
+// //       ? { ...row, verifyEmail: "sent" }
+// //       : row
+// //   )
+// // );
+
+
+//       setLoading(false);
+//     } else {
+//       console.log("HrData is empty or not an array");
+//       setData([]);
+//       setFilteredData([]);
+//       setLoading(false);
+//     }
+//   }, [HrData]);
 
   useEffect(() => {
     if (!userToken.token) navigate('/');
@@ -141,75 +185,161 @@ useEffect(() => {
     }));
   };
 
+
+
+  console.log(filteredData,"dattttttttttttttttttttttttttttt333333333333333333333333333333");
+
+
   const handleSubmitEmail = async (caseId, rowData) => {
-    const email = emailInputs[caseId];
-    if (!email) {
-      Swal.fire('Error', 'Please enter email', 'error');
-      return;
+  const email = emailInputs[caseId];
+  if (!email) {
+    Swal.fire('Error', 'Please enter email', 'error');
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    Swal.fire('Error', 'Please enter a valid email address', 'error');
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you want to send the onboarding form link to ${email}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Send Email',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#6b7280',
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  setSubmitting(prev => ({ ...prev, [caseId]: true }));
+  const payload2 = {
+    email: email,
+    child_caseId: caseId,
+  }
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/emp-email`,
+      payload2,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (response.data) {
+      Swal.fire({
+        title: 'Success!',
+        icon: "success",
+        text: 'Onboarding form link sent to employee email!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      
+      // Clear the email input
+      setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
+      
+      // Remove the row from both data and filteredData
+      setData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
+      setFilteredData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
+      
+      // Optional: Update HrData to mark as sent
+      setHrData(prevHrData => ({
+        ...prevHrData,
+        TaskAssignmentData: prevHrData.TaskAssignmentData?.map(row => 
+          row.CHILD_CASEID === caseId 
+            ? { ...row, verifyEmail: 'sent' } 
+            : row
+        )
+      }));
     }
-
-    if (!validateEmail(email)) {
-      Swal.fire('Error', 'Please enter a valid email address', 'error');
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to send the onboarding form link to ${email}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Send Email',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-    });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-
-    setSubmitting(prev => ({ ...prev, [caseId]: true }));
+  } catch (error) {
+    console.error('Email send error:', error);
+    Swal.fire('Error', 'Failed to send email', 'error');
+  } finally {
+    setSubmitting(prev => ({ ...prev, [caseId]: false }));
+  }
+};
 
 
-    const payload2 = {
-      email: email,
-      child_caseId: caseId,
-    }
+  // const handleSubmitEmail = async (caseId, rowData) => {
+  //   const email = emailInputs[caseId];
+  //   if (!email) {
+  //     Swal.fire('Error', 'Please enter email', 'error');
+  //     return;
+  //   }
 
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/emp-email`,
-        payload2,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
-      console.log(response, "pay1");
+  //   if (!validateEmail(email)) {
+  //     Swal.fire('Error', 'Please enter a valid email address', 'error');
+  //     return;
+  //   }
 
-      if (response.data) {
-        Swal.fire({
-          title: 'Success!',
-          icon: "success",
-                      text: 'Onboarding form link sent to employee email!',
+  //   const result = await Swal.fire({
+  //     title: 'Are you sure?',
+  //     text: `Do you want to send the onboarding form link to ${email}?`,
+  //     icon: 'warning',
+  //     showCancelButton: true,
+  //     confirmButtonText: 'Yes, Send Email',
+  //     cancelButtonText: 'Cancel',
+  //     confirmButtonColor: '#10b981',
+  //     cancelButtonColor: '#6b7280',
+  //   });
+
+  //   if (!result.isConfirmed) {
+  //     return;
+  //   }
+
+  //   setSubmitting(prev => ({ ...prev, [caseId]: true }));
+
+
+  //   const payload2 = {
+  //     email: email,
+  //     child_caseId: caseId,
+  //   }
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/emp-email`,
+  //       payload2,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${userToken.token}`,
+  //           "Content-Type": "application/json",
+  //           Accept: "application/json",
+  //         },
+  //       }
+  //     );
+     
+
+  //     if (response.data) {
+  //       Swal.fire({
+  //         title: 'Success!',
+  //         icon: "success",
+  //                     text: 'Onboarding form link sent to employee email!',
                     
-                      timer: 1500,
-                      showConfirmButton: false,
+  //                     timer: 1500,
+  //                     showConfirmButton: false,
      
     
-        });
-        setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
-      }
-    } catch (error) {
-      console.error('Email send error:', error);
-      Swal.fire('Error', 'Failed to send email', 'error');
-    } finally {
-      setSubmitting(prev => ({ ...prev, [caseId]: false }));
-    }
-  };
+  //       });
+  //       setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
+  //     }
+  //   } catch (error) {
+  //     console.error('Email send error:', error);
+  //     Swal.fire('Error', 'Failed to send email', 'error');
+  //   } finally {
+  //     setSubmitting(prev => ({ ...prev, [caseId]: false }));
+  //   }
+  // };
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

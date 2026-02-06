@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Eye, TrendingUp, Users, FileText, ChevronLeft, ChevronRight,
@@ -27,36 +22,39 @@ const HrInbox = () => {
     return info?.token;
   }, []);
 
-  const hrAprvlFetchData = async () => {
-    if (!token) {
-      console.warn('No token found');
-      return;
+const hrAprvlFetchData = async () => {
+  if (!token) {
+    console.warn('No token found');
+    return;
+  }
+  try {
+    setLoading(true);
+    const res = await fetch(`${API_BASE_URL}/hr-Aprvl-Data`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/hr-Aprvl-Data`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+    const data = await res.json();
 
-
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      const data = await res.json();
-
-      console.log("ajiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", data);
-      setHrData(data?.HrAprvlData || []);
-    } catch (err) {
-      console.error('Error fetching HR approvals', err);
-    } finally {
-      setLoading(false);
+    console.log("API Response:", data);
+    setHrData(data?.hrApprovalData || data?.HrAprvlData || []);
+    
+    // Store the counts separately if they exist in the response
+    if (data.counts) {
+      // You can store these counts in state if needed
+      console.log("Counts from API:", data.counts);
     }
-  };
-
+  } catch (err) {
+    console.error('Error fetching HR approvals', err);
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     if (token) {
       hrAprvlFetchData();
@@ -90,30 +88,33 @@ const HrInbox = () => {
     return data;
   }, [hrData, searchTerm, processFilter]);
 
-  const stats = useMemo(() => {
-    return {
-      total: hrData.length,
-      recruitmentMail: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('recruitment mail')
-      ).length,
-      verification: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('verification')
-      ).length,
-      salaryStackup: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('salary stack') ||
-        (i.Recruit_Process || '').toLowerCase().includes('salary')
-      ).length,
-      candidateApproval: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('candidate approval')
-      ).length,
-      noteForApproval: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('note for approval')
-      ).length,
-      offerLetter: hrData.filter((i) =>
-        (i.Recruit_Process || '').toLowerCase().includes('offer letter')
-      ).length,
-    };
-  }, [hrData]);
+const stats = useMemo(() => {
+  return {
+    total: hrData.length,
+    // Change to include "HR Recruitment"
+    recruitmentMail: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('hr recruitment') ||
+      (i.Recruit_Process || '').toLowerCase().includes('recruitment')
+    ).length,
+    verification: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('verification')
+    ).length,
+    salaryStackup: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('salary stack') ||
+      (i.Recruit_Process || '').toLowerCase().includes('salary')
+    ).length,
+    candidateApproval: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('candidate approval')
+    ).length,
+    noteForApproval: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('note for approval')
+    ).length,
+    offerLetter: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('offer letter')
+    ).length,
+  };
+}, [hrData]);
+ 
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
@@ -127,33 +128,34 @@ const HrInbox = () => {
 
 
   // Add this helper function after the getStageLabel function
-  const getProcessStyle = (process) => {
-    if (!process) return 'bg-gray-100 text-gray-700 border border-gray-200';
+ const getProcessStyle = (process) => {
+  if (!process) return 'bg-gray-100 text-gray-700 border border-gray-200';
 
-    const processLower = process.toLowerCase();
+  const processLower = process.toLowerCase();
 
-    if (processLower.includes('candidate approval')) {
-      return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
-    }
-    if (processLower.includes('salary stack') || processLower.includes('salary')) {
-      return 'bg-gradient-to-r from-pink-100 to-pink-50 text-pink-700 border border-pink-300';
-    }
-    if (processLower.includes('verification')) {
-      return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
-    }
-    if (processLower.includes('recruitment mail')) {
-      return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
-    }
-    if (processLower.includes('note for approval')) {
-      return 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 border border-green-300';
-    }
-    if (processLower.includes('offer letter')) {
-      return 'bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-700 border border-indigo-300';
-    }
+  if (processLower.includes('candidate approval')) {
+    return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
+  }
+  if (processLower.includes('salary stack') || processLower.includes('salary')) {
+    return 'bg-gradient-to-r from-pink-100 to-pink-50 text-pink-700 border border-pink-300';
+  }
+  if (processLower.includes('verification')) {
+    return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
+  }
+  // Change this line to include "hr recruitment"
+  if (processLower.includes('recruitment mail') || processLower.includes('hr recruitment')) {
+    return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
+  }
+  if (processLower.includes('note for approval')) {
+    return 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 border border-green-300';
+  }
+  if (processLower.includes('offer letter')) {
+    return 'bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-700 border border-indigo-300';
+  }
 
-    // Default color for other processes
-    return 'bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border border-slate-300';
-  };
+  // Default color for other processes
+  return 'bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border border-slate-300';
+};
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
       <div className="w-full px-1 py-0.1">
@@ -286,10 +288,10 @@ const HrInbox = () => {
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
                         { key: 'sno', label: 'S.No', width: 'w-12' },
-                        { key: 'caseId', label: 'Case ID', width: 'w-32' },
-                        { key: 'plant', label: 'Plant', width: 'w-38' },
+                        { key: 'caseId', label: 'Case ID', width: 'w-24' },
+                        { key: 'plant', label: 'Plant', width: 'w-48' },
                         { key: 'department', label: 'Department', width: 'w-24' },
-                        { key: 'designation', label: 'Designation', width: 'w-24' },
+                        // { key: 'designation', label: 'Designation', width: 'w-24' },
                         { key: 'created', label: 'Created', width: 'w-32' },
                         { key: 'updated', label: 'Updated', width: 'w-32' },
                         { key: 'process', label: 'Recruitment Process', width: 'w-48' },
@@ -314,24 +316,24 @@ const HrInbox = () => {
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                            {row.Child_CaseId || 'N/A'}
+                            {row.Child_CaseId || ''}
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900 ">
-                            {row.plant || 'N/A'}
+                          <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+                            {row.PLANT || ''}
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900 ">
-                            {row.department || 'N/A'}
+                          <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors ">
+                            {row.DEPT || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
+                        {/* <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 ">
                             {row.designation || 'N/A'}
                           </span>
-                        </td>
+                        </td> */}
 
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
                           {row.created_at
@@ -340,7 +342,7 @@ const HrInbox = () => {
                               month: 'short',
                               year: 'numeric'
                             })
-                            : 'N/A'}
+                            : ''}
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
                           {row.updated_at
@@ -349,17 +351,18 @@ const HrInbox = () => {
                               month: 'short',
                               year: 'numeric'
                             })
-                            : 'N/A'}
+                            : ''}
                         </td>
-                        <td className="px-3 py-2">
-                          <button
-                            onClick={() => handleViewDetails(row)}
-                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getProcessStyle(row.Recruit_Process)}`}
-                            title="click here"
-                          >
-                            {row.Recruit_Process || 'N/A'}
-                          </button>
-                        </td>
+                      <td className="px-3 py-2">
+  <button
+    onClick={() => handleViewDetails(row)}
+    className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getProcessStyle(row.Recruit_Process)}`}
+    title="click here"
+  >
+    {/* Add this line to change "HR Recruitment" to "Recruitment Mail" */}
+    {row.Recruit_Process === "HR Recruitment" ? "Recruitment Mail" : row.Recruit_Process || ''}
+  </button>
+</td>
 
                       </tr>
                     ))}

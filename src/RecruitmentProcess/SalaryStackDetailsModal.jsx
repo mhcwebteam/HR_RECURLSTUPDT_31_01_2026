@@ -202,7 +202,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       const employeeInfo = [
         ['Name:', String(data?.NAME || 'N/A'), 'Case ID:', String(data.CHILD_CASEID || 'N/A')],
         ['Email:', String(data?.EMAIL || 'N/A'), 'Phone:', String(data?.PHONE_NUMBER || 'N/A')],
-        ['Job Title:', String(data?.JOB_TITLE || 'Full Stack Developer'), 'Location:', String(data?.PLANT || 'Head Office')]
+        ['Job Title:', String(data?.JOB_TITLE || 'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
       ];
 
       employeeInfo.forEach((row) => {
@@ -395,11 +395,21 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
   };
 
   const handleSubmit = async (status) => {
-    console.log("Data ID:", data.id);
-    console.log("Existing Salary Breakup ID:", existingSalaryBreakupId);
-    console.log("New Salary Breakup ID:", newSalaryBreakupId);
-    console.log("Is Editing:", isEditing);
+  const result = await Swal.fire({
+    title: status === 'approved' ? 'Confirm Approval' : 'Confirm Rejection',
+    text: `Are you sure you want to ${status === 'approved' ? 'approve' : 'reject'} this salary breakup?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: status === 'approved' ? '#10b981' : '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: status === 'approved' ? 'Yes, Approve!' : 'Yes, Reject!',
+    cancelButtonText: 'Cancel'
+  });
 
+  // ✅ IF USER CLICKS "NO", STOP EXECUTION
+  if (!result.isConfirmed) {
+    return;
+  }
     const payload = {
       childCaseId: data.CHILD_CASEID,
       VerificationId: data.verification_id,
@@ -439,7 +449,8 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           'Content-Type': 'application/json',
         },
       });
-      console.log(response.data, "Response from server");
+    
+
 
 
 
@@ -447,8 +458,8 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       icon: "success",
         title: status === 'approved' ? 'Approved!' : 'Rejected!',
       text: "Mail Sent successfully",
-       text: response.data.message || 'Salary breakup rejected successfully!',
-      timer: 500,
+       text: response.data.message || `Salary breakup ${status} successfully!`,
+      timer: 1500,
       showConfirmButton: false,
     });
   
@@ -599,10 +610,10 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
               <InfoRow label="Name" value={data?.NAME} />
               <InfoRow label="Case ID" value={data?.CHILD_CASEID} valueColor="text-emerald-600" />
-              <InfoRow label="Job Title" value={data?.JOB_TITLE || 'Full Stack Developer'} />
+              <InfoRow label="Job Title" value={data?.JOB_TITLE} />
               <InfoRow label="Email" value={data?.EMAIL} />
               <InfoRow label="Phone" value={data?.PHONE_NUMBER} />
-              <InfoRow label="Location" value={data?.PLANT || 'Head Office'} valueColor="text-blue-600" />
+              <InfoRow label="Location" value={data?.PLANT} valueColor="text-blue-600" />
             </div>
           </div>
 

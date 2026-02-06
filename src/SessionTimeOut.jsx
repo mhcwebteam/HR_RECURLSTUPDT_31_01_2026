@@ -12,7 +12,7 @@ const SessionTimeout = () => {
       localStorage.removeItem("userInfo");
       alert("Session expired due to inactivity.");
       navigate("/");
-    }, 10* 60 * 1000); // 30 minutes
+    }, 30* 60 * 1000); // 30 minutes
   };
 
   useEffect(() => {

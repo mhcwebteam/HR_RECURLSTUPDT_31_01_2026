@@ -209,7 +209,7 @@ const AssignedTasks = () => {
                         { key: 'caseId', label: 'Case ID', width: 'w-32' },
                         { key: 'plant', label: 'Plant', width: 'w-32' },
                          { key: 'department', label: 'Department', width: 'w-32' },
-                        { key: 'designation', label: 'Designation', width: 'w-32' },
+                        // { key: 'designation', label: 'Designation', width: 'w-32' },
                         { key: 'assignedBy', label: 'Assigned By', width: 'w-32' },
                         { key: 'assignedTo', label: 'Assigned To', width: 'w-32' },
                         { key: 'status', label: 'Status', width: 'w-28' },
@@ -235,39 +235,39 @@ const AssignedTasks = () => {
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                            {row.case_id || 'N/A'}
+                            {row.case_id || ''}
                           </span>
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900">
-                            {row.plant || 'N/A'}
+                            {row.PLANT || ''}
                           </span>
                         </td>
                          <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900">
-                            {row.department || 'N/A'}
+                            {row.DEPT || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
+                        {/* <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900">
                             {row.designation || 'N/A'}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900">
-                            {row.assigned_by || 'N/A'}
+                            {row.assigned_by || ''}
                           </span>
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900">
-                            {row.assigned_to || 'N/A'}
+                            {row.assigned_to || ''}
                           </span>
                         </td>
                         <td className="px-3 py-2">
                           <button
                             className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getStatusStyle(row.status)}`}
                           >
-                            {row.status || 'N/A'}
+                            {row.status || ''}
                           </button>
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
@@ -277,7 +277,7 @@ const AssignedTasks = () => {
                               month: 'short',
                               year: 'numeric'
                             })
-                            : 'N/A'}
+                            : ''}
                         </td>
                       </tr>
                     ))}

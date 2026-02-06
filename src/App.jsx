@@ -118,6 +118,28 @@ export default function App() {
         },
 
 
+              {
+          
+      path: 'RecruitmentForm/:case_Id',
+      exact: true,
+      element: (
+     <section className='main'>
+        <div className='contentMain flex'>
+          {/* <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+          </div> */}
+          <div className={`contentRight py-4 px-4 w-[100%]`}>
+            <RecruitmentForm />
+          </div>
+        </div>
+      </section>
+          )
+
+
+
+
+          
+    },
+
 
           {
           path: '/AssignedTasks',
@@ -140,27 +162,7 @@ export default function App() {
 
   
 
-            {
-          
-      path: 'RecruitmentForm/:case_Id',
-      exact: true,
-      element: (
-     <section className='main'>
-        <div className='contentMain flex'>
-          {/* <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
-          </div> */}
-          <div className={`contentRight py-4 px-4 w-[100%]`}>
-            <RecruitmentForm />
-          </div>
-        </div>
-      </section>
-          )
-
-
-
-
-          
-    },
+      
   ],
 {
     basename: '/react/hrmprocess',

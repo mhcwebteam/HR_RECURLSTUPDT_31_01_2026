@@ -38,7 +38,7 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
     text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Yes, Send Email',
+    confirmButtonText: 'Yes',
     cancelButtonText: 'Cancel',
     confirmButtonColor: '#10b981',
     cancelButtonColor: '#6b7280',

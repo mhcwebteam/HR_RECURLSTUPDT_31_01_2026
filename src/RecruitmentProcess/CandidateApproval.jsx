@@ -55,6 +55,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { ContextData } from '../Context/ContextData';
 
 import CandidateStackDetailsModal from './CandidateStackDetailsModal';
+import Swal from 'sweetalert2';
 
 
 
@@ -127,6 +128,8 @@ const CandidateApproval = () => {
 
       );
 
+   
+
     } catch (err) {
 
       console.error(
@@ -156,6 +159,78 @@ const CandidateApproval = () => {
   }, [token]);
 
 
+ 
+
+
+
+  const handleMoveNextTab = async (row) => {
+
+
+  try {
+
+     const result = await Swal.fire({
+      title: 'Confirm Move',
+      text: `Move to the next approval stage?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Move',
+      cancelButtonText: 'Cancel'
+    });
+
+    // If user cancelled, stop here
+    if (!result.isConfirmed) {
+      return;
+    }
+ setSubmitting(prev => ({ ...prev, [row.CHILD_CASEID]: true }));
+
+
+
+    const payload = {
+
+      CHILD_CASEID: row.CHILD_CASEID,
+    };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/candToNoteAprvl`,
+      payload,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token?.token}`,
+        },
+      }
+    );
+
+
+
+    await Swal.fire({
+      icon: "success",
+      title: "Moved Successfully!",
+      text: `The row is moved to the next approval stage`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    if(candidAprvlGetData) {
+
+  await   candidAprvlGetData()
+    }
+
+  
+
+    console.log("Response:", response.data);
+  } catch (error) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error!',
+      text: error.response?.data?.message || 'Failed to move to next stage',
+      confirmButtonColor: '#ef4444'
+        });
+    console.error("Move next tab error:", error);
+  }
+};
 
 
 
@@ -166,15 +241,15 @@ const CandidateApproval = () => {
 
     let result = candidgetData.filter(user =>
 
-      user.candidate_aprvl_stage !== null &&
+      user.candidate_aprvl_stage == null 
 
-      user.candidate_aprvl_stage !== "null" &&
+    
 
-      user.candidate_aprvl_stage !== undefined
+
 
     );
 
-    console.log(result,"rrrrrrrrrrrrrrrrrrrrrrrrrr");
+ 
 
 
 
@@ -201,6 +276,7 @@ const CandidateApproval = () => {
       result = result.filter(user => user.CANDID_APPROVAL_STATUS === statusFilter);
 
     }
+
 
 
 
@@ -591,105 +667,108 @@ const CandidateApproval = () => {
 
     },
 
-    // {
+    {
 
-    //   field: 'ACTIONS',
+      field: 'ACTIONS',
 
-    //   headerName: 'Actions',
+      headerName: 'Actions',
 
-    //   flex: 1,
+      flex: 1,
 
-    //   minWidth: 110,
+      minWidth: 110,
 
-    //   sortable: false,
+      sortable: false,
 
-    //   filterable: false,
+      filterable: false,
 
-    //   renderCell: (params) => {
+      renderCell: (params) => {
 
-    //     const isSubmitting = submitting[params.row.CASEID] || false;
+        const isSubmitting = submitting[params.row.CASEID] || false;
 
-    //     return (
+        return (
 
-    //       <Button
+          <Button
 
-    //         variant="contained"
+            variant="contained"
 
-    //         size="small"
+            size="small"
 
-    //         disabled={isSubmitting}
+        onClick={() => handleMoveNextTab(params.row)}
 
-    //         sx={{
+     
 
-    //           background: isSubmitting
 
-    //             ? '#9ca3af'
+            sx={{
 
-    //             : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              background: isSubmitting
 
-    //           color: 'white',
+                ? '#9ca3af'
 
-    //           fontSize: '10px',
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
 
-    //           padding: '4px 10px',
+              color: 'white',
 
-    //           borderRadius: '6px',
+              fontSize: '10px',
 
-    //           textTransform: 'capitalize',
+              padding: '4px 10px',
 
-    //           boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+              borderRadius: '6px',
 
-    //           minWidth: '90px',
+              textTransform: 'capitalize',
 
-    //           '&:hover': {
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
 
-    //             background: isSubmitting
+              minWidth: '90px',
 
-    //               ? '#9ca3af'
+              '&:hover': {
 
-    //               : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                background: isSubmitting
 
-    //             transform: isSubmitting ? 'none' : 'translateY(-1px)',
+                  ? '#9ca3af'
 
-    //             boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
 
-    //           },
+                transform: isSubmitting ? 'none' : 'translateY(-1px)',
 
-    //           '&:disabled': {
+                boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
 
-    //             background: '#9ca3af',
+              },
 
-    //             color: '#e5e7eb',
+              '&:disabled': {
 
-    //           }
+                background: '#9ca3af',
 
-    //         }}
+                color: '#e5e7eb',
 
-    //       >
+              }
 
-    //         {isSubmitting ? (
+            }}
 
-    //           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          >
 
-    //             <CircularProgress size={12} sx={{ color: 'white' }} />
+            {isSubmitting ? (
 
-    //             Sending...
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 
-    //           </Box>
+                <CircularProgress size={12} sx={{ color: 'white' }} />
 
-    //         ) : (
+                Sending...
 
-    //           'Send Email'
+              </Box>
 
-    //         )}
+            ) : (
 
-    //       </Button>
+              'Move to Next Tab'
 
-    //     );
+            )}
 
-    //   },
+          </Button>
 
-    // },
+        );
+
+      },
+
+    },
 
   ], [submitting]);
 
@@ -1028,7 +1107,7 @@ const CandidateApproval = () => {
         data={selectedUser}
 
         onStatusChange={handleStatusChange}
-
+           note = ""
       />
 
     </Box>

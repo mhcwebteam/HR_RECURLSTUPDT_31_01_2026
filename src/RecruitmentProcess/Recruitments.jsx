@@ -23,7 +23,8 @@ import {
   UploadFile as UploadFileIcon,
   RequestQuote as RequestQuoteIcon
 } from '@mui/icons-material';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RecruitmentMail from './RecruitmentMail';
 import RecruitmentForm from './RecruitmentForm';
 import { CircleCheckBig, ScrollText, Mail, ShieldCheck, DollarSign, UserCheck, FileText, Send } from 'lucide-react';
@@ -32,6 +33,7 @@ import Salarystackup from './Salarystackup';
 import CandidateApproval from './CandidateApproval';
 import NoteForApprovals from './NoteForApprovals';
 import OfferLetter from './OfferLetter';
+import OfferApproved from './OfferApproved';
 
 const Recruitments = () => {
   const location = useLocation();
@@ -134,6 +136,17 @@ const Recruitments = () => {
       borderColor: 'border-indigo-300',
       hoverBg: 'hover:bg-indigo-100'
     },
+
+
+        { 
+      label: 'Offer Approved', 
+      component: 'Offer Approved',
+      icon: Send,
+      color: 'from-indigo-500 to-indigo-600',
+      bgColor: 'bg-indigo-50',
+      borderColor: 'border-indigo-300',
+      hoverBg: 'hover:bg-indigo-100'
+    },
   ];
 
   const handleMenuItemClick = (component) => {
@@ -160,6 +173,8 @@ const Recruitments = () => {
     return colorMap[color] || colorMap.blue;
   };
 
+  const navigate = useNavigate();
+
   const renderRecruitmentComponent = () => {
     console.log('Current component:', activeRecruitmentComponent);
     switch (activeRecruitmentComponent) {
@@ -175,8 +190,8 @@ const Recruitments = () => {
         return <NoteForApprovals/>
       case 'Offer Letter':
         return <OfferLetter/>      
-      case 'form':
-        // return <RecruitmentForm />
+      case 'Offer Approved':
+       return <OfferApproved />
       default:
         return null;
     }
@@ -219,18 +234,36 @@ const Recruitments = () => {
 
       <Paper elevation={1} className="mb-6 p-4 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 border-l-4 border-purple-500">
         {/* Header with Icon */}
-        <Box className="mb-3 flex items-center gap-3">
-          <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full"></div>
-          <div className="flex items-center gap-2">
-            <PeopleIcon className="text-purple-600" style={{ fontSize: '24px' }} />
-            <Typography 
-              variant="h6" 
-              className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
-            >
-              Recruitment Process
-            </Typography>
-          </div>
-        </Box>
+        <Box className="mb-3 flex items-center justify-between">
+      
+      {/* Left Title Section */}
+      <Box className="flex items-center gap-3">
+        <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full"></div>
+
+        <div className="flex items-center gap-2">
+          <PeopleIcon className="text-purple-600" style={{ fontSize: "24px" }} />
+          <Typography
+            variant="h6"
+            className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
+          >
+            Recruitment Process
+          </Typography>
+        </div>
+      </Box>
+
+      {/* Right Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1 px-3 py-1.5 rounded-lg 
+                   bg-gradient-to-r from-purple-600 to-blue-600
+                   text-white text-sm font-medium
+                   hover:opacity-90 transition"
+      >
+        <ArrowBackIcon fontSize="small" />
+        Back
+      </button>
+    </Box>
+
 
         {/* Animated Tabs Section */}
         {(activeTab === 0 || hoveredTab === 0) && (

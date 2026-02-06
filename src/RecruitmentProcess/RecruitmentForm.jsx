@@ -94,7 +94,7 @@ if(!userToken.token) return null
           }
         );
 
-    console.log(response,"responded for akkkkkkkkkkk");
+  
 
         setHrData(response.data)
         console.log("NOTE FOR APPROVAL API DATA:", response.data);
@@ -479,7 +479,7 @@ if(!userToken.token) return null
       setErrors(validationErrors);
       setShowErrors(true);
 
-      console.log("Validation Errors:", validationErrors); // ✅ Debug log
+      console.log("Validation Errors:", validationErrors); 
 
       const firstErrorField = document.querySelector('.border-red-500');
       if (firstErrorField) {
@@ -493,6 +493,24 @@ if(!userToken.token) return null
       });
       return;
     }
+
+
+    const result = await Swal.fire({
+    title: "Confirm Submission",
+    text: "Are you sure you want to submit this form?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Submit!",
+    cancelButtonText: "No, Cancel"
+  });
+  // ✅ IF USER CLICKS "NO", STOP EXECUTION
+  if (!result.isConfirmed) {
+    return;
+  }
+
+
 
     try {
       const data = new FormData();
@@ -566,27 +584,43 @@ if(!userToken.token) return null
         data,
         {
           headers: {
-            // Authorization: `Bearer ${userToken.token}`,
+           Authorization: `Bearer ${userToken.token}`,
             "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      if (response.data.success) {
+ if (response.data.success) {
+      await Swal.fire({
+        title: "Success",
+        text: "Recruitment data updated successfully",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      resetForm();
+    } else {
+      await Swal.fire("Failed", response.data.message, "error");
+    }
+
+
+      // if (response.data.success) {
     
 
-            await Swal.fire({
+      //       await Swal.fire({
             
-              title: "Success",
-              text: "Data saved successfully",
-              timer: 500,
-              showConfirmButton: false,
-            });
+      //         title: "Success",
+      //         text: "Data saved successfully",
+      //         timer: 500,
+      //         showConfirmButton: false,
+      //       });
+
         
-        resetForm();
-      } else {
-        await Swal.fire("Failed", response.data.message, "error");
-      }
+      //   resetForm();
+      // } else {
+      //   await Swal.fire("Failed", response.data.message, "error");
+      // }
     } catch (error) {
       console.error(error);
       await Swal.fire(
@@ -663,7 +697,7 @@ if(!userToken.token) return null
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* ================= BASIC INFORMATION ================= */}
           <div className="bg-white rounded-md shadow p-4 border-l-4 border-blue-500">
-            <h2 className="text-lg font-bold mb-3">Basic Information66666666666666</h2>
+            <h2 className="text-lg font-bold mb-3">Basic Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <InputField
@@ -1029,6 +1063,31 @@ if(!userToken.token) return null
                       error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''}
                     />
                   )}
+
+
+         <InputField
+                label={<>CURRENT CTC<span className="text-red-500">*</span></>}
+                name="CURRENT_CTC"
+                type="number"
+                value={formData.CURRENT_CTC}
+                onChange={handleInputChange}
+                error={showErrors ? errors.CURRENT_CTC : ''}
+              />
+
+
+   <InputField
+                label={<>EXP CTC<span className="text-red-500">*</span></>}
+                name="EXP_CTC"
+                type="number"
+                value={formData.EXP_CTC}
+                onChange={handleInputChange}
+                error={showErrors ? errors.EXP_CTC : ''}
+              />
+
+
+
+
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1065,6 +1124,7 @@ if(!userToken.token) return null
                 </div>
               </div>
             ))}
+
           </div>
 
           {/* ================= ACTION BUTTONS ================= */}
@@ -1112,12 +1172,22 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
 
 const FileUpload = ({ label, name, onChange, multiple = false, error }) => {
   const [fileName, setFileName] = useState('No file chosen');
+const [file, setFile] = useState("");
+    
   const maxSize = name === 'PAYSLIPS' || name === 'BANK_STATEMENTS' ? '4MB' : '2MB';
 
   const handleChange = (e) => {
+
+      const files = e.target.files;
+ 
+
+ setFile(files[0]);
     setFileName(e.target.files?.length > 0 ? `${e.target.files.length} file(s) selected` : 'No file chosen');
     onChange(e);
   };
+
+
+
 
   return (
     <div>
@@ -1135,10 +1205,15 @@ const FileUpload = ({ label, name, onChange, multiple = false, error }) => {
           }`}>
           Choose File
         </span>
-        <span className="text-gray-600 text-xs truncate">{fileName}</span>
+     
+         {/* {file && (
+  <p className="mt-1 text-xs text-gray-600 truncate">
+    {file.name}
+  </p>
+)} */}
       </label>
-      <p className="text-gray-500 text-xs mt-0.5">PDF only, max {maxSize}</p>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {/* <p className="text-gray-500 text-xs mt-0.5">PDF only, max {maxSize}</p> */}
+      {  file && <p className="text-gray-500 text-xs mt-1">{file.name}</p>}
     </div>
   );
 };

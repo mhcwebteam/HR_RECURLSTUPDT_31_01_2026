@@ -63,11 +63,11 @@ const NoteForApprovals = () => {
 
 
   
-  /* ---------------------------------------API CALL -------------------------------------*/
+
   const noteFrAprvlData = async () => {
     try {
       const res = await axios.get(
-        // "http://172.20.0.9/laravel/myhomedashboardMRF/api/getNt-aprvl-data",
+       
 
          `${API_BASE_URL}/getNt-aprvl-data`,
         {
@@ -81,69 +81,10 @@ const NoteForApprovals = () => {
       console.log("NOTE FOR APPROVAL API DATA:", res);
       setNoteAprvlData(res.data.VerifyData || []);
 
-
     } catch (err) {
       console.error("Error fetching approval data", err);
     }
   };
-
-  /*-----------------------------ApprovalS---------------------------------------------*/
-
-
-
-const handleNtFrApprove = async (row) => {
-
-
-  alert(1222222222222);
-
-  try {
-    // 🔵 Loading Swal
-    Swal.fire({
-      title: "Processing...",
-      text: "Please wait while approving",
-      allowOutsideClick: false,
-      //didOpen: () => Swal.showLoading(),
-    });
-
-    // 🔵 Approve API
-    // await axios.post(
-    //   `${API_BASE_URL}/Note-For-AprvlUpdt`,
-    //   { caseId: row.CHILD_CASEID },
-    //   {
-    //     headers: {
-    //       Accept: "application/json",
-    //       Authorization: `Bearer ${token.token}`,
-    //     },
-    //   }
-    // );
-
-    // 🟢 Success Swal (WAIT till shown)
-    await Swal.fire({
-      icon: "success",
-      title: "Approved Successfully",
-      text: "Note for approval updated successfully",
-      timer: 500,
-      showConfirmButton: false,
-    });
-
-    // 🟢 Refresh table data AFTER Swal
-    // await noteFrAprvlData();
-
-    // 🟢 Close modal
-    setApproveModalOpen(false);
-
-  } catch (err) {
-    console.error("Error In Update Note For Aprvl", err);
-
-    Swal.fire({
-      icon: "error",
-      title: "Approval Failed",
-      text: err.response?.data?.message || "Something went wrong. Please try again.",
-    });
-  }
-};
-
- 
 
 
   useEffect(() => {
@@ -152,8 +93,28 @@ const handleNtFrApprove = async (row) => {
     }
   }, [token]);
   
+
+
+  
  
   const assignApprover = async (row, role) => {
+
+  const result = await Swal.fire({
+    title: 'Confirm Approver Assignment',
+    text: `Are you sure you want to send this to ${role} for approval?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, Send!',
+    cancelButtonText: 'Cancel'
+  });
+
+  // ✅ IF USER CLICKS "NO", STOP EXECUTION
+  if (!result.isConfirmed) {
+    return;
+  }
+
     try {
       const payload = {
         child_case_id: row.CHILD_CASEID,
@@ -175,10 +136,29 @@ const handleNtFrApprove = async (row) => {
         }
       );
 
-      noteFrAprvlData(); // refresh list
+
+      await Swal.fire({
+      icon: 'success',
+      title: 'Assigned!',
+      text: `Successfully sent to ${role} for approval`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+      
+if(noteFrAprvlData) {
+  await noteFrAprvlData();
+}
+  
     } catch (err) {
+
       console.error("Approver Assign Error", err);
-      alert("Failed to assign approver");
+    await Swal.fire({
+      icon: 'error',
+      title: 'Assignment Failed',
+      text: err.response?.data?.message || 'Failed to assign approver',
+      confirmButtonColor: '#ef4444',
+    });
     }
   };
 
@@ -204,7 +184,7 @@ const handleNtFrApprove = async (row) => {
       SNO: index + 1,
       CHILD_CASEID: item.CHILD_CASEID,
       PLANT: item.PLANT,
-      FIRST_NAME: item.FIRST_NAME,
+       FIRST_NAME: `${item.FIRST_NAME} ${item.LAST_NAME}`,
       EMAIL: item.EMAIL,
       PHONE_NUMBER: item.PHONE_NUMBER,
       DEPT: item.DEPT,
@@ -268,40 +248,69 @@ const handleNtFrApprove = async (row) => {
         </Box>
       ),
     },
-    {
-      field: "APPROVE_ACTION",
-      headerName: "Approve",
-      flex: 0.9,
-      minWidth: 100,
+
+     {
+      field: "View",
+      headerName: "View",
+      width: 80,
       sortable: false,
       renderCell: (params) => (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={() => {
-            setApproveRow(params.row);
-            setApproveModalOpen(true);
-          }}
-          sx={{
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            color: 'white',
-            fontSize: '10px',
-            padding: '4px 10px',
-            borderRadius: '6px',
-            textTransform: 'capitalize',
-            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
-            fontWeight: 600,
-            '&:hover': {
-              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 4px 10px rgba(16, 185, 129, 0.4)',
-            },
-          }}
-        >
-          Approve
-        </Button>
+        <Tooltip title="View Details">
+          <IconButton
+            size="small"
+            onClick={() => {
+              setSelectedUser(params.row);
+              setModalOpen(true);
+            }}
+            sx={{
+              color: '#3b82f6',
+              '&:hover': {
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              },
+            }}
+          >
+            <Visibility fontSize="small" />
+          </IconButton>
+        </Tooltip>
       ),
     },
+
+    
+    // {
+    //   field: "APPROVE_ACTION",
+    //   headerName: "Approve",
+    //   flex: 0.9,
+    //   minWidth: 100,
+    //   sortable: false,
+    //   renderCell: (params) => (
+
+    //     <Button
+    //       variant="contained"
+    //       size="small"
+    //       onClick={() => {
+    //         setApproveRow(params.row);
+    //         setApproveModalOpen(true);
+    //       }}
+    //       sx={{
+    //         background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    //         color: 'white',
+    //         fontSize: '10px',
+    //         padding: '4px 10px',
+    //         borderRadius: '6px',
+    //         textTransform: 'capitalize',
+    //         boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+    //         fontWeight: 600,
+    //         '&:hover': {
+    //           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    //           transform: 'translateY(-1px)',
+    //           boxShadow: '0 4px 10px rgba(16, 185, 129, 0.4)',
+    //         },
+    //       }}
+    //     >
+    //       Approve
+    //     </Button>
+    //   ),
+    // },
     { 
       field: "CHILD_CASEID", 
       headerName: "Case ID", 
@@ -427,74 +436,48 @@ const handleNtFrApprove = async (row) => {
       minWidth: 120,
       renderCell: (params) => getStatusChip(params.value),
     },
-    {
-      field: "View",
-      headerName: "View",
-      width: 80,
-      sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="View Details">
-          <IconButton
-            size="small"
-            onClick={() => {
-              setSelectedUser(params.row);
-              setModalOpen(true);
-            }}
-            sx={{
-              color: '#3b82f6',
-              '&:hover': {
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              },
-            }}
-          >
-            <Visibility fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
-    },
+   
 
-token?.Is_Employee === 2 &&
-    {
-      field: "APPROVER",
-      headerName: "Send For Approval",
-      flex: 1.3,
-      minWidth: 180,
-      sortable: false,
-      renderCell: (params) => (
-        <TextField
-          select
-          size="small"
-          fullWidth
-          value={params.row.APPROVER ?? ""}
-          onChange={(e) => assignApprover(params.row, e.target.value)}
-          SelectProps={{
-            displayEmpty: true,
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: '12px',
-              height: '32px',
-              '& fieldset': {
-                borderColor: '#d1d5db',
-              },
-              '&:hover fieldset': {
-                borderColor: '#667eea',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#667eea',
-              },
-            },
-          }}
-        >
-          <MenuItem value="" disabled>
-            <em>Select Approver</em>
-          </MenuItem>
-          <MenuItem value="HOD"> HOD</MenuItem>
-          <MenuItem value="DIRECTOR">Director</MenuItem>
-          <MenuItem value="EVC">EVC</MenuItem>
-        </TextField>
-      ),
+token?.Is_Employee === 2 && {
+  field: "APPROVER",
+  headerName: "Send For Approval",
+  flex: 1.3,
+  minWidth: 180,
+  sortable: false,
+  renderCell: (params) => {
+    // Hide dropdown if HR is approved
+    if (params.row.HR === "Approved") {
+      return null; 
     }
+
+    return (
+      <TextField
+        select
+        size="small"
+        fullWidth
+        value={params.row.APPROVER ?? ""}
+        onChange={(e) => assignApprover(params.row, e.target.value)}
+        SelectProps={{ displayEmpty: true }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            fontSize: '12px',
+            height: '32px',
+            '& fieldset': { borderColor: '#d1d5db' },
+            '&:hover fieldset': { borderColor: '#667eea' },
+            '&.Mui-focused fieldset': { borderColor: '#667eea' },
+          },
+        }}
+      >
+        <MenuItem value="" disabled>
+          <em>Select Approver</em>
+        </MenuItem>
+        <MenuItem value="HOD">HOD</MenuItem>
+        <MenuItem value="DIRECTOR">Director</MenuItem>
+        <MenuItem value="EVC">EVC</MenuItem>
+      </TextField>
+    );
+  },
+},
   ];
 
   /* -------------------- JSX -------------------- */
@@ -795,6 +778,7 @@ token?.Is_Employee === 2 &&
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         data={selectedUser}
+         note = {noteFrAprvlData}
       />
     </Box>
   );

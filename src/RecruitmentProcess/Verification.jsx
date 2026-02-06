@@ -24,6 +24,7 @@ import { ContextData } from '../Context/ContextData';
 import VerificationDetailsModal from './VerificationDetailsModal';
 import axios from 'axios';
 import { API_BASE_URL } from '../Config/Config';
+import Swal from 'sweetalert2';
 
 const Verification = () => 
 {
@@ -155,7 +156,22 @@ const [personalData, setPersonalData] = useState([]);
     setSelectedUser(user);
     setModalOpen(true);
   };
-  const handleStatusChange = (updateData) => {
+  const handleStatusChange = async (updateData) => {
+    const result = await Swal.fire({
+    title: "Confirm Status Change",
+    text: "Are you sure you want to update the verification status?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Update!",
+    cancelButtonText: "No, Cancel"
+  });
+
+  // ✅ IF USER CLICKS "NO", STOP EXECUTION
+  if (!result.isConfirmed) {
+    return;
+  }
     setPersonalData(prevData => 
     prevData.map(item => 
       item.child_caseid === updateData.id 
@@ -163,6 +179,16 @@ const [personalData, setPersonalData] = useState([]);
         : item
     )
   );
+
+
+
+  await Swal.fire({
+    title: "Updated!",
+    text: "Verification status updated successfully",
+    icon: "success",
+    timer: 1500,
+    showConfirmButton: false,
+  });
   };
 
   const formatDate = (dateString) => {

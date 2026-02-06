@@ -6,9 +6,11 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../Config/Config';
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
-
+import logo from "../asset/imagesmy.png"
 
 const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow, token }) => (
+
+
 
 
 
@@ -84,10 +86,82 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
       </div>
     </div>
 
-    <div>HOD: {data.HR}</div>
-    <div>DIRECTOR: {data.DIRECTOR}</div>
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  {/* HOD */}
+  <div className="group border-1 border-blue-300 rounded-lg px-3 py-2 bg-blue-100/60
+                  flex items-center justify-between
+                  hover:shadow-md transition-all duration-200">
 
-    <div>EVC: {data.EVC}</div>
+    {/* Left: User + Role */}
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-full bg-blue-200 text-blue-700">
+        👤
+      </div>
+      <p className="text-sm font-semibold text-gray-800">HOD</p>
+    </div>
+
+    {/* Right: Status */}
+    <div
+      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border
+        ${data?.HR === 'Approved'
+          ? 'bg-green-100 text-green-700 border-green-400'
+          : 'bg-white text-gray-600 border-gray-400'
+        }`}
+    >
+      <span>{data?.HR === 'Approved' ? '✔️' : '⏳'}</span>
+      <span>{data?.HR || 'Pending'}</span>
+    </div>
+  </div>
+
+  {/* DIRECTOR */}
+  <div className="group border-1 border-purple-300 rounded-lg px-3 py-2 bg-purple-100/60
+                  flex items-center justify-between
+                  hover:shadow-md transition-all duration-200">
+
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-full bg-purple-200 text-purple-700">
+        👤
+      </div>
+      <p className="text-sm font-semibold text-gray-800">DIRECTOR</p>
+    </div>
+
+    <div
+      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border
+        ${data?.DIRECTOR === 'Approved'
+          ? 'bg-green-100 text-green-700 border-green-400'
+          : 'bg-white text-gray-600 border-gray-400'
+        }`}
+    >
+      <span>{data?.DIRECTOR === 'Approved' ? '✔️' : '⏳'}</span>
+      <span>{data?.DIRECTOR || 'Pending'}</span>
+    </div>
+  </div>
+
+  {/* EVC */}
+  <div className="group border-1 border-orange-300 rounded-lg px-3 py-2 bg-orange-100/60
+                  flex items-center justify-between
+                  hover:shadow-md transition-all duration-200">
+
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-full bg-orange-200 text-orange-700">
+        👤
+      </div>
+      <p className="text-sm font-semibold text-gray-800">EVC</p>
+    </div>
+
+    <div
+      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border
+        ${data?.EVC === 'Approved'
+          ? 'bg-green-100 text-green-700 border-green-400'
+          : 'bg-white text-gray-600 border-gray-400'
+        }`}
+    >
+      <span>{data?.EVC === 'Approved' ? '✔️' : '⏳'}</span>
+      <span>{data?.EVC || 'Pending'}</span>
+    </div>
+  </div>
+</div>
+
 
 
     {/* Remarks */}
@@ -104,10 +178,10 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
   </div>
 );
 
-const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
+const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }) => {
 
 
-  const [activeTab, setActiveTab] = useState('personal'); // 'personal', 'company', 'salary'
+  const [activeTab, setActiveTab] = useState('salary'); // 'personal', 'company', 'salary'
 
   const [token, userToken] = useState(() => {
     const authToken = JSON.parse(localStorage.getItem("userInfo"));
@@ -173,7 +247,7 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
       const amount = parseFloat(data.OFFER_CTC) || 0;
       setOfferCTC(amount);
       setSalary(calculateDetailedBreakdown(amount));
-      setActiveTab('personal'); // Reset to personal details when modal opens
+      setActiveTab('salary'); // Reset to personal details when modal opens
     }
   }, [open, data]);
 
@@ -427,6 +501,23 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
   };
 
   const handleSubmit = async () => {
+
+
+     const result = await Swal.fire({
+    title: 'Confirm Approval',
+    text: 'Are you sure you want to approve this candidate?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, Approve',
+    cancelButtonText: 'Cancel'
+  });
+
+  // If user cancelled, stop here
+  if (!result.isConfirmed) {
+    return;
+  }
     const payload = {
       caseId: data.CHILD_CASEID,
       remarks: remarks,
@@ -450,9 +541,16 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
               timer: 1500,
               showConfirmButton: false,
             });
+
+            if(note) {
+              
+          await  note()
+
+            }
+           
         onClose();
         setRemarks("")
-        // Parent component refresh
+      
         if (onStatusChange) onStatusChange();
       }
 
@@ -549,7 +647,7 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
               <img
-                src="/images/imagesmy.png"
+                src={logo}
                 alt="Logo"
                 className="h-15 w-15 rounded-full object-cover"
               />
@@ -575,14 +673,15 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
 
         {/* Tab Navigation */}
         <div className="flex border-b bg-gray-50 flex-shrink-0">
+
           <button
-            onClick={() => setActiveTab('personal')}
-            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'personal'
+            onClick={() => setActiveTab('salary')}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'salary'
               ? 'bg-blue-900 text-white border-b-2 border-blue-900'
               : 'text-gray-600 hover:bg-gray-100'
               }`}
           >
-            Personal Details
+            Salary Stackup
           </button>
           <button
             onClick={() => setActiveTab('company')}
@@ -593,15 +692,17 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange }) => 
           >
             Company Requirements
           </button>
-          <button
-            onClick={() => setActiveTab('salary')}
-            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'salary'
+
+               <button
+            onClick={() => setActiveTab('personal')}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'personal'
               ? 'bg-blue-900 text-white border-b-2 border-blue-900'
               : 'text-gray-600 hover:bg-gray-100'
               }`}
           >
-            Salary Stackup
+            Personal Details
           </button>
+     
         </div>
 
         {/* Content Area - Fixed height with scroll */}

@@ -3,10 +3,13 @@ import {  Box,  Paper,  Typography} from '@mui/material';
 import {  GroupAdd as GroupAddIcon} from '@mui/icons-material';
 import { FileText, Settings, BarChart3 } from 'lucide-react';
 import JoiningReportList from './JoiningReportList';
+import Appointement from './Appointement'
 
 const Onboarding = () => {
   const [activeComponent, setActiveComponent] = useState(null);
   const [hoveredTab, setHoveredTab] = useState(null);
+
+
   const onboardingMenuItems = [
     {
       label: 'Joining Report',
@@ -18,31 +21,32 @@ const Onboarding = () => {
       hoverBg: 'hover:bg-orange-100'
     },
  
+
+    {
+
+       label: 'Appointment',
+      component: 'Appointement',
+      icon: FileText,
+      color: 'from-orange-500 to-orange-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-300',
+      hoverBg: 'hover:bg-orange-100'
+    }
+
+
+
   ];
 
   const renderOnboardingComponent = () => {
     switch (activeComponent) {
       case 'joining-report':
         return <JoiningReportList />;
-      case 'onboarding-settings':
-        return (
-          <Paper className="p-6">
-            <Typography variant="h6">Onboarding Settings</Typography>
-            <Typography className="text-gray-500 mt-2">
-              Settings configuration will be available here.
-            </Typography>
-          </Paper>
-        );
+      
+      case 'Appointement':
 
-      case 'onboarding-reports':
-        return (
-          <Paper className="p-6">
-            <Typography variant="h6">Onboarding Reports</Typography>
-            <Typography className="text-gray-500 mt-2">
-              Reports and analytics will be available here.
-            </Typography>
-          </Paper>
-        );
+    return <Appointement />;
+
+       
 
       default:
         return (
