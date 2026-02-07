@@ -108,7 +108,6 @@ const [personalData, setPersonalData] = useState([]);
       NOTICE_PERIOD: item.notice_period || 'N/A',
       PREVIOUS_COMPANY: item.previous_company || 'N/A',
       DURATION: item.duration || 'N/A',
-      STATUS: item.status,
       remarks: item.remarks || 'No remarks',
       submitted_date: item.created_at || 'N/A',
       documents: item.documents || {}
@@ -410,51 +409,7 @@ minWidth: 70,
         border: '1px solid #e2e8f0',
       }}>
         
-        {/* <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 ,gap:2}}>
-         <Box sx={{ flex: 1, maxWidth: '400px' }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search name, email, phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: '#667eea', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  height: '38px',
-                  fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
-                }
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
-                },
-              }}
-            />
-          </Box>
-          
-        </Box> */}
+       
 
         {filteredData.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8, color: '#6b7280' }}>

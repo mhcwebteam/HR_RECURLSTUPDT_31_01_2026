@@ -183,7 +183,7 @@ const OfferLetter = () => {
       setOfferLetterData(ofrdata.data.evcVerifiedData || []);
 
 
-      console.log("ofrdataofrdataofrdataofrdata",ofrdata);
+  
 
     }
     catch(err)
@@ -193,24 +193,66 @@ const OfferLetter = () => {
   }
   
   //useEffect Calling here ----
-   useEffect(() => {
+useEffect(() => {
+  if (token?.token) {
+    fetchOfrData();
+  }
+}, [token?.token]);
 
-    if (token?.token) {
 
-      fetchOfrData();
 
-    }
 
-  }, [token]);
 
-  //---------------------View the Offer Letter from Backend--------------------//
-  const handleViewOfferLetter = (user) => 
-  {
-    setOfferLetterOpen(true);
-     setSelectedCandidate({
-        ...user,
-      });
-  };
+  const handleViewOfferLetter = async (user) => {
+
+  try {
+
+
+
+ const date_only = joiningDates[user.CHILD_CASEID];
+
+
+    const payload = {
+      CHILD_CASEID: user.CHILD_CASEID,
+       joiningDate: date_only,
+    };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/join-Date-updt`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+
+setOfferLetterOpen(true);
+    
+
+setSelectedCandidate({ ...user });
+
+  } catch (error) {
+    console.error('Assign approver failed:', error);
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'Something went wrong',
+      text:
+        error?.response?.data?.message ||
+        'Unable to assign approver. Please try again.',
+    });
+  } finally {
+    
+  //  setOfferLetterOpen(false);
+  }
+};
+
+
+
 
   const filteredData = useMemo(() => {
     if (!ofrList || ofrList.length === 0) return [];
@@ -385,17 +427,17 @@ const OfferLetter = () => {
         </Box>
       ),
     },
-    {
-      field: 'DESIGNATION',
-      headerName: 'Designation',
-      flex: 1,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+    // {
+    //   field: 'DESIGNATION',
+    //   headerName: 'Designation',
+    //   flex: 1,
+    //   minWidth: 130,
+    //   renderCell: (params) => (
+    //     <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
+    //       {params.value}
+    //     </Box>
+    //   ),
+    // },
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
@@ -540,7 +582,7 @@ const OfferLetter = () => {
           },
         }}
       >
-        Send
+        Send Email
       </Button>
     </Tooltip>
   ),

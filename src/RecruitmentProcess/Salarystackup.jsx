@@ -53,15 +53,12 @@ const Salarystackup = () => {
         {
           "Content-Type": "application/json",
           Accept: 'application/json',
-          Authorization: `Bearer ${token.token}`
+          Authorization: `Bearer ${token?.token}`
         }
       });
 
 
       const responseData = response.data;
-
-
-      console.log("responseDataresponseDataresponseData22222222",responseData);
   
 
       setStackupData(responseData);
@@ -75,7 +72,7 @@ const Salarystackup = () => {
   };
 
   useEffect(() => {
-    if (token.token) {
+    if (token?.token) {
       fetchData()
     }
   }, [token?.token])
@@ -153,6 +150,7 @@ const filteredData = useMemo(() => {
   };
 
   const handleSendEmail = async (row) => {
+
     const result = await Swal.fire({
       title: 'Send Approval Email?',
       text: `Are you sure you want to send the approval email to ${row.EMAIL}?`,
@@ -165,7 +163,7 @@ const filteredData = useMemo(() => {
       reverseButtons: true,
     });
 
-    // ❌ If user clicks Cancel, stop here
+   
     if (!result.isConfirmed) return;
 
     try {
@@ -185,13 +183,17 @@ const filteredData = useMemo(() => {
       );
 
       if (response.data.success) {
+
+
         Swal.fire({
           icon: 'success',
           title: 'Email Sent!',
         showConfirmButton: false, 
           text: response.data.message,
+            timer: 1500,
           confirmButtonColor: '#10b981',
         });
+
 
 
   //       if(fetchData) {
@@ -234,20 +236,7 @@ const filteredData = useMemo(() => {
     };
 
     try {
-      // const response = await axios.post(
-      //   `${API_BASE_URL}/Ofr-Ctc-Upt`, 
-      //   payload, 
-      //   {
-      //     headers: {
-      //       "Accept": "application/json",
-      //       Authorization: `Bearer ${token.token}`
-      //     },
-      //   }
-      // );
-
-      // console.log('Offer CTC saved:', response.data);
-
-      // Mark as confirmed after successful save
+  
       setConfirmedOffers(prev => ({
         ...prev,
         [rowId]: typedValue
@@ -629,24 +618,7 @@ const filteredData = useMemo(() => {
     },
   ], [offerCtcValues, submitting, savingOfferCtc, confirmedOffers]);
 
-  // Function to save all offer CTC values
-  const handleSaveAllOfferCtc = async () => {
-    try {
-      const offersToSave = Object.entries(offerCtcValues).map(([id, value]) => ({
-        id,
-        offer_ctc: value
-      }));
-
-      console.log('Saving offer CTC values:', offersToSave);
-      // Add your API call here to save the data
-      // await axios.post(`${API_BASE_URL}/save-offer-ctc`, { offers: offersToSave });
-
-      alert('Offer CTC values saved successfully!');
-    } catch (error) {
-      console.error('Error saving offer CTC:', error);
-      alert('Failed to save offer CTC values');
-    }
-  };
+ 
 
   return (
     <Box sx={{

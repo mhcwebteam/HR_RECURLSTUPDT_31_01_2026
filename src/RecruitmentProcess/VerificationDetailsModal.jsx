@@ -16,7 +16,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
   const [viewingDoc, setViewingDoc] = useState(null);
   const [viewingDocName, setViewingDocName] = useState('');
   const [isMaximized, setIsMaximized] = useState(false);
-  const [approvedDocs, setApprovedDocs] = useState({}); // Track approved documents locally
+  const [approvedDocs, setApprovedDocs] = useState({});
 
   useEffect(() => {
     setDocuments(data?.documents || []);
@@ -55,64 +55,6 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
   if (!open) return null;
 
 
-
-
-
-
-// const handleSubmit = async () => {
-//   try {
-//     const payload = {
-//       child_caseId: data.CHILD_CASEID,
-//       remarks,
-//     };
-    
-//     const response =
-
-//      await axios.post(`${API_BASE_URL}/verify-update`, payload, {
-//       headers: {
-//         Authorization: `Bearer ${userToken.token}`,
-//         'Content-Type': 'application/json',
-//       },
-//     });
-
-
-//     if (response.data) {
-
-
-//       // ✅ Call onStatusChange to update parent state with verification_status: "1"
-//       if (onStatusChange) {
-//         onStatusChange({
-//           id: data.CHILD_CASEID,  // This should match the id used in handleStatusChange
-//           verification_status: "1"
-//         });
-//       }
-      
-//   Swal.fire({
-//     icon: 'success',
-//     title: 'Success!',
-//     text: 'Verification updated successfully!',
-//     timer: 1500,
-//     showConfirmButton: false,
-//   });
-
-
-//          if (refersh) {
-        
-//             await refersh();
-         
-//         }
-//       setRemarks('');
-//       onClose();
-//     }
-//   } catch (error) {
-//     console.error('Error submitting form:', error);
-//     Swal.fire({
-//       title: 'Error!',
-//       text: 'Failed to update verification. Please try again.',
-//       icon: 'error',
-//     });
-//   }
-// };
 
 
  const handleSubmit = async () => {

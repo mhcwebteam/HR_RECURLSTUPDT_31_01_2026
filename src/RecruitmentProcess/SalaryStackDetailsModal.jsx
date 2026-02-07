@@ -457,7 +457,6 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
     await Swal.fire({
       icon: "success",
         title: status === 'approved' ? 'Approved!' : 'Rejected!',
-      text: "Mail Sent successfully",
        text: response.data.message || `Salary breakup ${status} successfully!`,
       timer: 1500,
       showConfirmButton: false,

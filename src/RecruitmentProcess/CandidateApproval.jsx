@@ -708,7 +708,7 @@ const CandidateApproval = () => {
 
               color: 'white',
 
-              fontSize: '10px',
+              fontSize: '9px',
 
               padding: '4px 10px',
 
@@ -758,7 +758,7 @@ const CandidateApproval = () => {
 
             ) : (
 
-              'Move to Next Tab'
+              'Move to NoteForAprl'
 
             )}
 

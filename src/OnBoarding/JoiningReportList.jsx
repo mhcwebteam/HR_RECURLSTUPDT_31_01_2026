@@ -52,46 +52,39 @@ const JoiningReportList = () => {
 
       const apiData = response.data.data;
 
-      console.log(apiData, ": API Data");
-
-
-      const formattedRows = apiData
-        .filter(item => {
-   
-          const hasJoiningDate = item.joiningDate &&
-            item.joiningDate !== '' &&
-            item.joiningDate !== null &&
-            item.joiningDate !== undefined &&
-            item.joiningDate !== 'null';
-
   
-          const isValidDateString = item.joiningDate &&
-            item.joiningDate.toString().trim() !== '';
 
-          return hasJoiningDate && isValidDateString;
-        })
-        .map((item, index) => ({
-          id: item.verification_id || index,
-          CHILD_CASEID: item.child_caseid,
-          employee_name: item.name,
-          email: item.email,
-          phone: item.phone_number,
-          department: item.DEPT,
-          location: item.PLANT,
-          joining_date: item.joiningDate,
-          current_ctc: item.CURRENT_CTC,
-          expected_ctc: item.EXP_CTC,
-          offered_ctc: item.OFFER_CTC ?? 'Pending',
-          joining_status: 'Joined',
-          offer_letter: item.OfferLetterFlag ?? 'Pending',
-          bgv_status: item.verification_status ?? 'Pending',
-          documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
-          current_stage: item.CURRENT_TASK,
-          hr_owner: item.CURRENT_USER,
-          created_at: item.created_at,
-          // Store the entire item for History modal
-          fullData: item,
-        }));
+
+    const formattedRows = apiData
+  .filter(item => {
+    const hasJoiningDate =
+      item.onBoarding === "1" 
+    
+
+    return hasJoiningDate;
+  })
+  .map((item, index) => ({
+    id: item.verification_id || index,
+    CHILD_CASEID: item.child_caseid,
+    employee_name: item.name,
+    email: item.email,
+    phone: item.phone_number,
+    department: item.DEPT,
+    location: item.PLANT,
+    joining_date: item.joiningDate,
+    current_ctc: item.CURRENT_CTC,
+    expected_ctc: item.EXP_CTC,
+    offered_ctc: item.OFFER_CTC ?? '',
+    joining_status: 'Joined',
+    offer_letter: item.OfferLetterFlag ?? '',
+    bgv_status: item.verification_status ?? '',
+    documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+    current_stage: item.CURRENT_TASK,
+    hr_owner: item.CURRENT_USER,
+    created_at: item.created_at,
+    fullData: item,
+  }));
+
 
       console.log("Filtered formattedRows (with joining dates):", formattedRows);
       setJoiningData(formattedRows);

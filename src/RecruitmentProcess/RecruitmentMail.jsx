@@ -41,6 +41,7 @@ const RecruitmentMail = () => {
   //  const { HrData } = useContext(ContextData);
 
  
+console.log("TOKEN:", userToken);
 
 
 useEffect(() => {
@@ -110,43 +111,7 @@ useEffect(() => {
 
 
 
-//   useEffect(() => {
-//     if (Array.isArray(HrData?.TaskAssignmentData) && HrData?.TaskAssignmentData?.length > 0) {
 
-//       console.log("HrData?.TaskAssignmentData)HrData?.TaskAssignmentData)",HrData?.TaskAssignmentData)
-
-
-//       // const shortlistedData = HrData?.TaskAssignmentData?.filter(row => {
-//       //   const status = row.ACTION_STATUS || row.STATUS || row.CUR_STATUS;
-//       //   return status?.toUpperCase() === 'pending';
-//       // });
-
-//       // const rowsWithId = shortlistedData.map((row, index) => ({
-//       //   ...row,
-//       //   id: row.CASEID || `row_${index}`,
-//       // }));
-
-  
-//       setData(HrData?.TaskAssignmentData);
-//       setFilteredData(HrData?.TaskAssignmentData);
-
-// //      setFilteredData(prev =>
-// //   prev.map(row =>
-// //     row.case_id === updatedCaseId
-// //       ? { ...row, verifyEmail: "sent" }
-// //       : row
-// //   )
-// // );
-
-
-//       setLoading(false);
-//     } else {
-//       console.log("HrData is empty or not an array");
-//       setData([]);
-//       setFilteredData([]);
-//       setLoading(false);
-//     }
-//   }, [HrData]);
 
   useEffect(() => {
     if (!userToken.token) navigate('/');
@@ -187,7 +152,7 @@ useEffect(() => {
 
 
 
-  console.log(filteredData,"dattttttttttttttttttttttttttttt333333333333333333333333333333");
+ 
 
 
   const handleSubmitEmail = async (caseId, rowData) => {

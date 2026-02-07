@@ -71,7 +71,7 @@ const OfferApproved = () => {
     {
       const confirm = await Swal.fire({
           title: "Are you sure?",
-          text: "You want to Send this Mail",
+          text: "You want to Move OnBoarding?",
           icon: "warning",
           showCancelButton: true,
           confirmButtonText: "Yes, Send",
@@ -80,21 +80,12 @@ const OfferApproved = () => {
         });
         if (!confirm.isConfirmed) return;
 
-
-const date_only = joiningDates
-  ? Object.values(joiningDates)[0]
-  : null;
-
-
-
-
         const  payload =
         {
-          CHILD_CASEID:rowData.CHILD_CASEID,
-          EMAIL     :rowData.EMAIL,
-          joiningDate: date_only,
+          CHILD_CASEID: rowData.CHILD_CASEID,
+       
         }
-      const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
+      const ofrMailSend = await axios.post(`${API_BASE_URL}/move-To-OnBoard`,payload,
         {
         headers:
         {
@@ -103,7 +94,7 @@ const date_only = joiningDates
            "Authorization":`Bearer ${token.token}`
          }})
 
-         console.log("ofrMailSendofrMailSendofrMailSendofrMailSend",ofrMailSend);
+      
       if (ofrMailSend.data.message) 
         {
        
@@ -111,10 +102,14 @@ const date_only = joiningDates
     await Swal.fire({
       icon: "success",
       title: "Success",
-      text: "Mail Sent successfully",
+      text: "Move to OnBoarding!",
       timer: 1500,
       showConfirmButton: false,
     });
+
+    if(fetchOfrData) {
+      await fetchOfrData()
+    }
            
          } else {
            await Swal.fire("Failed", response.data.message, "error");
@@ -130,40 +125,30 @@ const date_only = joiningDates
   }
   
 
-  const fetchOfrData = async()=>
-
-   
-  {
-
-    try
-    {
-      const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`,
+ const fetchOfrData = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/ofr-aprvl-issue-lst`,
       {
-        headers:
-        {
-            "Accept"       : "application/json",
-            "Authorization": `Bearer ${token.token}`,
-        }
-      })
-      setOfferLetterData(ofrdata.data.evcVerifiedData || []);
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token.token}`,
+        },
+      }
+    );
 
-   console.log("ofrdataofrdataofrdata",ofrdata);
-    }
-    catch(err)
-    {
-      console.error("Error In Fetching Offer List");
-    }
+    setOfferLetterData(response.data?.candidAcptdOfr ?? []);
+  } catch (err) {
+    console.error("Error in fetching offer list:", err);
   }
-  
-   useEffect(() => {
+};
 
-    if (token?.token) {
+useEffect(() => {
+  if (token?.token) {
+    fetchOfrData();
+  }
+}, [token?.token]);
 
-      fetchOfrData();
-
-    }
-
-  }, [token]);
 
 
   const handleViewOfferLetter = (user) => 
@@ -296,17 +281,19 @@ const date_only = joiningDates
         </Box>
       ),
     },
-    {
-      field: 'NAME',
-      headerName: 'Name',
-      flex: 1,
-      minWidth: 140,
-      renderCell: (params) => (
-        <Box sx={{ fontWeight: 600, color: '#1f2937' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+ {
+  field: 'FIRST_NAME',
+  headerName: 'Name',
+  flex: 1,
+  minWidth: 140,
+  valueGetter: (value, row) =>
+    `${row?.FIRST_NAME ?? ''} ${row?.LAST_NAME ?? ''}`,
+  renderCell: (params) => (
+    <Box sx={{ fontWeight: 600, color: '#1f2937' }}>
+      {params.value}
+    </Box>
+  ),
+},
     {
       field: 'EMAIL',
       headerName: 'Email',
@@ -340,17 +327,17 @@ const date_only = joiningDates
         </Box>
       ),
     },
-    {
-      field: 'DESIGNATION',
-      headerName: 'Designation',
-      flex: 1,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+    // {
+    //   field: 'DESIGNATION',
+    //   headerName: 'Designation',
+    //   flex: 1,
+    //   minWidth: 130,
+    //   renderCell: (params) => (
+    //     <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
+    //       {params.value}
+    //     </Box>
+    //   ),
+    // },
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
@@ -424,18 +411,29 @@ const date_only = joiningDates
 
 
 
-    {
-      field: 'joiningDate',
-      headerName: 'Date of Joining',
-      flex: 1.3,
-      minWidth: 170,
-      
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+{
+  field: 'joiningDate',
+  headerName: 'Date of Joining',
+  flex: 1.3,
+  minWidth: 170,
+  renderCell: (params) => {
+    if (!params.value) return 'N/A';
+
+    const date = new Date(params.value);
+
+    const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
+
+    return (
+      <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
+        {formattedDate}
+      </Box>
+    );
+  },
+}
+
+,
     {
       field: 'View',
       headerName: 'View Offer',
@@ -459,13 +457,16 @@ const date_only = joiningDates
         </Tooltip>
       ),
     },
+
+
+    
     {
   field: 'actions',
   headerName: 'Actions',
   width: 120,
   sortable: false,
   renderCell: (params) => (
-    <Tooltip title="Send Email">
+    <Tooltip title="Move to Onboarding">
       <Button
         size="small"
         variant="contained"
@@ -473,13 +474,13 @@ const date_only = joiningDates
         sx={{
           backgroundColor: '#10b981',
           textTransform: 'none',
-          fontSize: '12px',
+          fontSize: '9px',
           '&:hover': {
             backgroundColor: '#059669',
           },
         }}
       >
-        Send
+    Move To Onboarding
       </Button>
     </Tooltip>
   ),
