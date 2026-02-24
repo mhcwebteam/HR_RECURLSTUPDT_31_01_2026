@@ -305,17 +305,17 @@ useEffect(() => {
         </Box>
       ),
     },
-    {
-      field: 'ADDRESS',
-      headerName: 'ADDRESS',
-      flex: 1.2,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+    // {
+    //   field: 'ADDRESS',
+    //   headerName: 'ADDRESS',
+    //   flex: 1.2,
+    //   minWidth: 150,
+    //   renderCell: (params) => (
+    //     <Box sx={{ color: '#374151', fontSize: '12px' }}>
+    //       {params.value}
+    //     </Box>
+    //   ),
+    // },
     {
       field: 'PHONE_NUMBER',
       headerName: 'Phone Number',

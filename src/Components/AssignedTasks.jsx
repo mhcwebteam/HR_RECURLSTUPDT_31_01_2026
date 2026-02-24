@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search, Eye, TrendingUp, Users, FileText, ChevronLeft, ChevronRight, Filter, Download, RefreshCw, UserCheck, ClipboardList, Clock } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config';
 import { useNavigate } from 'react-router-dom';
+import ManPowerView from './ManPowerView';
 
 const AssignedTasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,11 +13,23 @@ const AssignedTasks = () => {
   const [taskData, setTaskData] = useState([]);
 
   const navigate = useNavigate();
-
+const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState(null);
   const token = useMemo(() => {
     const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
     return info?.token;
   }, []);
+
+
+   const handleViewClick = (caseId) => {
+    setSelectedCaseId(caseId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCaseId(null);
+  };
 
   const fetchTaskAssignments = async () => {
     if (!token) {
@@ -206,6 +219,7 @@ const AssignedTasks = () => {
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
                         { key: 'sno', label: 'S.No', width: 'w-12' },
+                        { key: 'Action', label: 'Action', width: 'w-12' },
                         { key: 'caseId', label: 'Case ID', width: 'w-32' },
                         { key: 'plant', label: 'Plant', width: 'w-32' },
                          { key: 'department', label: 'Department', width: 'w-32' },
@@ -233,6 +247,24 @@ const AssignedTasks = () => {
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
                           {currentPage * pageSize + index + 1}
                         </td>
+
+
+                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+  <button
+    onClick={() => handleViewClick(row.case_id)} 
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 
+               rounded-lg text-xs font-semibold 
+               transition-all duration-200 shadow-sm 
+               hover:shadow-md hover:scale-105 cursor-pointer
+               bg-gradient-to-r from-blue-100 to-indigo-200
+               text-indigo-700
+               hover:from-blue-200 hover:to-indigo-300
+               border border-indigo-200"
+  >
+    <Eye className="w-3.5 h-3.5" />
+    View
+  </button>
+</td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
                             {row.case_id || ''}
@@ -343,6 +375,14 @@ const AssignedTasks = () => {
           )}
         </div>
       </div>
+      {isModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-y-auto relative">
+      {/* ManPowerView Component - Pass onClose prop */}
+      <ManPowerView caseId={selectedCaseId} onClose={handleCloseModal} />
+    </div>
+  </div>
+)}
     </div>
   );
 };
@@ -393,6 +433,9 @@ const StatCard = ({ title, value, icon, color }) => {
           <div className={colors.text}>{icon}</div>
         </div>
       </div>
+
+
+      
     </div>
   );
 };

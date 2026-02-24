@@ -44,10 +44,14 @@ const [personalData, setPersonalData] = useState([]);
 
   const EmpVerify = async () => {
     if (!userToken?.token) return;
+
+ 
     try {
       const response = await axios.get(`${API_BASE_URL}/emp-verify-data`, {
         headers: { Authorization: `Bearer ${userToken.token}` },
       });
+
+      console.log("ressssssssssssss",response.data.data);
       setPersonalData(response.data?.data || []);
     } catch (err) {
       console.error("Error fetching verify data", err);
@@ -65,6 +69,8 @@ const [personalData, setPersonalData] = useState([]);
   {
     if (!personalData || personalData.length === 0) return [];
     let result = [...personalData];
+
+
 
     result = result.filter(item => item.verification_status !== "1");
 
@@ -92,6 +98,7 @@ const [personalData, setPersonalData] = useState([]);
       NAME: item.name || 'N/A',
       EMAIL: item.email || 'N/A',
       ADDRESS: item.address || 'N/A',
+      DEPT: item.DEPT || "N/A",
       PHONE_NUMBER: item.phone_number || 'N/A',
       DOB: item.dob || 'N/A',
       AADHAR_NUM: item.aadhar_number || 'N/A',
@@ -110,7 +117,9 @@ const [personalData, setPersonalData] = useState([]);
       DURATION: item.duration || 'N/A',
       remarks: item.remarks || 'No remarks',
       submitted_date: item.created_at || 'N/A',
-      documents: item.documents || {}
+      documents: item.documents || {},
+ experienceData: item.experienceData || {}
+
     }));
   }, [personalData, searchTerm, statusFilter]);
   const getStatusChip = (status) => {
@@ -249,6 +258,21 @@ minWidth: 70,
         </Box>
       ),
     },
+
+
+      {
+      field: 'DEPT',
+      headerName: 'Department',
+      flex: 1.5,
+      minWidth: 200,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+
     {
       field: 'PHONE_NUMBER',
       headerName: 'Phone',

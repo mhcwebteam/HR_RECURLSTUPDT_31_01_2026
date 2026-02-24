@@ -73,7 +73,7 @@ const CandidateApproval = () => {
 
   const [submitting, setSubmitting] = useState({});
 
-  const { personalData } = useContext(ContextData);
+ 
 
   const [candidgetData, setCandidAprvlData] = useState([]);
 

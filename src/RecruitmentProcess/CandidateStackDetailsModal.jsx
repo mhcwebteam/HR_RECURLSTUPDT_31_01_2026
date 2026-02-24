@@ -568,67 +568,180 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
   };
 
   // Personal Details Component
-  const PersonalDetails = () => (
-    <div className="p-6 space-y-4">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Personal Details</h2>
+  // const PersonalDetails = () => (
+  //   <div className="p-6 space-y-4">
+  //     <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Personal Details</h2>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Name</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.FIRST_NAME || 'N/A'}</p>
-        </div>
+  //     <div className="grid grid-cols-2 gap-4">
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Name</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.FIRST_NAME || 'N/A'}</p>
+  //       </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Present Company</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
-        </div>
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Present Company</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
+  //       </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.DESIGNATION || data?.DEPT || 'N/A'}</p>
-        </div>
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.DESIGNATION || data?.DEPT || 'N/A'}</p>
+  //       </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Current Salary</label>
-          <p className="text-sm font-semibold text-green-700">₹{data?.CURRENT_CTC ? parseFloat(data.CURRENT_CTC).toLocaleString('en-IN') : '0'}</p>
-        </div>
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Current Salary</label>
+  //         <p className="text-sm font-semibold text-green-700">₹{data?.CURRENT_CTC ? parseFloat(data.CURRENT_CTC).toLocaleString('en-IN') : '0'}</p>
+  //       </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Experience</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
-        </div>
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Experience</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
+  //       </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Notice Period</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || 'N/A'}</p>
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Notice Period</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || 'N/A'}</p>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
+
+   const PersonalDetails = () => {
+    // Calculate hike percentage
+    const currentCTC = parseFloat(data?.CURRENT_CTC || 0);
+    const offerCTC = parseFloat(data?.OFFER_CTC || 0);
+    const hikePercentage = currentCTC > 0 ? (((offerCTC - currentCTC) / currentCTC) * 100).toFixed(2) : 0;
+
+    return (
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-2 gap-4 divide-x divide-gray-300">
+          {/* LEFT SECTION - PRESENT DETAILS */}
+          <div className="space-y-3 pr-4">
+            <h3 className="text-md font-bold text-gray-700 mb-2 pb-2 border-b border-gray-300 flex justify-center items-center">
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                PRESENT DETAILS
+              </span>
+            </h3>
+
+            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Name:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.FIRST_NAME || data?.NAME || 'N/A'}</p>
+            </div>
+
+            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Present Company:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
+            </div>
+
+            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Total Experience:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
+            </div>
+
+            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Current CTC:</label>
+              <p className="text-sm font-semibold text-green-700">₹{currentCTC.toLocaleString('en-IN')}</p>
+            </div>
+
+            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Designation:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.DESIGNATION || data?.DEPT || 'N/A'}</p>
+            </div>
+
+          </div>
+
+          {/* RIGHT SECTION - PROPOSED DETAILS */}
+          <div className="space-y-3 pl-4">
+            <h3 className="text-md font-bold text-gray-700 mb-2 pb-2 border-b border-gray-300 flex justify-center items-center">
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">PROPOSED DETAILS</span>
+            </h3>
+
+            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Offered CTC:</label>
+              <p className="text-sm font-semibold text-blue-700">₹{offerCTC.toLocaleString('en-IN')}</p>
+            </div>
+
+            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">
+                Offered Designation:
+              </label>
+              <p className="text-sm font-semibold text-gray-800">
+                {data?.OFFERED_DESIGNATION || 'N/A'}
+              </p>
+            </div>
+
+            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Hike Percentage:</label>
+              <p className={`text-sm font-semibold ${parseFloat(hikePercentage) > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {hikePercentage}%
+              </p>
+            </div>
+
+            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Joining Duration:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || data?.NOTICE_PERIOD || 'N/A'}</p>
+            </div>
+
+            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Source Type:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.SRC_TYPE || data?.SOURCE || 'N/A'}</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Company Requirements Component
-  const CompanyRequirements = () => (
-    <div className="p-6 space-y-4">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Company Requirements</h2>
+  // const CompanyRequirements = () => (
+  //   <div className="p-6 space-y-4">
+  //     <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Company Requirements</h2>
 
+  //     <div className="grid grid-cols-2 gap-4">
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Case ID</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.CHILD_CASEID || 'N/A'}</p>
+  //       </div>
+
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Plant</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.PLANT || 'N/A'}</p>
+  //       </div>
+
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.DEPT || 'N/A'}</p>
+  //       </div>
+
+  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Years of Experience Required</label>
+  //         <p className="text-sm font-semibold text-gray-800">{data?.REQUIRED_EXPERIENCE || data?.EXPERIENCE || 'N/A'} years</p>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
+
+
+     const CompanyRequirements = () => (
+    <div className="p-6 space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Case ID</label>
+        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+          <label className="text-xs font-bold text-gray-500 uppercase">Case ID:</label>
           <p className="text-sm font-semibold text-gray-800">{data?.CHILD_CASEID || 'N/A'}</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Plant</label>
+        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+          <label className="text-xs font-bold text-gray-500 uppercase">Plant:</label>
           <p className="text-sm font-semibold text-gray-800">{data?.PLANT || 'N/A'}</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
+        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+          <label className="text-xs font-bold text-gray-500 uppercase">Designation:</label>
           <p className="text-sm font-semibold text-gray-800">{data?.DEPT || 'N/A'}</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Years of Experience Required</label>
+        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+          <label className="text-xs font-bold text-gray-500 uppercase">Years of Experience Required:</label>
           <p className="text-sm font-semibold text-gray-800">{data?.REQUIRED_EXPERIENCE || data?.EXPERIENCE || 'N/A'} years</p>
         </div>
       </div>

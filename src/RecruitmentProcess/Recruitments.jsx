@@ -1,39 +1,22 @@
+
+
+
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Box,
-  Button,
-  Chip,
-  Switch,
-  FormControlLabel,
-  Paper,
-  Tabs,
-  Tab
-} from '@mui/material';
-import {
-  People as PeopleIcon,
-  TrendingUp as TrendingUpIcon,
-  Assignment as AssignmentIcon,
-  Notifications as NotificationsIcon,
-  GroupAdd as GroupAddIcon,
-  ListAlt as ListAltIcon,
-  UploadFile as UploadFileIcon,
-  RequestQuote as RequestQuoteIcon
-} from '@mui/icons-material';
+import { Card, CardContent, Typography, Grid, Box, Button, Chip, Switch, FormControlLabel, Paper, Tabs, Tab } from '@mui/material';
+import { People as PeopleIcon, TrendingUp as TrendingUpIcon, Assignment as AssignmentIcon, Notifications as NotificationsIcon, GroupAdd as GroupAddIcon, ListAlt as ListAltIcon, UploadFile as UploadFileIcon, RequestQuote as RequestQuoteIcon } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RecruitmentMail from './RecruitmentMail';
 import RecruitmentForm from './RecruitmentForm';
-import { CircleCheckBig, ScrollText, Mail, ShieldCheck, DollarSign, UserCheck, FileText, Send } from 'lucide-react';
+import { CircleCheckBig, ScrollText, Mail, ShieldCheck, DollarSign, UserCheck, FileText, Send, Zap } from 'lucide-react';
 import Verification from './Verification';
 import Salarystackup from './Salarystackup';
 import CandidateApproval from './CandidateApproval';
 import NoteForApprovals from './NoteForApprovals';
 import OfferLetter from './OfferLetter';
 import OfferApproved from './OfferApproved';
+import Action from './Action';
 
 const Recruitments = () => {
   const location = useLocation();
@@ -42,11 +25,8 @@ const Recruitments = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [hoveredTab, setHoveredTab] = useState(null);
 
-
-
-
   const queryParams = new URLSearchParams(location.search);
-  const process = queryParams.get('process');   
+  const process = queryParams.get('process');
   useEffect(() => {
     if (process) {
       setActiveRecruitmentComponent(process);
@@ -82,54 +62,63 @@ const Recruitments = () => {
   // ];
 
   const RecruitmentMenuItems = [
-    { 
-      label: 'Recruitment Mail', 
-       component: 'HR Recruitment', 
+    {
+      label: 'Actions ',
+      component: 'Actions',
+      icon: Zap,
+      color: 'from-teal-500 to-cyan-600',
+      bgColor: 'bg-teal-50',
+      borderColor: 'border-teal-300',
+      hoverBg: 'hover:bg-teal-100'
+    },
+    {
+      label: 'Recruitment Mail',
+      component: 'Recruitment Mail',
       icon: Mail,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-300',
       hoverBg: 'hover:bg-purple-100'
     },
-    { 
-      label: 'Verification', 
-      component: 'Verification', 
+    {
+      label: 'Verification',
+      component: 'Verification',
       icon: ShieldCheck,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-300',
       hoverBg: 'hover:bg-blue-100'
     },
-    { 
-      label: 'Salary Stackup', 
-      component: 'Salary Stack Up', 
+    {
+      label: 'Salary Stackup',
+      component: 'Salary Stack Up',
       icon: DollarSign,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-300',
       hoverBg: 'hover:bg-green-100'
     },
-    { 
-      label: 'Candidate Approval', 
-      component: 'Candidate Approval', 
+    {
+      label: 'Candidate Approval',
+      component: 'Candidate Approval',
       icon: UserCheck,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-300',
       hoverBg: 'hover:bg-orange-100'
     },
-    { 
-      label: 'Note For Approval', 
-      component: 'Note For Approval', 
+    {
+      label: 'Note For Approval',
+      component: 'Note For Approval',
       icon: FileText,
       color: 'from-pink-500 to-pink-600',
       bgColor: 'bg-pink-50',
       borderColor: 'border-pink-300',
       hoverBg: 'hover:bg-pink-100'
     },
-    { 
-      label: 'Offer Letter', 
-      component: 'Offer Letter', 
+    {
+      label: 'Offer Letter',
+      component: 'Offer Letter',
       icon: Send,
       color: 'from-indigo-500 to-indigo-600',
       bgColor: 'bg-indigo-50',
@@ -138,8 +127,8 @@ const Recruitments = () => {
     },
 
 
-        { 
-      label: 'Offer Approved', 
+    {
+      label: 'Offer Approved',
       component: 'Offer Approved',
       icon: Send,
       color: 'from-indigo-500 to-indigo-600',
@@ -165,10 +154,10 @@ const Recruitments = () => {
 
   const getColorClasses = (color) => {
     const colorMap = {
-      blue:   { bg: 'bg-blue-100',   text: 'text-blue-600'     },
-      green:  { bg: 'bg-green-100',  text: 'text-green-600'    },
-      orange: { bg: 'bg-orange-100', text: 'text-orange-600'   },
-      purple: { bg: 'bg-purple-100', text: 'text-purple-600'   },
+      blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+      green: { bg: 'bg-green-100', text: 'text-green-600' },
+      orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+      purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
     };
     return colorMap[color] || colorMap.blue;
   };
@@ -178,20 +167,22 @@ const Recruitments = () => {
   const renderRecruitmentComponent = () => {
     console.log('Current component:', activeRecruitmentComponent);
     switch (activeRecruitmentComponent) {
-     case 'HR Recruitment':
+      case 'Actions':
+        return <Action />;
+      case 'Recruitment Mail':
         return <RecruitmentMail />;
       case 'Verification':
         return <Verification />
       case 'Salary Stack Up':
-        return <Salarystackup/>
+        return <Salarystackup />
       case 'Candidate Approval':
-        return <CandidateApproval/>
+        return <CandidateApproval />
       case 'Note For Approval':
-        return <NoteForApprovals/>
+        return <NoteForApprovals />
       case 'Offer Letter':
-        return <OfferLetter/>      
+        return <OfferLetter />
       case 'Offer Approved':
-       return <OfferApproved />
+        return <OfferApproved />
       default:
         return null;
     }
@@ -235,34 +226,34 @@ const Recruitments = () => {
       <Paper elevation={1} className="mb-6 p-4 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 border-l-4 border-purple-500">
         {/* Header with Icon */}
         <Box className="mb-3 flex items-center justify-between">
-      
-      {/* Left Title Section */}
-      <Box className="flex items-center gap-3">
-        <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full"></div>
 
-        <div className="flex items-center gap-2">
-          <PeopleIcon className="text-purple-600" style={{ fontSize: "24px" }} />
-          <Typography
-            variant="h6"
-            className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
-          >
-            Recruitment Process
-          </Typography>
-        </div>
-      </Box>
+          {/* Left Title Section */}
+          <Box className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full"></div>
 
-      {/* Right Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg 
+            <div className="flex items-center gap-2">
+              <PeopleIcon className="text-purple-600" style={{ fontSize: "24px" }} />
+              <Typography
+                variant="h6"
+                className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
+              >
+                Recruitment Process
+              </Typography>
+            </div>
+          </Box>
+
+          {/* Right Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg 
                    bg-gradient-to-r from-purple-600 to-blue-600
                    text-white text-sm font-medium
                    hover:opacity-90 transition"
-      >
-        <ArrowBackIcon fontSize="small" />
-        Back
-      </button>
-    </Box>
+          >
+            <ArrowBackIcon fontSize="small" />
+            Back
+          </button>
+        </Box>
 
 
         {/* Animated Tabs Section */}
@@ -273,7 +264,9 @@ const Recruitments = () => {
                 const IconComponent = item.icon;
                 const isActive = activeRecruitmentComponent === item.component;
                 const isHovered = hoveredTab === item.component;
-                
+
+                console.log(isActive,"issssssssssssssssssss",activeRecruitmentComponent);
+
                 return (
                   <button
                     key={item.component}
@@ -287,15 +280,15 @@ const Recruitments = () => {
                       relative group px-5 py-3 rounded-lg font-semibold text-sm
                       transition-all duration-300 ease-out
                       flex items-center gap-2.5 border-2
-                      ${isActive 
-                        ? `bg-gradient-to-r ${item.color} text-white border-transparent shadow-lg scale-105 transform tab-button-active` 
+                      ${isActive
+                        ? `bg-gradient-to-r ${item.color} text-white border-transparent shadow-lg scale-105 transform tab-button-active`
                         : `${item.bgColor} ${item.borderColor} text-gray-700 ${item.hoverBg} hover:shadow-md hover:scale-102 hover:border-opacity-100`
                       }
                     `}
                   >
                     {/* Animated background glow for active state */}
                     {isActive && (
-                      <div 
+                      <div
                         className="absolute inset-0 rounded-lg bg-white"
                         style={{
                           opacity: 0.3,
@@ -303,20 +296,20 @@ const Recruitments = () => {
                         }}
                       ></div>
                     )}
-                    
+
                     {/* Icon with rotation animation */}
-                    <div 
+                    <div
                       className={`
                         relative z-10 transition-transform duration-300
                         ${isHovered || isActive ? 'scale-110 rotate-12' : 'scale-100'}
                       `}
                     >
-                      <IconComponent 
-                        size={18} 
+                      <IconComponent
+                        size={18}
                         className={`${isActive ? 'text-white' : 'text-gray-600'} transition-colors duration-300`}
                       />
                     </div>
-                    
+
                     {/* Label */}
                     <span className="relative z-10 tracking-wide">
                       {item.label}
@@ -329,7 +322,7 @@ const Recruitments = () => {
 
                     {/* Hover glow effect */}
                     {(isHovered || isActive) && (
-                      <div 
+                      <div
                         className={`absolute inset-0 rounded-lg blur-md -z-10 bg-gradient-to-r ${item.color}`}
                         style={{ opacity: 0.2 }}
                       ></div>
@@ -407,10 +400,10 @@ const Recruitments = () => {
                   <Typography variant="h6" className="font-semibold text-gray-800">
                     Recent Activity
                   </Typography>
-                  <Chip 
-                    label="No new notifications" 
-                    size="small" 
-                    color="default" 
+                  <Chip
+                    label="No new notifications"
+                    size="small"
+                    color="default"
                     variant="outlined"
                   />
                 </Box>

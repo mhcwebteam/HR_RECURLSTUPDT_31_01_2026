@@ -12,12 +12,13 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 
 import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaChartPie } from 'react-icons/fa';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
 import DataFlow from "../Components/DataFlow.jsx"
-import ManPowerView from '../ManpowerComponent/ManPowerView.jsx';
+
 import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
 import { ContextData } from '../Context/ContextData.jsx';
 import RecruitmentForm from './RecruitmentForm.jsx';
+import ManPowerView from '../Components/ManPowerView.jsx';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -81,14 +82,16 @@ useEffect(() => {
 
 useEffect(() => {
   if (Array.isArray(HrData?.TaskAssignmentData)) {
+  
 
     const filtered = HrData.TaskAssignmentData
+
+
       .filter(row => {
    
 
         return (
-      
-          row.verifyEmail !== "sent"  
+             row.actionStatus == "new" && row.verifyEmail !== "sent"
         );
       })
       .map((row, index) => ({
@@ -183,6 +186,7 @@ useEffect(() => {
   }
 
   setSubmitting(prev => ({ ...prev, [caseId]: true }));
+
   const payload2 = {
     email: email,
     child_caseId: caseId,

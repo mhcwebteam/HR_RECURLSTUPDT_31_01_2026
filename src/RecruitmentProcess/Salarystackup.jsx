@@ -17,8 +17,8 @@ const Salarystackup = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [submitting, setSubmitting] = useState({});
-  const { personalData } = useContext(ContextData);
-
+  // const { personalData } = useContext(ContextData);
+ const [approvedRows, setApprovedRows] = useState({});
   const [savingOfferCtc, setSavingOfferCtc] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -42,7 +42,7 @@ const Salarystackup = () => {
     if (stackupData?.salaryStackUpGetData && stackupData?.salaryStackUpGetData?.length > 0) {
       setOfferCtcValues(stackupData?.salaryStackUpGetData[0].offer_ctc || '');
     }
-  }, [personalData]);
+  }, []);
 
   
   const fetchData = async () => {
@@ -59,7 +59,7 @@ const Salarystackup = () => {
 
 
       const responseData = response.data;
-  
+  console.log(responseData,"responded one!!!!!!!!!!!1");
 
       setStackupData(responseData);
     }
@@ -149,8 +149,9 @@ const filteredData = useMemo(() => {
     );
   };
 
-  const handleSendEmail = async (row) => {
 
+
+ const handleSendEmail = async (row) => {
     const result = await Swal.fire({
       title: 'Send Approval Email?',
       text: `Are you sure you want to send the approval email to ${row.EMAIL}?`,
@@ -163,8 +164,18 @@ const filteredData = useMemo(() => {
       reverseButtons: true,
     });
 
-   
     if (!result.isConfirmed) return;
+    // ✅ ADD THIS — shows a loading card while the API call is in progress
+    Swal.fire({
+      title: 'Sending Email...',
+      text: 'Please wait while we send the approval email.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
 
     try {
       const response = await axios.post(
@@ -183,24 +194,14 @@ const filteredData = useMemo(() => {
       );
 
       if (response.data.success) {
-
-
         Swal.fire({
           icon: 'success',
           title: 'Email Sent!',
-        showConfirmButton: false, 
+          showConfirmButton: false,
           text: response.data.message,
-            timer: 1500,
+          timer: 1500,
           confirmButtonColor: '#10b981',
         });
-
-
-
-  //       if(fetchData) {
-  // await fetchData()
-  //       }
-
-       
       } else {
         Swal.fire({
           icon: 'error',
@@ -212,13 +213,98 @@ const filteredData = useMemo(() => {
       Swal.fire({
         icon: 'error',
         title: 'Submission Failed',
-        text:
-          error.response?.data?.error ||
-          error.message ||
-          'Server error occurred',
+        text: error.response?.data?.error || error.message || 'Server error occurred',
       });
     }
   };
+
+
+
+  // const handleSendEmail = async (row) => {
+
+  //   const result = await Swal.fire({
+  //     title: 'Send Approval Email?',
+  //     text: `Are you sure you want to send the approval email to ${row.EMAIL}?`,
+  //     icon: 'question',
+  //     showCancelButton: true,
+  //     confirmButtonText: 'Yes, Send',
+  //     cancelButtonText: 'Cancel',
+  //     confirmButtonColor: '#10b981',
+  //     cancelButtonColor: '#6b7280',
+  //     reverseButtons: true,
+  //   });
+
+   
+  //   if (!result.isConfirmed) return;
+
+
+  
+  //   Swal.fire({
+  //     title: 'Sending Email...',
+  //     text: 'Please wait while we send the approval email.',
+  //     allowOutsideClick: false,
+  //     allowEscapeKey: false,
+  //     showConfirmButton: false,
+  //     didOpen: () => {
+  //       Swal.showLoading();
+  //     },
+  //   });
+
+
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/cand-aprvl-email`,
+  //       {
+  //         case_id: row.CHILD_CASEID,
+  //         email: row.EMAIL,
+  //         name: row.NAME,
+  //       },
+  //       {
+  //         headers: {
+  //           Accept: "application/json",
+  //           Authorization: `Bearer ${token.token}`,
+  //         },
+  //       }
+  //     );
+
+  //     if (response.data.success) {
+
+
+  //       Swal.fire({
+  //         icon: 'success',
+  //         title: 'Email Sent!',
+  //       showConfirmButton: false, 
+  //         text: response.data.message,
+  //           timer: 1500,
+  //         confirmButtonColor: '#10b981',
+  //       });
+
+
+
+  // //       if(fetchData) {
+  // // await fetchData()
+  // //       }
+
+       
+  //     } else {
+  //       Swal.fire({
+  //         icon: 'error',
+  //         title: 'Submission Failed',
+  //         text: response.data.error || 'Something went wrong',
+  //       });
+  //     }
+  //   } catch (error) {
+  //     Swal.fire({
+  //       icon: 'error',
+  //       title: 'Submission Failed',
+  //       text:
+  //         error.response?.data?.error ||
+  //         error.message ||
+  //         'Server error occurred',
+  //     });
+  //   }
+  // };
 
   const handleSaveOfferCtc = async (rowId, row) => {
     const typedValue = offerCtcValues[rowId];
@@ -292,6 +378,15 @@ const filteredData = useMemo(() => {
 
  const handleStatusChange = (updateData) => {
   console.log('Status updated:', updateData);
+
+
+      // ✅ Track approved rows so Send Email button enables
+    if (updateData.status === 'approved') {
+      setApprovedRows(prev => ({
+        ...prev,
+        [updateData.id]: true
+      }));
+    }
 
   // Update the confirmed offers if offer_ctc is present in updateData
   if (updateData.offer_ctc && updateData.id) {
@@ -522,6 +617,60 @@ const filteredData = useMemo(() => {
         );
       }
     },
+
+  {
+  field: 'Hike',
+  headerName: 'Hike %',
+  flex: 0.9,
+  minWidth: 120,
+  renderCell: (params) => {
+    const rowId = params.row.id;
+
+    const currentCtc = Number(params.row.CURRENT_CTC || 0);
+
+    // Get Offer CTC (local saved OR DB)
+    const offerCtc =
+      confirmedOffers[rowId]
+        ? Number(confirmedOffers[rowId])
+        : Number(params.row.OFFER_CTC || 0);
+
+    // ❌ If Offer CTC not available → Don't show hike
+    if (!offerCtc || offerCtc === 0) {
+      return (
+        <Box sx={{ fontSize: '12px', color: '#9ca3af' }}>
+          -
+        </Box>
+      );
+    }
+
+    // ❌ Prevent divide by zero
+    if (!currentCtc) {
+      return (
+        <Box sx={{ fontSize: '12px', color: '#9ca3af' }}>
+          -
+        </Box>
+      );
+    }
+
+    const hike = ((offerCtc - currentCtc) / currentCtc) * 100;
+    const isPositive = hike >= 0;
+
+    return (
+      <Box
+        sx={{
+          fontSize: '13px',
+          fontWeight: 600,
+          color: isPositive ? '#10b981' : '#ef4444'
+        }}
+      >
+        {hike.toFixed(2)}%
+      </Box>
+    );
+  }
+},
+
+
+
     {
       field: 'status',
       headerName: 'Salary Status',
@@ -574,14 +723,18 @@ const filteredData = useMemo(() => {
       filterable: false,
       renderCell: (params) => {
         const isSubmitting = submitting[params.row.CASEID] || false;
+
+        // ✅ Check if this row has been approved
+        const isApproved = approvedRows[params.row.id] || false;
+
         return (
           <Button
             variant="contained"
             size="small"
             onClick={() => handleSendEmail(params.row)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isApproved}
             sx={{
-              background: isSubmitting
+              background: (isSubmitting || !isApproved)
                 ? '#9ca3af'
                 : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               color: 'white',
@@ -589,14 +742,14 @@ const filteredData = useMemo(() => {
               padding: '4px 10px',
               borderRadius: '6px',
               textTransform: 'capitalize',
-              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+              boxShadow: isApproved ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'none',
               minWidth: '90px',
               '&:hover': {
-                background: isSubmitting
+                background: (isSubmitting || !isApproved)
                   ? '#9ca3af'
                   : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                transform: isSubmitting ? 'none' : 'translateY(-1px)',
-                boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+                transform: (isSubmitting || !isApproved) ? 'none' : 'translateY(-1px)',
+                boxShadow: (isSubmitting || !isApproved) ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
               },
               '&:disabled': {
                 background: '#9ca3af',
@@ -616,7 +769,7 @@ const filteredData = useMemo(() => {
         );
       },
     },
-  ], [offerCtcValues, submitting, savingOfferCtc, confirmedOffers]);
+  ], [offerCtcValues, submitting, savingOfferCtc, confirmedOffers, approvedRows]);
 
  
 

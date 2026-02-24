@@ -8,44 +8,99 @@ import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 
-const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSelectedUser,refersh }) => {
+const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSelectedUser, refersh }) => {
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
   const [remarks, setRemarks] = useState(data?.remarks || '');
   const [updateDocuments, setDocuments] = useState([]);
+  const [expDocuments, setExDocuments] = useState([]);
   const [localData, setLocalData] = useState(data);
   const [viewingDoc, setViewingDoc] = useState(null);
   const [viewingDocName, setViewingDocName] = useState('');
   const [isMaximized, setIsMaximized] = useState(false);
   const [approvedDocs, setApprovedDocs] = useState({});
 
+  console.log("Modal Data:", localData);
+
   useEffect(() => {
-    setDocuments(data?.documents || []);
+  setDocuments(data?.documents || []);
+  setExDocuments(data?.expDocuments || []);
+  
+  // Combine both data and local approvedDocs state
+  const initialApproved = {};
+  
+  // First, check documents from data
+  if (data?.documents) {
+    const docTypes = {
+      Tenth_DocId: 'Tenth_Status',
+      Inter_DocId: 'Inter_Status',
+      grad_DocId: 'Grad_Status',
+      pg_DocId: 'Pg_Status',
+      Aadhar_DocId: 'Aadhr_Status',
+      pan_DocId: 'Pan_Status',
+      PaySlip_DocId: 'PaySlip_Status',
+      Exp_DocId: 'Exp_Status',
+      Reliev_DocId: 'Reliv_Status'
+    };
     
-    // Initialize approvedDocs from data
-    if (data?.documents) {
-      const initialApproved = {};
-      // Map document types to their status fields
-      const docTypes = {
-        Tenth_DocId: 'Tenth_Status',
-        Inter_DocId: 'Inter_Status',
-        grad_DocId: 'Grad_Status',
-        pg_DocId: 'Pg_Status',
-        Aadhar_DocId: 'Aadhr_Status',
-        pan_DocId: 'Pan_Status',
-        PaySlip_DocId: 'PaySlip_Status',
-        Exp_DocId: 'Exp_Status',
-        Reliev_DocId: 'Reliv_Status'
-      };
+    Object.entries(docTypes).forEach(([docIdKey, statusKey]) => {
+      if (data.documents[docIdKey]) {
+        initialApproved[data.documents[docIdKey]] = 
+          data.documents[statusKey] === 1 || 
+          data.documents[statusKey] === "1";
+      }
+    });
+  }
+  
+  // Also check experienceData for bank statements, offer letters, etc.
+  if (data?.experienceData) {
+    data.experienceData.forEach((exp) => {
+      // Check bank statement
+      if (exp.BANK_STATEMENT_DOC_ID) {
+        initialApproved[exp.BANK_STATEMENT_DOC_ID] = 
+          exp.BANK_STATEMENT_DOC_STATUS == "1" || 
+          exp.BANK_STATEMENT_DOC_STATUS == 1;
+      }
       
-      Object.entries(docTypes).forEach(([docIdKey, statusKey]) => {
-        if (data.documents[docIdKey]) {
-          initialApproved[data.documents[docIdKey]] = data.documents[statusKey] === 1;
-        }
-      });
+      // Check offer letter
+      if (exp.OFFER_DOC_ID) {
+        initialApproved[exp.OFFER_DOC_ID] = 
+          exp.OFFER_LETTER_STATUS == "1" || 
+          exp.OFFER_LETTER_STATUS == 1;
+      }
       
-      setApprovedDocs(initialApproved);
-    }
-  }, [data?.documents, setSelectedUser]);
+      // Check relieving letter
+      if (exp.RELIEVING_DOC_ID) {
+        initialApproved[exp.RELIEVING_DOC_ID] = 
+          exp.RELIEV_DOC_STATUS == "1" || 
+          exp.RELIEV_DOC_STATUS == 1;
+      }
+      
+      // Check experience letter
+      if (exp.EXP_DOC_ID) {
+        initialApproved[exp.EXP_DOC_ID] = 
+          exp.EXPERIENCE_DOC_STATUS == "1" || 
+          exp.EXPERIENCE_DOC_STATUS == 1;
+      }
+      
+      // Check payslips
+      if (exp.payslips) {
+        exp.payslips.forEach((payslip) => {
+          if (payslip.EMP_PAYSLIP_ID) {
+         
+            initialApproved[payslip.EMP_PAYSLIP_ID] = 
+              payslip.PAYSLIP_STATUS == "1" || 
+              payslip.PAYSLIP_STATUS == 1;
+          }
+        });
+      }
+    });
+  }
+  
+  setApprovedDocs(prev => ({
+    ...initialApproved,
+    ...prev 
+  }));
+}, [data?.documents, data?.experienceData, setSelectedUser]);
 
   useEffect(() => {
     setLocalData(data);
@@ -54,96 +109,30 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
   const isApproved = true;
   if (!open) return null;
 
-
-
-
- const handleSubmit = async () => {
-  // ✅ CHECK IF AT LEAST ONE DOCUMENT IS APPROVED
-  const hasApprovedDoc = Object.values(approvedDocs).some(status => status === true);
-  
-  if (!hasApprovedDoc) {
-    await Swal.fire({
-      title: "Approval Required",
-      text: "Please approve at least one document before submitting!",
-      icon: "warning",
-      confirmButtonColor: "#3085d6",
-    });
-    return;
-  }
-
-  // ✅ CONFIRMATION ALERT BEFORE SUBMISSION
-  const result = await Swal.fire({
-    title: "Confirm Submission",
-    text: "Are you sure you want to submit this verification?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonColor: "#10b981",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, Submit!",
-    cancelButtonText: "Cancel"
-  });
-
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  try {
-    const payload = {
-      child_caseId: data.CHILD_CASEID,
-      remarks,
-    };
+  const handleSubmit = async () => {
+    // ✅ CHECK IF AT LEAST ONE DOCUMENT IS APPROVED
+    const hasApprovedDoc = Object.values(approvedDocs).some(status => status === true);
     
-    const response = await axios.post(`${API_BASE_URL}/verify-update`, payload, {
-      headers: {
-        Authorization: `Bearer ${userToken.token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.data) {
-      // ✅ Call onStatusChange to update parent state with verification_status: "1"
-      if (onStatusChange) {
-        onStatusChange({
-          id: data.CHILD_CASEID,
-          verification_status: "1"
-        });
-      }
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Verification updated successfully!',
-        timer: 1500,
-        showConfirmButton: false,
+    if (!hasApprovedDoc) {
+      await Swal.fire({
+        title: "Approval Required",
+        text: "Please approve at least one document before submitting!",
+        icon: "warning",
+        confirmButtonColor: "#3085d6",
       });
-
-      if (refersh) {
-        await refersh();
-      }
-      
-      setRemarks('');
-      onClose();
+      return;
     }
-  } catch (error) {
-    console.error('Error submitting form:', error);
-    Swal.fire({
-      title: 'Error!',
-      text: 'Failed to update verification. Please try again.',
-      icon: 'error',
-    });
-  }
-};
 
-  const handleApprove = async (Document_Id, Verify_Id, title) => {
+    // ✅ CONFIRMATION ALERT BEFORE SUBMISSION
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to approve ${title}?`,
-      icon: 'warning',
+      title: "Confirm Submission",
+      text: "Are you sure you want to submit this verification?",
+      icon: "question",
       showCancelButton: true,
-      confirmButtonColor: '#16a34a',
-      cancelButtonColor: '#dc2626',
-      confirmButtonText: 'Yes, Approve',
-      cancelButtonText: 'No',
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Submit!",
+      cancelButtonText: "Cancel"
     });
 
     if (!result.isConfirmed) {
@@ -152,53 +141,367 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
 
     try {
       const payload = {
-        Verification_Id: Verify_Id,
-        Document_Id: Document_Id,
+        child_caseId: data.CHILD_CASEID,
+        remarks,
       };
-
-      const response = await axios.post(
-        `${API_BASE_URL}/verify-Doc-Status`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      // Update the local state immediately
-      setApprovedDocs(prev => ({
-        ...prev,
-        [Document_Id]: true
-      }));
-
-      // Also update the parent component if needed
-      setSelectedUser(data);
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Approved!',
-        text: 'Document has been approved successfully.',
-        timer: 500,
-        showConfirmButton: false,
+      
+      const response = await axios.post(`${API_BASE_URL}/verify-update`, payload, {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (response.data) {
+        // ✅ Call onStatusChange to update parent state with verification_status: "1"
+        if (onStatusChange) {
+          onStatusChange({
+            id: data.CHILD_CASEID,
+            verification_status: "1"
+          });
+        }
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Verification updated successfully!',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        if (refersh) {
+          await refersh();
+        }
+        
+        setRemarks('');
+        onClose();
+      }
     } catch (error) {
+      console.error('Error submitting form:', error);
       Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update verification. Please try again.',
         icon: 'error',
-        title: 'Error',
-        text: 'Something went wrong while approving the document.',
       });
     }
   };
 
+const handleApprove = async (
+  Document_Id,
+  Verify_Id,
+  title,
+  documentPath,
+  EMP_COMP_ID
+) => {
+
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you want to approve ${title}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Yes, Approve',
+    cancelButtonText: 'No',
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    // ✅ DEFINE PAYLOAD HERE - BEFORE USING IT
+    let payload = {};
+
+    let docType = null;
+    const lowerTitle = title.toLowerCase();
+
+    // ===== DOCUMENT TYPE CHECK =====
+    if (lowerTitle.includes('bank statement')) {
+      payload.EMP_COMP_ID = EMP_COMP_ID || "";
+      payload.BANK_STATEMENT_DOC_STATUS = "1";
+      // payload.Document_Id = Document_Id;  // ✅ ADD Document_Id
+      docType = 'bank_statement';
+
+    } else if (lowerTitle.includes('offer letter')) {
+      payload.EMP_COMP_ID = EMP_COMP_ID || "";
+      payload.OFFER_LETTER_STATUS = "1";
+      // payload.Document_Id = Document_Id;  // ✅ ADD Document_Id
+      docType = 'offer_letter';
+
+    } else if (lowerTitle.includes('relieving letter')) {
+      payload.EMP_COMP_ID = EMP_COMP_ID || "";
+      payload.RELIEV_DOC_STATUS = "1";
+      // payload.Document_Id = Document_Id;  // ✅ ADD Document_Id
+      docType = 'relieving_letter';
+
+    } else if (lowerTitle.includes('experience letter')) {
+      payload.EMP_COMP_ID = EMP_COMP_ID || "";
+      payload.EXPERIENCE_DOC_STATUS = "1";
+      // payload.Document_Id = Document_Id;  // ✅ ADD Document_Id
+      docType = 'experience_letter';
+
+    } else if (lowerTitle.includes('payslip')) {
+      // payload.EMP_COMP_ID = EMP_COMP_ID || "";  // ✅ UNCOMMENT THIS
+     payload.EMP_PAYSLIP_ID = Document_Id;
+       payload.EMP_COMP_ID = EMP_COMP_ID || "";
+      payload.PAYSLIP_STATUS = "1";
+      // payload.Document_Id = Document_Id; // Optional - if backend needs both
+      docType = 'payslip';
+    }
+
+
+    else {
+      payload.Document_Id = Document_Id;
+      payload.Verification_Id  = Verify_Id
+
+    }
+    
+    setApprovedDocs(prev => ({
+      ...prev,
+      [Document_Id]: true
+    }));
+
+    if (docType && localData?.experienceData) {
+      const updatedExperienceData = localData.experienceData.map(exp => {
+        if (docType === 'bank_statement' && exp.BANK_STATEMENT_DOC_ID == Document_Id) {
+          return {
+            ...exp,
+            BANK_STATEMENT_DOC_STATUS: "1",
+            BANK_STATEMENT_STATUS: "1"
+          };
+        }
+        if (docType === 'offer_letter' && exp.OFFER_DOC_ID == Document_Id) {
+          return {
+            ...exp,
+            OFFER_LETTER_STATUS: "1",
+            OFFER_STATUS: "1"
+          };
+        }
+        if (docType === 'relieving_letter' && exp.RELIEVING_DOC_ID == Document_Id) {
+          return {
+            ...exp,
+            RELIEV_DOC_STATUS: "1",
+            RELIEVING_STATUS: "1"
+          };
+        }
+        if (docType === 'experience_letter' && exp.EXP_DOC_ID == Document_Id) {
+          return {
+            ...exp,
+            EXPERIENCE_DOC_STATUS: "1",
+            EXP_STATUS: "1"
+          };
+        }
+        if (docType === 'payslip' && exp.payslips?.some(p => p.EMP_PAYSLIP_ID == Document_Id)) {
+          const updatedPayslips = exp.payslips.map(p =>
+            p.EMP_PAYSLIP_ID === Document_Id
+              ? { ...p, PAYSLIP_STATUS: "1" }
+              : p
+          );
+          return {
+            ...exp,
+            payslips: updatedPayslips
+          };
+        }
+        return exp;
+      });
+
+      setLocalData(prev => ({
+        ...prev,
+        experienceData: updatedExperienceData
+      }));
+    }
+
+    // ===== API CALL =====
+    await axios.post(
+      `${API_BASE_URL}/verify-Doc-Status`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Approved!',
+      text: `${title} has been approved successfully.`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+  } catch (error) {
+    console.error("Approval error:", error);
+
+    // Revert UI if API fails
+    setApprovedDocs(prev => {
+      const newState = { ...prev };
+      delete newState[Document_Id];
+      return newState;
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Something went wrong while approving the document.',
+    });
+  }
+};
+
+
+// const handleApprove = async (Document_Id, Verify_Id, title, documentPath, EMP_COMP_ID) => {
+
+
+//   const result = await Swal.fire({
+//     title: 'Are you sure?',
+//     text: `Do you want to approve ${title}?`,
+//     icon: 'warning',
+//     showCancelButton: true,
+//     confirmButtonColor: '#16a34a',
+//     cancelButtonColor: '#dc2626',
+//     confirmButtonText: 'Yes, Approve',
+//     cancelButtonText: 'No',
+//   });
+
+//   if (!result.isConfirmed) {
+//     return;
+//   }
+
+//   try {
+//     const payload = {
+//       Verification_Id: Verify_Id,
+//       Document_Id: Document_Id,
+//       EMP_COMP_ID: EMP_COMP_ID || "",
+//       EMP_PAYSLIP_ID: Document_Id || "",
+//     };
+
+//     let docType = null;
+    
+//     // Add specific status field based on document title
+//     if (title.toLowerCase().includes('bank statement')) {
+//       payload.BANK_STATEMENT_DOC_STATUS = "1";
+//       docType = 'bank_statement';
+//     } else if (title.toLowerCase().includes('offer letter')) {
+//       payload.OFFER_LETTER_STATUS = "1";
+//       docType = 'offer_letter';
+//     } else if (title.toLowerCase().includes('relieving letter')) {
+//       payload.RELIEV_DOC_STATUS = "1";
+//       docType = 'relieving_letter';
+//     } else if (title.toLowerCase().includes('payslip')) {
+//       payload.PAYSLIP_STATUS = "1";  // Fixed typo: PLAYSLIP_STATUS -> PAYSLIP_STATUS
+//       docType = 'payslip';
+//     } else if (title.toLowerCase().includes('experience letter')) {
+//       payload.EXPERIENCE_DOC_STATUS = "1";
+//       docType = 'experience_letter';
+//     }
+
+//     console.log("Sending approval payload:", payload);
+
+//     // IMMEDIATELY update the local state BEFORE API call
+//     // 1. Update approvedDocs
+//     setApprovedDocs(prev => ({
+//       ...prev,
+//       [Document_Id]: true
+//     }));
+
+//     // 2. Update localData if it's an experience-related document
+//     if (docType && localData?.experienceData) {
+//       const updatedExperienceData = localData.experienceData.map(exp => {
+//         if (docType === 'bank_statement' && exp.BANK_STATEMENT_DOC_ID === Document_Id) {
+//           return { 
+//             ...exp, 
+//             BANK_STATEMENT_DOC_STATUS: "1",
+//             BANK_STATEMENT_STATUS: "1" 
+//           };
+//         }
+//         if (docType === 'offer_letter' && exp.OFFER_DOC_ID === Document_Id) {
+//           return { 
+//             ...exp, 
+//             OFFER_LETTER_STATUS: "1",
+//             OFFER_STATUS: "1" 
+//           };
+//         }
+//         if (docType === 'relieving_letter' && exp.RELIEVING_DOC_ID === Document_Id) {
+//           return { 
+//             ...exp, 
+//             RELIEV_DOC_STATUS: "1",
+//             RELIEVING_STATUS: "1" 
+//           };
+//         }
+//         if (docType === 'experience_letter' && exp.EXP_DOC_ID === Document_Id) {
+//           return { 
+//             ...exp, 
+//             EXPERIENCE_DOC_STATUS: "1",
+//             EXP_STATUS: "1" 
+//           };
+//         }
+//         if (docType === 'payslip' && exp.payslips?.some(p => p.EMP_PAYSLIP_ID === Document_Id)) {
+//           const updatedPayslips = exp.payslips.map(p => 
+//             p.EMP_PAYSLIP_ID === Document_Id 
+//               ? { ...p, PAYSLIP_STATUS: "1" }
+//               : p
+//           );
+//           return { ...exp, payslips: updatedPayslips };
+//         }
+//         return exp;
+//       });
+
+//       setLocalData(prev => ({
+//         ...prev,
+//         experienceData: updatedExperienceData
+//       }));
+//     }
+
+//     // 3. Now make the API call
+//     const response = await axios.post(
+//       `${API_BASE_URL}/verify-Doc-Status`,
+//       payload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${userToken.token}`,
+//           'Content-Type': 'application/json',
+//         },
+//       }
+//     );
+
+//     await Swal.fire({
+//       icon: 'success',
+//       title: 'Approved!',
+//       text: `${title} has been approved successfully.`,
+//       timer: 1500,
+//       showConfirmButton: false,
+//     });
+//   } catch (error) {
+//     console.error("Approval error:", error);
+    
+//     // If API fails, revert the local state
+//     setApprovedDocs(prev => {
+//       const newState = { ...prev };
+//       delete newState[Document_Id];
+//       return newState;
+//     });
+    
+//     Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: 'Something went wrong while approving the document.',
+//     });
+//   }
+// };
+
   const isDocApproved = (documentId, docStatus) => {
+    console.log("isDocApproved check:", { documentId, docStatus, approvedDocs });
+    
     // First check if we've approved it locally
     if (documentId && approvedDocs[documentId]) {
+      console.log("Approved locally");
       return true;
     }
     // Then check the original status from data
-    return docStatus == 1;
+    // Check for both string "1" and number 1
+    const isApproved = docStatus === 1 || docStatus === "1";
+    console.log("Status from data is approved:", isApproved);
+    return isApproved;
   };
 
   const handleViewDocument = (url, name) => {
@@ -242,6 +545,8 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
     if (!url) return null;
     const isPDF = url.toLowerCase().endsWith('.pdf');
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URLss}${url}`;
+
+  
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-70 p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
@@ -283,9 +588,40 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
     );
   };
 
-  const DocumentCard = ({ docStatus, documentId, Verification_Id, title, documentPath }) => {
+  const DocumentCard = ({ 
+    docStatus, 
+    documentId, 
+    Verification_Id, 
+    title, 
+    documentPath,
+    EMP_COMP_ID,
+    bankStatementStatus,
+    offerLetterStatus,
+    relievingStatus,
+    payslipStatus,
+    experienceStatus
+  }) => {
+  
+    
     const hasDocument = documentPath && documentPath !== null;
-    const isApproved = isDocApproved(documentId, docStatus);
+    
+    let statusToCheck = docStatus;
+    
+    if (title.toLowerCase().includes('bank statement')) {
+      statusToCheck = bankStatementStatus || docStatus;
+    } else if (title.toLowerCase().includes('offer letter')) {
+      statusToCheck = offerLetterStatus || docStatus;
+    } else if (title.toLowerCase().includes('relieving letter')) {
+      statusToCheck = relievingStatus || docStatus;
+    } else if (title.toLowerCase().includes('payslip')) {
+      statusToCheck = payslipStatus || docStatus;
+    } else if (title.toLowerCase().includes('experience letter')) {
+      statusToCheck = experienceStatus || docStatus;
+    }
+    
+    const isApproved = isDocApproved(documentId, statusToCheck);
+    
+    console.log(`Document: ${title}, Status to check: ${statusToCheck}, Is Approved: ${isApproved}`);
     
     return (
       <div className={`p-3 rounded-lg border-2 transition-all ${hasDocument
@@ -300,6 +636,11 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
               <p className="text-[10px] text-gray-500 mt-0.5">
                 {hasDocument ? 'Document available' : 'Not uploaded'}
               </p>
+              {isApproved && (
+                <p className="text-[10px] text-green-600 mt-0.5 font-semibold">
+                  ✓ Approved
+                </p>
+              )}
             </div>
           </div>
           {hasDocument ? (
@@ -318,7 +659,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
                 </span>
               ) : (
                 <button
-                  onClick={() => handleApprove(documentId, Verification_Id, title, documentPath)}
+                  onClick={() => handleApprove(documentId, Verification_Id, title, documentPath, EMP_COMP_ID)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-xs font-medium"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -337,21 +678,100 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
   };
 
   const educationDocuments = [
-    { title: '10th Certificate', path: data?.documents?.['10th_certi'], marks: data?.SSC_MARKS, documentId: data?.documents?.Tenth_DocId, docStatus: data?.documents?.Tenth_Status, Verification_Id: data.Verification_Id },
-    { title: 'Intermediate Certificate', path: data?.documents?.Inter_certi, marks: data?.INTER_MARKS, documentId: data?.documents?.Inter_DocId, docStatus: data?.documents?.Inter_Status, Verification_Id: data.Verification_Id },
-    { title: 'B.Tech/Degree Certificate ', path: data?.documents?.Gradu_certi, marks: data?.BTECH_MARKS, documentId: data?.documents?.grad_DocId, docStatus: data?.documents?.Grad_Status, Verification_Id: data.Verification_Id },
-    { title: 'PG Certificate', path: data?.documents?.Pg_certi, marks: data?.PG_MARKS, documentId: data?.documents?.pg_DocId, docStatus: data?.documents?.Pg_Status, Verification_Id: data.Verification_Id },
+    { 
+      title: '10th Certificate', 
+      path: data?.documents?.['10th_certi'], 
+      marks: data?.SSC_MARKS, 
+      documentId: data?.documents?.Tenth_DocId, 
+      docStatus: data?.documents?.Tenth_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+    { 
+      title: 'Intermediate Certificate', 
+      path: data?.documents?.Inter_certi, 
+      marks: data?.INTER_MARKS, 
+      documentId: data?.documents?.Inter_DocId, 
+      docStatus: data?.documents?.Inter_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+    { 
+      title: 'B.Tech/Degree Certificate ', 
+      path: data?.documents?.Gradu_certi, 
+      marks: data?.BTECH_MARKS, 
+      documentId: data?.documents?.grad_DocId, 
+      docStatus: data?.documents?.Grad_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+    { 
+      title: 'PG Certificate', 
+      path: data?.documents?.Pg_certi, 
+      marks: data?.PG_MARKS, 
+      documentId: data?.documents?.pg_DocId, 
+      docStatus: data?.documents?.Pg_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+
+     { 
+      title: 'PHD Certificate', 
+      path: data?.documents?.PHD_FILENAME, 
+      marks: data?.PHD_MARKS, 
+      documentId: data?.documents?.PHD_DocId, 
+      docStatus: data?.documents?.PHD_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+
+      { 
+      title: 'Others', 
+      path: data?.documents?.OTHER_FILENAME, 
+      marks: data?.PG_MARKS, 
+      documentId: data?.documents?.OTHER_Status, 
+      docStatus: data?.documents?.OTHER_DocId, 
+      Verification_Id: data.Verification_Id 
+    },
+
+
+
   ];
 
   const identityDocuments = [
-    { title: 'Aadhar Card', path: data?.documents?.Aadhar_certi, documentId: data?.documents?.Aadhar_DocId, docStatus: data?.documents?.Aadhr_Status, Verification_Id: data.Verification_Id },
-    { title: 'PAN Card', path: data?.documents?.Pan_certi, documentId: data?.documents?.pan_DocId, docStatus: data?.documents?.Pan_Status, Verification_Id: data.Verification_Id },
-  ];
+    { 
+      title: 'Aadhar Card', 
+      path: data?.documents?.Aadhar_certi, 
+      documentId: data?.documents?.Aadhar_DocId, 
+      docStatus: data?.documents?.Aadhr_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+    { 
+      title: 'PAN Card', 
+      path: data?.documents?.Pan_certi, 
+      documentId: data?.documents?.pan_DocId, 
+      docStatus: data?.documents?.Pan_Status, 
+      Verification_Id: data.Verification_Id 
+    },
 
-  const professionalDocuments = [
-    { title: 'Payslip', path: data?.documents?.Payslip, documentId: data?.documents?.PaySlip_DocId, docStatus: data?.documents?.PaySlip_Status, Verification_Id: data.Verification_Id },
-    { title: 'Experience Letter', path: data?.documents?.Exp_Letter, documentId: data?.documents?.Exp_DocId, docStatus: data?.documents?.Exp_Status, Verification_Id: data.Verification_Id },
-    { title: 'Relieving Letter', path: data?.documents?.Relieving_Letter, documentId: data?.documents?.Reliev_DocId, docStatus: data?.documents?.Reliv_Status, Verification_Id: data.Verification_Id },
+       { 
+      title: 'Photo', 
+      path: data?.documents?.photo, 
+      documentId: data?.documents?.photo_DocId, 
+      docStatus: data?.documents?.photo_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+
+       { 
+      title: 'Resume', 
+      path: data?.documents?.RESUME_UPLOAD, 
+      documentId: data?.documents?.RESUME_DocId, 
+      docStatus: data?.documents?.RESUME_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+     { 
+      title: 'UAN Doc', 
+      path: data?.documents?.UAN_FILE, 
+      documentId: data?.documents?.UAN_DocId, 
+      docStatus: data?.documents?.UAN_Status, 
+      Verification_Id: data.Verification_Id 
+    },
+
   ];
 
   return (
@@ -421,7 +841,14 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {identityDocuments.map((doc, index) => (
-                  <DocumentCard key={index} docStatus={doc.docStatus} documentId={doc.documentId} Verification_Id={doc.Verification_Id} title={doc.title} documentPath={doc.path} />
+                  <DocumentCard 
+                    key={index} 
+                    docStatus={doc.docStatus} 
+                    documentId={doc.documentId} 
+                    Verification_Id={doc.Verification_Id} 
+                    title={doc.title} 
+                    documentPath={doc.path} 
+                  />
                 ))}
               </div>
             </div>
@@ -436,7 +863,13 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {educationDocuments.map((doc, index) => (
                   <div key={index} className="space-y-1.5">
-                    <DocumentCard docStatus={doc.docStatus} documentId={doc.documentId} Verification_Id={doc.Verification_Id} title={doc.title} documentPath={doc.path} />
+                    <DocumentCard 
+                      docStatus={doc.docStatus} 
+                      documentId={doc.documentId} 
+                      Verification_Id={doc.Verification_Id} 
+                      title={doc.title} 
+                      documentPath={doc.path} 
+                    />
                     {doc.marks && doc.marks !== 'N/A' && (
                       <div className="text-center">
                         <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
@@ -450,26 +883,103 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, setSele
             </div>
 
             {/* Professional Experience */}
-            <div className="bg-white rounded-xl shadow-sm p-4 mb-3">
-              <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-purple-600 rounded-full"></span>
-                Professional Experience
-              </h3>
-              <div className="border-b border-gray-200 mb-3"></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <InfoRow label="Previous Company" value={data?.PREVIOUS_COMPANY} />
-                <InfoRow label="Duration" value={data?.DURATION ? `${data.DURATION} months` : 'N/A'} />
-                <InfoRow label="Notice Period" value={data?.NOTICE_PERIOD ? `${data.NOTICE_PERIOD} days` : 'N/A'} />
-                <InfoRow label="Current CTC" value={data?.CURRENT_CTC ? `₹${data.CURRENT_CTC} LPA` : 'N/A'} valueColor="text-green-600" />
-                <InfoRow label="Expected CTC" value={data?.EXP_CTC ? `₹${data.EXP_CTC} LPA` : 'N/A'} valueColor="text-orange-600" />
-                <InfoRow label="Offer CTC" value={data?.OFFER_CTC ? `₹${data.OFFER_CTC} LPA` : 'N/A'} valueColor="text-purple-600" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {professionalDocuments.map((doc, index) => (
-                  <DocumentCard key={index} docStatus={doc.docStatus} documentId={doc.documentId} Verification_Id={doc.Verification_Id} title={doc.title} documentPath={doc.path} />
-                ))}
-              </div>
-            </div>
+          {/* Professional Experience */}
+<div className="bg-white rounded-xl shadow-sm p-4 mb-3">
+  <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+    <span className="w-1.5 h-6 bg-purple-600 rounded-full"></span>
+    Professional Experience
+  </h3>
+  <div className="border-b border-gray-200 mb-3"></div>
+  
+  {/* Experience Details from localData (not data) */}
+  {localData?.experienceData?.map((exp, index) => (
+    <div key={index} className="mb-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <InfoRow label="Company" value={exp.COMPANY_NAME} />
+        <InfoRow label="Designation" value={exp.DESIGNATION} />
+        {/* <InfoRow label="Duration" value={exp.DESIGNATION} /> */}
+        <InfoRow label="Experience" value={`${exp.EXPERIENCE_YEARS} years`} />
+      </div>
+
+      {/* Professional Documents - From localData */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Experience Letter */}
+        {exp.EXPERIENCE_DOC && (
+          <DocumentCard 
+            title="Experience Letter"
+            documentPath={exp.EXPERIENCE_DOC}
+            documentId={exp.EXP_DOC_ID}
+            docStatus={exp.EXPERIENCE_DOC_STATUS || exp.EXP_STATUS}
+            Verification_Id={data.Verification_Id}
+            EMP_COMP_ID={exp.EMP_COMP_ID}
+            experienceStatus={exp.EXPERIENCE_DOC_STATUS || exp.EXP_STATUS}
+          />
+        )}
+        
+        {/* Relieving Letter */}
+        {exp.RELIVING_LETTER_DOC && (
+          <DocumentCard 
+            title="Relieving Letter"
+            documentPath={exp.RELIVING_LETTER_DOC}
+            documentId={exp.RELIEVING_DOC_ID}
+            docStatus={exp.RELIEV_DOC_STATUS || exp.RELIEVING_STATUS}
+            Verification_Id={data.Verification_Id}
+            EMP_COMP_ID={exp.EMP_COMP_ID}
+            relievingStatus={exp.RELIEV_DOC_STATUS || exp.RELIEVING_STATUS}
+          />
+        )}
+        
+        {/* Bank Statement */}
+        {exp.BANK_STATEMENT_DOC && (
+          <DocumentCard 
+            title="Bank Statement"
+            documentPath={exp.BANK_STATEMENT_DOC}
+            documentId={exp.BANK_STATEMENT_DOC_ID}
+            docStatus={exp.BANK_STATEMENT_DOC_STATUS || exp.BANK_STATEMENT_STATUS}
+            Verification_Id={data.Verification_Id}
+            EMP_COMP_ID={exp.EMP_COMP_ID}
+            bankStatementStatus={exp.BANK_STATEMENT_DOC_STATUS || exp.BANK_STATEMENT_STATUS}
+          />
+        )}
+        
+        {/* Offer Letter */}
+        {exp.OFFER_LETTER_DOC && (
+          <DocumentCard 
+            title="Offer Letter"
+            documentPath={exp.OFFER_LETTER_DOC}
+            documentId={exp.OFFER_DOC_ID}
+            docStatus={exp.OFFER_LETTER_STATUS || exp.OFFER_STATUS}
+            Verification_Id={data.Verification_Id}
+            EMP_COMP_ID={exp.EMP_COMP_ID}
+            offerLetterStatus={exp.OFFER_LETTER_STATUS || exp.OFFER_STATUS}
+          />
+        )}
+        
+        {/* Payslips */}
+        {exp.payslips && exp.payslips.map((payslip, payslipIndex) => (
+          <DocumentCard 
+            key={payslip.EMP_PAYSLIP_ID || payslipIndex}
+            title={`Payslip ${payslipIndex + 1}`}
+            documentPath={payslip.PAYSLIP_FILE}
+            documentId={payslip.EMP_PAYSLIP_ID}
+            docStatus={payslip.PAYSLIP_STATUS}
+            Verification_Id={data.Verification_Id}
+            EMP_COMP_ID={exp.EMP_COMP_ID}
+            payslipStatus={payslip.PAYSLIP_STATUS}
+          />
+        ))}
+      </div>
+    </div>
+  ))}
+  
+  {/* Additional professional info from main data */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <InfoRow label="Current CTC" value={data?.CURRENT_CTC ? `₹${data.CURRENT_CTC} LPA` : 'N/A'} valueColor="text-green-600" />
+    <InfoRow label="Expected CTC" value={data?.EXP_CTC ? `₹${data.EXP_CTC} LPA` : 'N/A'} valueColor="text-orange-600" />
+    {/* <InfoRow label="Offer CTC" value={data?.OFFER_CTC ? `₹${data.OFFER_CTC} LPA` : 'N/A'} valueColor="text-purple-600" /> */}
+    <InfoRow label="Notice Period" value={data?.NOTICE_PERIOD ? `${data.NOTICE_PERIOD} days` : 'N/A'} />
+  </div>
+</div>
 
             {/* Verification Status & Remarks */}
             <div className="bg-white rounded-xl shadow-sm p-4">

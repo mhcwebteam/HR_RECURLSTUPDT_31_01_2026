@@ -15,6 +15,12 @@ const HrInbox = () => {
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [hrData, setHrData] = useState([]);
+
+
+  console.log(hrData,"ffffffffff");
+
+
+
   const navigate = useNavigate();
 
   const token = useMemo(() => {
@@ -44,7 +50,7 @@ const hrAprvlFetchData = async () => {
     console.log("API Response:", data);
     setHrData(data?.hrApprovalData || data?.HrAprvlData || []);
     
-    // Store the counts separately if they exist in the response
+   
     if (data.counts) {
       // You can store these counts in state if needed
       console.log("Counts from API:", data.counts);
@@ -88,14 +94,24 @@ const hrAprvlFetchData = async () => {
     return data;
   }, [hrData, searchTerm, processFilter]);
 
+
+  console.log(hrData,"hrrrrrrrrrrrrrrrr")
+
 const stats = useMemo(() => {
   return {
     total: hrData.length,
-    // Change to include "HR Recruitment"
-    recruitmentMail: hrData.filter((i) =>
-      (i.Recruit_Process || '').toLowerCase().includes('hr recruitment') ||
-      (i.Recruit_Process || '').toLowerCase().includes('recruitment')
+ 
+    Actions: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('Actions')
     ).length,
+
+
+    recruitmentMail: hrData.filter((i) =>
+      (i.Recruit_Process || '').toLowerCase().includes('Recruitment Mail')
+  
+    ).length,
+
+
     verification: hrData.filter((i) =>
       (i.Recruit_Process || '').toLowerCase().includes('verification')
     ).length,
@@ -114,14 +130,14 @@ const stats = useMemo(() => {
     ).length,
   };
 }, [hrData]);
+
+console.log("statsstatsstatsstatsstats",stats);
  
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-
-  console.log(paginatedRows,"ajithku");
 
   const totalPages = Math.ceil(filteredRows.length / pageSize);
   const safeTotalPages = Math.max(1, totalPages);
@@ -133,6 +149,13 @@ const stats = useMemo(() => {
 
   const processLower = process.toLowerCase();
 
+
+
+
+    if (processLower.includes('Actions')) {
+    return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
+  }
+
   if (processLower.includes('candidate approval')) {
     return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
   }
@@ -143,7 +166,7 @@ const stats = useMemo(() => {
     return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
   }
   // Change this line to include "hr recruitment"
-  if (processLower.includes('recruitment mail') || processLower.includes('hr recruitment')) {
+  if (processLower.includes('Recruitment Mail')) {
     return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
   }
   if (processLower.includes('note for approval')) {
@@ -180,8 +203,9 @@ const stats = useMemo(() => {
 
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-3">  
           <StatCard
-            title="Total Approvals"
-            value={stats.total}
+            title="Actions"
+            value={stats.Actions
+}
             icon={<Users className="w-5 h-5" />}
             color="blue"
           />
@@ -248,6 +272,7 @@ const stats = useMemo(() => {
                     className="pl-8 pr-7 py-2 border-2 border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none cursor-pointer text-xs font-medium hover:border-blue-300 hover:shadow-md transition-all"
                   >
                     <option value="all">All Processes</option>
+                        <option value="all">Actions</option>
                     <option value="recruitment mail">Recruitment Mail</option>
                     <option value="verification">Verification</option>
                     <option value="salary">Salary Stackup</option>
@@ -360,7 +385,7 @@ const stats = useMemo(() => {
     title="click here"
   >
     {/* Add this line to change "HR Recruitment" to "Recruitment Mail" */}
-    {row.Recruit_Process === "HR Recruitment" ? "Recruitment Mail" : row.Recruit_Process || ''}
+    {row.Recruit_Process === "Recruitment Mail" ? "Recruitment Mail" : row.Recruit_Process || ''}
   </button>
 </td>
 
@@ -521,6 +546,17 @@ const StatCard = ({ title, value, icon, color }) => {
 };
 
 export default HrInbox;
+
+
+
+
+
+
+
+
+
+
+
 
 
 

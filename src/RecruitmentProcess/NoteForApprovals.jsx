@@ -61,30 +61,45 @@ const NoteForApprovals = () => {
   });
 
 
+ 
+
 
   
+const noteFrAprvlData = async () => {
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/getNt-aprvl-data`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token?.token}`,
+        },
+      }
+    );
 
-  const noteFrAprvlData = async () => {
-    try {
-      const res = await axios.get(
-       
+    const verifyData = res?.data?.VerifyData;
 
-         `${API_BASE_URL}/getNt-aprvl-data`,
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token?.token}`,
-          },
-        }
-      );
+    // const approvals =
+    //   token?.Emp_Category == "HR" &&
+    //   verifyData?.DIRECTOR == "Approved" &&
+    //   verifyData?.HOD == "Approved" &&
+    //   verifyData?.EVC == "Approved";
+ setNoteAprvlData(verifyData);
+    
 
-      console.log("NOTE FOR APPROVAL API DATA:", res);
-      setNoteAprvlData(res.data.VerifyData || []);
+    // if (approvals) {
+     
+    // } else {
+    //   setNoteAprvlData([]);
+    // }
 
-    } catch (err) {
-      console.error("Error fetching approval data", err);
-    }
-  };
+    console.log("verifyDataverifyDataverifyData",verifyData);
+
+  } catch (err) {
+    console.error("Error fetching approval data", err);
+  }
+};
+
 
 
   useEffect(() => {
@@ -162,42 +177,94 @@ if(noteFrAprvlData) {
     }
   };
 
-  /* -------------------- FILTERED DATA -------------------- */
   const filteredData = useMemo(() => {
-    if (!Array.isArray(noteAprvlData)) return [];
-    let result = [...noteAprvlData];
-    if (searchTerm) {
-      result = result.filter(
-        (item) =>
-          item.FIRST_NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.CHILD_CASEID?.includes(searchTerm)
+  if (!Array.isArray(noteAprvlData)) return [];
+  let result = [...noteAprvlData];
+  
+  // For HR users, filter out records where all approvals are complete
+  if (token?.Emp_Category === "HR") {
+    result = result.filter(item => {
+      // Keep records where at least one approval is pending
+      return !(
+        item.DIRECTOR == "Approved" &&
+        item.HR == "Approved" &&
+        item.EVC == "Approved"
       );
-    }
-    if (statusFilter !== "all") {
-      result = result.filter(
-        (item) => item.status?.toLowerCase() === statusFilter
-      );
-    }
-    return result.map((item, index) => ({
-      id: item.verification_id, // REQUIRED BY DATAGRID
-      SNO: index + 1,
-      CHILD_CASEID: item.CHILD_CASEID,
-      PLANT: item.PLANT,
-       FIRST_NAME: `${item.FIRST_NAME} ${item.LAST_NAME}`,
-      EMAIL: item.EMAIL,
-      PHONE_NUMBER: item.PHONE_NUMBER,
-      DEPT: item.DEPT,
-      CURRENT_CTC: item.CURRENT_CTC,
-      EXP_CTC: item.EXP_CTC,
-      OFFER_CTC: item.OFFER_CTC,
-      HR: item.HR,
-      DIRECTOR: item.DIRECTOR,
-      EVC: item.EVC,
-      STATUS: item.status,
-      SUBMITTED_DATE: item.created_at,
-    }));
-  }, [noteAprvlData, searchTerm, statusFilter]);
+    });
+  }
+  
+  if (searchTerm) {
+    result = result.filter(
+      (item) =>
+        item.FIRST_NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.CHILD_CASEID?.includes(searchTerm)
+    );
+  }
+  
+  if (statusFilter !== "all") {
+    result = result.filter(
+      (item) => item.status?.toLowerCase() === statusFilter
+    );
+  }
+  
+  return result.map((item, index) => ({
+    id: item.verification_id,
+    SNO: index + 1,
+    CHILD_CASEID: item.CHILD_CASEID,
+    PLANT: item.PLANT,
+    FIRST_NAME: `${item.FIRST_NAME || ''} ${item.LAST_NAME || ''}`.trim(),
+    EMAIL: item.EMAIL,
+    PHONE_NUMBER: item.PHONE_NUMBER,
+    DEPT: item.DEPT,
+    CURRENT_CTC: item.CURRENT_CTC,
+    EXP_CTC: item.EXP_CTC,
+    OFFER_CTC: item.OFFER_CTC,
+    HR: item.HR,
+    DIRECTOR: item.DIRECTOR,
+    HOD: item.HOD,
+    EVC: item.EVC,
+    STATUS: item.status,
+    SUBMITTED_DATE: item.created_at,
+  }));
+}, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
+
+  /* -------------------- FILTERED DATA -------------------- */
+  // const filteredData = useMemo(() => {
+  //   if (!Array.isArray(noteAprvlData)) return [];
+  //   let result = [...noteAprvlData];
+  //   if (searchTerm) {
+  //     result = result.filter(
+  //       (item) =>
+  //         item.FIRST_NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //         item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //         item.CHILD_CASEID?.includes(searchTerm)
+  //     );
+  //   }
+  //   if (statusFilter !== "all") {
+  //     result = result.filter(
+  //       (item) => item.status?.toLowerCase() === statusFilter
+  //     );
+  //   }
+  //   return result.map((item, index) => ({
+  //     id: item.verification_id, // REQUIRED BY DATAGRID
+  //     SNO: index + 1,
+  //     CHILD_CASEID: item.CHILD_CASEID,
+  //     PLANT: item.PLANT,
+  //      FIRST_NAME: `${item.FIRST_NAME} ${item.LAST_NAME}`,
+  //     EMAIL: item.EMAIL,
+  //     PHONE_NUMBER: item.PHONE_NUMBER,
+  //     DEPT: item.DEPT,
+  //     CURRENT_CTC: item.CURRENT_CTC,
+  //     EXP_CTC: item.EXP_CTC,
+  //     OFFER_CTC: item.OFFER_CTC,
+  //     HR: item.HR,
+  //     DIRECTOR: item.DIRECTOR,
+  //     EVC: item.EVC,
+  //     STATUS: item.status,
+  //     SUBMITTED_DATE: item.created_at,
+  //   }));
+  // }, [noteAprvlData, searchTerm, statusFilter]);
 
   /* -------------------- STATUS CHIP -------------------- */
   const getStatusChip = (status) => {
@@ -438,7 +505,7 @@ if(noteFrAprvlData) {
     },
    
 
-token?.Is_Employee === 2 && {
+token?.Emp_Category == "HR" && {
   field: "APPROVER",
   headerName: "Send For Approval",
   flex: 1.3,

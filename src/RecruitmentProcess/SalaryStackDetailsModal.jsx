@@ -1,12 +1,14 @@
 
 
 
+
+
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../Config/Config";
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
-
+import { Eye } from 'lucide-react';
 const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
   const FIXED_COMPONENTS = {
@@ -87,6 +89,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       setOfferCTC(offerAmount);
       const breakdown = calculateSalaryBreakdown(offerAmount);
       setSalaryComponents(breakdown);
+      setRemarks('');
 
       if (data.id) {
         setIsEditing(true);
@@ -406,7 +409,6 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
     cancelButtonText: 'Cancel'
   });
 
-  // ✅ IF USER CLICKS "NO", STOP EXECUTION
   if (!result.isConfirmed) {
     return;
   }
@@ -449,21 +451,15 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           'Content-Type': 'application/json',
         },
       });
-    
 
-
-
-
-    await Swal.fire({
-      icon: "success",
+      await Swal.fire({
+        icon: "success",
         title: status === 'approved' ? 'Approved!' : 'Rejected!',
-       text: response.data.message || `Salary breakup ${status} successfully!`,
-      timer: 1500,
-      showConfirmButton: false,
-    });
-  
+        text: response.data.message || `Salary breakup ${status} successfully!`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
-      // Pass the updated offer_ctc back to parent
       if (onStatusChange) {
         onStatusChange({
           id: data.verification_id,
@@ -473,8 +469,6 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           ...payload
         });
       }
-
- 
 
       onClose();
     } catch (err) {
@@ -507,298 +501,228 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
   if (!open) return null;
 
   const InfoRow = ({ label, value, valueColor = 'text-gray-700' }) => (
-    <div className="flex items-start mb-3">
-      <div className="flex items-center min-w-[180px] text-gray-600 font-medium">
-        <span>{label}:</span>
-      </div>
-      <div className={`flex-1 font-medium ${valueColor}`}>
-        {value || 'N/A'}
-      </div>
+    <div className="flex items-center gap-2 text-xs">
+      <span className="text-gray-500 min-w-[90px] font-medium">{label}:</span>
+      <span className={`font-semibold ${valueColor}`}>{value || 'N/A'}</span>
     </div>
   );
 
   const SalaryRow = ({ label, field, monthly, annual, isEditable = true, isBold = false, bgColor = '', isFixed = false, showESINote = false }) => (
-    <tr className={`${bgColor} hover:bg-gray-50 transition-colors`}>
-      <td className={`px-4 py-3 ${isBold ? 'font-bold' : 'font-semibold'} text-gray-700`}>
+    <tr className={`${bgColor} hover:bg-gray-50 transition-colors text-xs`}>
+      <td className={`px-3 py-1.5 ${isBold ? 'font-bold' : 'font-medium'} text-gray-700`}>
         {label}
-        {isFixed && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Fixed</span>}
+        {isFixed && <span className="ml-1 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Fixed</span>}
         {showESINote && !salaryComponents.is_esi_applicable && (
-          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Not Applicable</span>
+          <span className="ml-1 text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded">N/A</span>
         )}
       </td>
-      <td className="px-4 py-3 text-center">
+      <td className="px-3 py-1.5 text-center">
         {isEditable && !isViewMode && !isFixed ? (
           <input
             type="number"
             value={monthly}
             onChange={(e) => handleInputChange(field, e.target.value)}
-            className="w-24 px-2 py-1 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-20 px-2 py-0.5 border border-gray-300 rounded text-center text-xs focus:ring-1 focus:ring-emerald-500 focus:border-transparent"
           />
         ) : (
           <span className={isBold ? 'font-bold' : ''}>{monthly.toLocaleString('en-IN')}</span>
         )}
       </td>
-      <td className={`px-4 py-3 text-center ${isBold ? 'font-bold' : ''}`}>
+      <td className={`px-3 py-1.5 text-center ${isBold ? 'font-bold' : ''}`}>
         {annual.toLocaleString('en-IN')}
       </td>
     </tr>
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[94vh] overflow-hidden shadow-2xl">
+        {/* Ultra Compact Header */}
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 flex justify-between items-center">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">💰</span>
             <div>
-              <h2 className="text-2xl font-bold">Salary Stackup</h2>
-              {isEditing ? (
-                <p className="text-sm text-emerald-100">Editing existing salary breakup (ID: {existingSalaryBreakupId})</p>
-              ) : (
-                <p className="text-sm text-emerald-100">Creating new salary breakup (ID: {newSalaryBreakupId})</p>
-              )}
+              <h2 className="text-base font-bold">Salary Stackup</h2>
+             
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsViewMode(!isViewMode)}
-              className="bg-white text-emerald-700 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition-all flex items-center gap-2"
+              className="bg-white text-emerald-700 px-2.5 py-1 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-all flex items-center gap-1"
             >
               {isViewMode ? (
                 <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+                  <span className="text-sm">✏️</span>
                   Edit
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  View
+                   <Eye className="w-4 h-4" />
+  View
                 </>
               )}
             </button>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <button onClick={onClose} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all">
+              <span className="text-base">✖️</span>
             </button>
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 bg-gray-50">
-          {/* Personal Information */}
-          <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-            <div className="flex items-center mb-4">
-              <svg className="w-7 h-7 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <h3 className="text-xl font-bold text-gray-800">Employee Information</h3>
+        <div className="overflow-y-auto max-h-[calc(94vh-115px)] p-3 bg-gradient-to-br from-gray-50 to-gray-100">
+          {/* Employee Info - Pastel Blue */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm p-3 mb-2.5 border border-blue-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-base">👤</span>
+              <h3 className="text-sm font-bold text-blue-900">Employee Information</h3>
             </div>
-            <div className="border-b border-gray-200 mb-4"></div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
+            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
               <InfoRow label="Name" value={data?.NAME} />
-              <InfoRow label="Case ID" value={data?.CHILD_CASEID} valueColor="text-emerald-600" />
-              <InfoRow label="Job Title" value={data?.JOB_TITLE} />
+              <InfoRow label="Case ID" value={data?.CHILD_CASEID} valueColor="text-blue-700" />
+              <InfoRow label="Job Title" value={data?.DEPT} />
               <InfoRow label="Email" value={data?.EMAIL} />
               <InfoRow label="Phone" value={data?.PHONE_NUMBER} />
-              <InfoRow label="Location" value={data?.PLANT} valueColor="text-blue-600" />
+              <InfoRow label="Location" value={data?.PLANT} valueColor="text-blue-700" />
             </div>
           </div>
 
-          {/* Salary Breakdown */}
-          <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <svg className="w-7 h-7 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <h3 className="text-xl font-bold text-gray-800">Salary Breakdown</h3>
+          {/* Compensation Components - Pastel Green */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl shadow-sm p-3 mb-2.5 border border-emerald-100">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">💵</span>
+                <h3 className="text-sm font-bold text-emerald-900">I. Compensation Components</h3>
               </div>
               {!isViewMode && (
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                  Edit Mode Active
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                  Edit Mode
                 </span>
               )}
             </div>
-            <div className="border-b border-gray-200 mb-4"></div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gradient-to-r from-emerald-50 to-teal-50">
-                    <th className="px-4 py-3 text-left font-bold text-gray-800">Compensation Components</th>
-                    <th className="px-4 py-3 text-center font-bold text-gray-800">Monthly - INR</th>
-                    <th className="px-4 py-3 text-center font-bold text-gray-800">Annual - INR</th>
+                  <tr className="bg-emerald-100 border-b border-emerald-200">
+                    <th className="px-3 py-1.5 text-left font-bold text-emerald-900 text-xs">Component</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-emerald-900 text-xs">Monthly (₹)</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-emerald-900 text-xs">Annual (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Section I - Compensation Components */}
-                  <tr className="bg-emerald-100">
-                    <td colSpan="3" className="px-4 py-2 font-bold text-emerald-900">I. COMPENSATION COMPONENTS</td>
-                  </tr>
-                  <SalaryRow
-                    label="Basic Salary"
-                    field="basic_salary"
-                    monthly={salaryComponents.basic_salary}
-                    annual={salaryComponents.basic_salary * 12}
-                  />
-                  <SalaryRow
-                    label="HRA"
-                    field="hra"
-                    monthly={salaryComponents.hra}
-                    annual={salaryComponents.hra * 12}
-                  />
-                  <SalaryRow
-                    label="Conveyance"
-                    field="conveyance"
-                    monthly={salaryComponents.conveyance}
-                    annual={salaryComponents.conveyance * 12}
-                    isFixed={true}
-                  />
-                  <SalaryRow
-                    label="Education Allowance"
-                    field="education_allowance"
-                    monthly={salaryComponents.education_allowance}
-                    annual={salaryComponents.education_allowance * 12}
-                    isFixed={true}
-                  />
-                  <SalaryRow
-                    label="Special Allowance"
-                    field="special_allowance"
-                    monthly={calculations.special_allowance}
-                    annual={calculations.special_allowance * 12}
-                  />
-                  <SalaryRow
-                    label="GROSS SALARY (sum of 1 to 5)"
-                    field="grossSalary"
-                    monthly={calculations.grossSalary}
-                    annual={calculations.grossSalaryAnnual}
-                    isEditable={false}
-                    isBold={true}
-                    bgColor="bg-emerald-50"
-                  />
-
-                  {/* Section II - Other Benefits */}
-                  <tr className="bg-blue-100">
-                    <td colSpan="3" className="px-4 py-2 font-bold text-blue-900">II. OTHER BENEFITS</td>
-                  </tr>
-                  <SalaryRow
-                    label="Bonus"
-                    field="bonus"
-                    monthly={calculations.bonus}
-                    annual={calculations.bonus * 12}
-                  />
-                  <SalaryRow
-                    label="Leave Travel Allowance"
-                    field="leave_travel_allowance"
-                    monthly={salaryComponents.leave_travel_allowance}
-                    annual={salaryComponents.leave_travel_allowance * 12}
-                  />
-                  <SalaryRow
-                    label="Meal Vouchers"
-                    field="meal_vouchers"
-                    monthly={salaryComponents.meal_vouchers}
-                    annual={salaryComponents.meal_vouchers * 12}
-                  />
-                  <SalaryRow
-                    label="Employer PF Contribution"
-                    field="employer_pf_contribution"
-                    monthly={salaryComponents.employer_pf_contribution}
-                    annual={salaryComponents.employer_pf_contribution * 12}
-                  />
-                  <SalaryRow
-                    label="Employer ESI Contribution"
-                    field="employer_esi_contribution"
-                    monthly={salaryComponents.employer_esi_contribution}
-                    annual={salaryComponents.employer_esi_contribution * 12}
-                    showESINote={true}
-                  />
-
-                  {/* Section III - Deductions */}
-                  <tr className="bg-red-100">
-                    <td colSpan="3" className="px-4 py-2 font-bold text-red-900">III. DEDUCTIONS ON GROSS SALARY</td>
-                  </tr>
-                  <SalaryRow
-                    label="Employee PF Contribution"
-                    field="employee_pf_contribution"
-                    monthly={salaryComponents.employee_pf_contribution}
-                    annual={salaryComponents.employee_pf_contribution * 12}
-                  />
-                  <SalaryRow
-                    label="Employee ESI Contribution"
-                    field="employeeESIContribution"
-                    monthly={salaryComponents.employeeESIContribution}
-                    annual={salaryComponents.employeeESIContribution * 12}
-                    showESINote={true}
-                  />
-                  <SalaryRow
-                    label="Professional Tax"
-                    field="professional_tax"
-                    monthly={salaryComponents.professional_tax}
-                    annual={salaryComponents.professional_tax * 12}
-                  />
-                  <SalaryRow
-                    label="TOTAL DEDUCTIONS (sum of 1 to 3)"
-                    field="totalDeductions"
-                    monthly={calculations.totalDeductions}
-                    annual={calculations.totalDeductionsAnnual}
-                    isEditable={false}
-                    isBold={true}
-                    bgColor="bg-red-50"
-                  />
-
-                  {/* Section IV - Net Salary */}
-                  <tr className="bg-green-100">
-                    <td colSpan="3" className="px-4 py-2 font-bold text-green-900">IV. NET SALARY</td>
-                  </tr>
-                  <SalaryRow
-                    label="NET SALARY (I+II-IV)"
-                    field="netSalary"
-                    monthly={calculations.netSalaryMonthly}
-                    annual={calculations.netSalaryAnnual}
-                    isEditable={false}
-                    isBold={true}
-                    bgColor="bg-green-50"
-                  />
-
-                  {/* Section V - Fixed Cost to Company */}
-                  <tr className="bg-purple-100">
-                    <td colSpan="3" className="px-4 py-2 font-bold text-purple-900">V. FIXED COST TO COMPANY</td>
-                  </tr>
-                  <SalaryRow
-                    label="FIXED COST TO COMPANY"
-                    field="fixedCost"
-                    monthly={offerCTC ? offerCTC / 12 : 0}
-                    annual={offerCTC || 0}
-                    isEditable={false}
-                    isBold={true}
-                    bgColor="bg-purple-50"
-                  />
+                  <SalaryRow label="Basic Salary" field="basic_salary" monthly={salaryComponents.basic_salary} annual={salaryComponents.basic_salary * 12} />
+                  <SalaryRow label="HRA" field="hra" monthly={salaryComponents.hra} annual={salaryComponents.hra * 12} />
+                  <SalaryRow label="Conveyance" field="conveyance" monthly={salaryComponents.conveyance} annual={salaryComponents.conveyance * 12} isFixed={true} />
+                  <SalaryRow label="Education Allow." field="education_allowance" monthly={salaryComponents.education_allowance} annual={salaryComponents.education_allowance * 12} isFixed={true} />
+                  <SalaryRow label="Special Allow." field="special_allowance" monthly={calculations.special_allowance} annual={calculations.special_allowance * 12} />
+                  <SalaryRow label="GROSS SALARY" field="grossSalary" monthly={calculations.grossSalary} annual={calculations.grossSalaryAnnual} isEditable={false} isBold={true} bgColor="bg-emerald-100" />
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Offer CTC Section */}
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl shadow-md p-6 border-2 border-orange-200">
+          {/* Other Benefits - Pastel Purple */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-sm p-3 mb-2.5 border border-purple-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-base">🎁</span>
+              <h3 className="text-sm font-bold text-purple-900">II. Other Benefits</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-purple-100 border-b border-purple-200">
+                    <th className="px-3 py-1.5 text-left font-bold text-purple-900 text-xs">Component</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-purple-900 text-xs">Monthly (₹)</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-purple-900 text-xs">Annual (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <SalaryRow label="Bonus" field="bonus" monthly={calculations.bonus} annual={calculations.bonus * 12} />
+                  <SalaryRow label="LTA" field="leave_travel_allowance" monthly={salaryComponents.leave_travel_allowance} annual={salaryComponents.leave_travel_allowance * 12} />
+                  <SalaryRow label="Meal Vouchers" field="meal_vouchers" monthly={salaryComponents.meal_vouchers} annual={salaryComponents.meal_vouchers * 12} />
+                  <SalaryRow label="Employer PF" field="employer_pf_contribution" monthly={salaryComponents.employer_pf_contribution} annual={salaryComponents.employer_pf_contribution * 12} />
+                  <SalaryRow label="Employer ESI" field="employer_esi_contribution" monthly={salaryComponents.employer_esi_contribution} annual={salaryComponents.employer_esi_contribution * 12} showESINote={true} />
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Deductions - Pastel Red */}
+          <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl shadow-sm p-3 mb-2.5 border border-red-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-base">➖</span>
+              <h3 className="text-sm font-bold text-red-900">III. Deductions</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-red-100 border-b border-red-200">
+                    <th className="px-3 py-1.5 text-left font-bold text-red-900 text-xs">Component</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-red-900 text-xs">Monthly (₹)</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-red-900 text-xs">Annual (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <SalaryRow label="Employee PF" field="employee_pf_contribution" monthly={salaryComponents.employee_pf_contribution} annual={salaryComponents.employee_pf_contribution * 12} />
+                  <SalaryRow label="Employee ESI" field="employeeESIContribution" monthly={salaryComponents.employeeESIContribution} annual={salaryComponents.employeeESIContribution * 12} showESINote={true} />
+                  <SalaryRow label="Professional Tax" field="professional_tax" monthly={salaryComponents.professional_tax} annual={salaryComponents.professional_tax * 12} />
+                  <SalaryRow label="TOTAL DEDUCTIONS" field="totalDeductions" monthly={calculations.totalDeductions} annual={calculations.totalDeductionsAnnual} isEditable={false} isBold={true} bgColor="bg-red-100" />
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Net Salary - Pastel Teal */}
+          <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl shadow-sm p-3 mb-2.5 border border-teal-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-base">✅</span>
+              <h3 className="text-sm font-bold text-teal-900">IV. Net Salary</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-teal-100 border-b border-teal-200">
+                    <th className="px-3 py-1.5 text-left font-bold text-teal-900 text-xs">Component</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-teal-900 text-xs">Monthly (₹)</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-teal-900 text-xs">Annual (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <SalaryRow label="NET SALARY (I+II-III)" field="netSalary" monthly={calculations.netSalaryMonthly} annual={calculations.netSalaryAnnual} isEditable={false} isBold={true} bgColor="bg-teal-100" />
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Fixed CTC - Pastel Amber */}
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl shadow-sm p-3 mb-2.5 border border-amber-100">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-base">💼</span>
+              <h3 className="text-sm font-bold text-amber-900">V. Fixed Cost to Company</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-amber-100 border-b border-amber-200">
+                    <th className="px-3 py-1.5 text-left font-bold text-amber-900 text-xs">Component</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-amber-900 text-xs">Monthly (₹)</th>
+                    <th className="px-3 py-1.5 text-center font-bold text-amber-900 text-xs">Annual (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <SalaryRow label="FIXED CTC" field="fixedCost" monthly={offerCTC ? offerCTC / 12 : 0} annual={offerCTC || 0} isEditable={false} isBold={true} bgColor="bg-amber-100" />
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Offer CTC Input - Pastel Orange */}
+          <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl shadow-sm p-3 border border-orange-100 mb-2.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <svg className="w-8 h-8 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏆</span>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Offer CTC (Per Annum)</h3>
-                  <p className="text-sm text-gray-600">Total cost to company for this position</p>
+                  <h3 className="text-sm font-bold text-orange-900">Offer CTC (Annual)</h3>
+                  <p className="text-[10px] text-orange-700">Total cost to company for this position</p>
                 </div>
               </div>
               <div className="text-right">
@@ -807,78 +731,56 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
                     type="number"
                     value={offerCTC}
                     onChange={(e) => handleOfferCTCChange(parseFloat(e.target.value) || 0)}
-                    className="text-3xl font-bold text-orange-600 border-2 border-orange-300 rounded-xl px-4 py-2 text-right focus:ring-2 focus:ring-orange-500 focus:border-transparent w-64"
+                    className="text-xl font-bold text-orange-700 border-2 border-orange-300 rounded-lg px-3 py-1 text-right focus:ring-2 focus:ring-orange-500 focus:border-transparent w-44"
                   />
                 ) : (
-                  <div className="text-3xl font-bold text-orange-600">
+                  <div className="text-xl font-bold text-orange-700">
                     ₹ {offerCTC.toLocaleString('en-IN')}
                   </div>
                 )}
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-[10px] text-orange-600 mt-0.5">
                   Calculated CTC: ₹ {calculations.fixedCostAnnual.toLocaleString('en-IN')}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Remarks Section */}
-          <div className="bg-white rounded-2xl shadow-md p-6 mt-4">
-            <label className="block font-semibold text-gray-700 mb-2">
-              Remarks / Notes:
-            </label>
+          {/* Remarks - Pastel Gray */}
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl shadow-sm p-3 border border-gray-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-base">📝</span>
+              <label className="block font-semibold text-gray-700 text-xs">Remarks</label>
+            </div>
             <textarea
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              placeholder="Add any remarks or notes here..."
-              rows={3}
-              className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-              // disabled={isViewMode}
+              placeholder="Add remarks..."
+              rows={2}
+              className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
             />
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
-          <div className="text-xs text-gray-600">
-            Last updated: {new Date().toLocaleString('en-IN')}
+        {/* Ultra Compact Footer */}
+        <div className="bg-gray-50 px-3 py-2 flex justify-between items-center border-t border-gray-200">
+          <div className="text-[10px] text-gray-500">
+            {new Date().toLocaleString('en-IN')}
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-all disabled:opacity-50"
-            >
+          <div className="flex gap-1.5">
+            <button onClick={onClose} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-all disabled:opacity-50">
               Cancel
             </button>
-            <button
-              onClick={handlePreviewPDF}
-              disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-all flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              Preview PDF
+            <button onClick={handlePreviewPDF} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 transition-all flex items-center gap-1 disabled:opacity-50">
+              <span className="text-xs">📄</span>
+             Preview PDF
             </button>
-            <button
-              onClick={() => handleSubmit('rejected')}
-              disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-all flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <button onClick={() => handleSubmit('rejected')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-all flex items-center gap-1 disabled:opacity-50">
+              <span className="text-xs">❌</span>
               Reject
             </button>
-            <button
-              onClick={() => handleSubmit('approved')}
-              disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Approve & Submit
+            <button onClick={() => handleSubmit('approved')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all flex items-center gap-1 disabled:opacity-50">
+              <span className="text-xs">✔️</span>
+              Approve
             </button>
           </div>
         </div>
@@ -888,3 +790,4 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 };
 
 export default SalaryStackDetailsModal;
+
