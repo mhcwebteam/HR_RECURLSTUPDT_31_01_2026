@@ -13,6 +13,11 @@ import { useParams } from 'react-router-dom';
 
 const RecruitmentForm = () => {
   const { case_Id } = useParams();
+
+    const [sameAsPermanent, setSameAsPermanent] = useState(null); 
+    const [personalData, setPersonalData] = useState([]);
+
+  
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",
     PLANT: "",
@@ -49,11 +54,12 @@ const RecruitmentForm = () => {
     ESI_NUM: '',
     SRC_TYPE: '',
     SRC_REFER_NAME: '',
+    SRC_REFER_DEPT: '',
     EMER_CONTACT_NUM: '',
     PASSPORT_NUMBER: '',
     PASSPORT_EXPIRY: '',
-    DRIVING_LICENCE: '',
-    DRIVING_LICENCE_EXPIRY: '',
+    DRIVING_LICENSE: '',
+   DRIVING_LICENSE_EXPIRY: '',
     BLOOD_GROUP: '',
     // Education
     SSC_SCHOOL_NAME: '',
@@ -95,9 +101,13 @@ const RecruitmentForm = () => {
     CURRENT_CTC: '',
     EXP_CTC: '',
     AGE: "",
+    address_status: "",
   });
 
-  const [sameAsPermanent, setSameAsPermanent] = useState(null); // null = no selection
+
+ 
+
+// null = no selection
   const [openSections, setOpenSections] = useState({
     basicInfo: true,
     education: false,
@@ -132,7 +142,180 @@ const RecruitmentForm = () => {
   const [errors, setErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
 
+
   const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
+
+
+  
+const EmpVerify = async () => {
+  if (!userToken?.token) return;
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/emp-verify-drftdata`, {
+      headers: { Authorization: `Bearer ${userToken.token}` },
+    });
+
+    console.log("Draft Data Response:", response);
+
+    if (response.data?.success && response.data?.data) {
+      // Filter only draft records
+      const draftRecords = response.data.data.filter(
+        item => item.status?.toLowerCase() == "draft"
+      );
+
+      if (draftRecords.length > 0) {
+     
+        
+        const draftData = draftRecords[0];
+        
+        console.log("Loading draft data:", draftData);
+
+        // Map API fields to form fields
+        setFormData(prev => ({
+          ...prev,
+          CHILD_CASEID: draftData.child_caseid || '',
+          PLANT: draftData.PLANT || '',
+          FIRST_NAME: draftData.name || '',
+          EMAIL: draftData.email || '',
+          PHONE_NUMBER: draftData.phone_number || '',
+          ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
+          GENDER: draftData.GENDER || '',
+          MARITAL_STATUS: draftData.MARITAL_STATUS || '',
+          LANG_KNOWN: draftData.LANG_KNOWN || '',
+          MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
+          DEPT: draftData.DEPT || '',
+          HNO: draftData.HNO || '',
+          CITY: draftData.CITY || '',
+          MANDAL: draftData.MANDAL || '',
+          DISTRICT: draftData.DISTRICT || '',
+          STATE: draftData.STATE || '',
+          PINCODE: draftData.PINCODE || '',
+          PRESENT_HNO: draftData.PRESENT_HNO || '',
+          PRESENT_CITY: draftData.PRESENT_CITY || '',
+          PRESENT_MANDAL: draftData.PRESENT_MANDAL || '',
+          PRESENT_DISTRICT: draftData.PRESENT_DISTRICT || '',
+          PRESENT_STATE: draftData.PRESENT_STATE || '',
+          PRESENT_PINCODE: draftData.PRESENT_PINCODE || '',
+          AADHAR_NUM: draftData.aadhar_number || '',
+          PAN_NUM: draftData.pan_number || '',
+          UAN_NUM: draftData.UAN_NUM || '',
+       '10TH_FILENAME': draftData.documents['10th_certi'] || '',  
+    INTER_FILENAME: draftData.documents.Inter_certi,
+
+  UAN_FILE: draftData.documents?.UAN_FILE || '',
+            
+AADHAR_PATH: draftData.documents?.Aadhar_certi || '',
+
+PAN_PATH:draftData.documents?.Pan_certi || '',
+
+RESUME_UPLOAD: draftData.documents?.RESUME_UPLOAD || '',
+PHOTO: draftData.documents?.photo || '',
+
+
+
+          DOB_ASPER_ADHAR: draftData.DOB_ASPER_ADHAR || '',
+          ESI_NUM: draftData.ESI_NUM || '',
+          SRC_TYPE: draftData.SRC_TYPE || '',
+          SRC_REFER_NAME: draftData.SRC_REFER_NAME || '',
+          SRC_REFER_DEPT: draftData.SRC_REFER_DEPT || '',
+          EMER_CONTACT_NUM: draftData.EMER_CONTACT_NUM || '',
+          PASSPORT_NUMBER: draftData.PASSPORT_NUMBER || '',
+          PASSPORT_EXPIRY: draftData.PASSPORT_EXPIRY || '',
+          DRIVING_LICENSE: draftData.DRIVING_LICENSE || '',
+          DRIVING_LICENSE_EXPIRY: draftData.DRIVING_LICENSE_EXPIRY || '',
+          BLOOD_GROUP: draftData.BLOOD_GROUP || '',
+          SSC_SCHOOL_NAME: draftData.SSC_SCHOOL_NAME || '',
+          SSC_BOARD: draftData.SSC_BOARD || '',
+          SSC_MARKS: draftData.ssc_marks || '',
+        BTECH_FILENAME:draftData?.documents?.Gradu_certi || '',
+
+          SSC_PASSED_YEAR: draftData.SSC_PASSED_YEAR || '',
+          INTER_COLLEGE_NAME: draftData.INTER_COLLEGE_NAME || '',
+          INTER_BOARD: draftData.INTER_BOARD || '',
+          INTER_MARKS: draftData.inter_marks || '',
+          INTER_PASSED_YEAR: draftData.INTER_PASSED_YEAR || '',
+          GRAD_COLLEGE_NAME: draftData.GRAD_COLLEGE_NAME || '',
+          DEGREE_UNIVERSITY: draftData.DEGREE_UNIVERSITY || '',
+          BTECH_MARKS: draftData.btech_marks || '',
+          DEGREE_PASSED_YEAR: draftData.DEGREE_PASSED_YEAR || '',
+          PG_COLLEGE_NAME: draftData.PG_COLLEGE_NAME || '',
+          PG_UNIVERSITY: draftData.PG_UNIVERSITY || '',
+          PG_MARKS: draftData.pg_marks || '',
+          PG_PASSED_YEAR: draftData.PG_PASSED_YEAR || '',
+           PG_FILENAME: draftData.documents.Pg_certi || '',
+
+            PHD_FILENAME: draftData.documents.PHD_FILENAME || '',
+            OTHER_FILENAME: draftData.documents.OTHER_FILENAME || '',
+          PHD_COLLEGE_NAME: draftData.PHD_COLLEGE_NAME || '',
+          PHD_UNIVERSITY: draftData.PHD_UNIVERSITY || '',
+          PHD_MARKS: draftData.PHD_MARKS || '',
+          PHD_PASSED_YEAR: draftData.PHD_PASSED_YEAR || '',
+          OTHER_COLLEGE_NAME: draftData.OTHER_COLLEGE_NAME || '',
+          OTHER_UNIVERSITY: draftData.OTHER_UNIVERSITY || '',
+          OTHER_MARKS: draftData.OTHER_MARKS || '',
+          OTHER_PASSED_YEAR: draftData.OTHER_PASSED_YEAR || '',
+          CURRENT_CTC: draftData.current_ctc || '',
+          EXP_CTC: draftData.expected_ctc || '',
+          AGE: draftData.AGE || '',
+
+        }));
+
+        // Set sameAsPermanent based on DESIG field
+        if (draftData.address_status === "YES") {
+          setSameAsPermanent(true);
+        } else if (draftData.address_status === "NO") {
+          setSameAsPermanent(false);
+        }
+
+        // Load experience data if available
+        if (draftData.experienceData && draftData.experienceData.length > 0) {
+          const mappedExperiences = draftData.experienceData.map((exp, index) => ({
+            id: Date.now() + index,
+            COMPANY_NAME: exp.COMPANY_NAME || '',
+            DESIGNATION: exp.DESIGNATION || '',
+            FROM_DATE: exp.START_DATE || '',
+            TO_DATE: exp.END_DATE || (() => {
+              const today = new Date();
+              const year = today.getFullYear();
+              const month = String(today.getMonth() + 1).padStart(2, '0');
+              const day = String(today.getDate()).padStart(2, '0');
+              return `${year}-${month}-${day}`;
+            })(),
+            DURATION: exp.EXPERIENCE_YEARS || '',
+            CURRENT_CTC: draftData.current_ctc || '',
+            EXP_CTC: draftData.expected_ctc || '',
+            NOTICE_PERIOD: exp.NOTICE_PERIOD || '',
+            PAYSLIPS: exp.payslips?.map(p => p.PAYSLIP_FILE) || [],
+            RELIEVING_LETTER: exp.RELIVING_LETTER_DOC || null,
+            OFFER_LETTER: exp.OFFER_LETTER_DOC || null,
+            EXP_LETTER: exp.EXPERIENCE_DOC || null,
+            BANK_STATEMENTS: exp.BANK_STATEMENT_DOC ? [exp.BANK_STATEMENT_DOC] : [],
+            isCurrent: exp.END_DATE === new Date().toISOString().split('T')[0] || !exp.END_DATE
+          }));
+          
+          setExperiences(mappedExperiences);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching verify data", err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to load draft data',
+    });
+  }
+};
+
+useEffect(() => {
+  EmpVerify();
+}, [userToken?.token]);
+
+  useEffect(() => {
+    EmpVerify();
+  }, [userToken?.token]);
+
+
 
   useEffect(() => {
     if (userToken?.Emp_Id) {
@@ -158,6 +341,14 @@ const RecruitmentForm = () => {
     return age;
   };
 
+
+
+
+
+
+
+
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -180,35 +371,86 @@ const RecruitmentForm = () => {
     }
   };
 
+
   const handleFileChange = (e) => {
-    const { name, files } = e.target;
+  const { name, files } = e.target;
+  const file = files[0];
+  console.log(file,"fileeeeeeeeeeeeee4444444444");
+  if (!file) return;
 
-    if (showErrors && errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+  // clear error on change
+  if (showErrors && errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: "" }));
+  }
 
-    const maxSizeRegular = 2 * 1024 * 1024;
-    const maxSizePayslips = 4 * 1024 * 1024;
+  // ---------- CONFIG ----------
+  const photoFields = ["PHOTO"]; // add more if needed
+  const isPhoto = photoFields.includes(name);
 
-    const file = files[0];
-    if (!file) return;
+  const maxPhotoSize = 50 * 1024; // 50 KB
+  const maxPdfSize =  200 * 1024 ; // 1 MB
+  const maxLargePdfSize = 500 * 1024; // 2
 
-    if (file.type !== 'application/pdf') {
-      Swal.fire({ title: "Invalid File Type", text: "Only PDF files are allowed", icon: "error" });
-      e.target.value = '';
+  // ---------- PHOTO VALIDATION ----------
+  if (isPhoto) {
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      Swal.fire({
+        title: "Invalid File Type",
+        text: "Only JPG, JPEG, or PNG images are allowed",
+        icon: "error",
+      });
+      e.target.value = "";
       return;
     }
 
-    const maxSize = (name === 'PAYSLIPS' || name === 'BANK_STATEMENTS') ? maxSizePayslips : maxSizeRegular;
+    if (file.size > maxPhotoSize) {
+      Swal.fire({
+        title: "File Too Large",
+        text: "Photo size must be less than 50 KB",
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+  }
+
+  // ---------- PDF VALIDATION ----------
+  if (!isPhoto) {
+    if (file.type !== "application/pdf") {
+      Swal.fire({
+        title: "Invalid File Type",
+        text: "Only PDF files are allowed",
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    const maxSize =
+      name === "PAYSLIPS" || name === "BANK_STATEMENTS"
+        ? maxLargePdfSize
+        : maxPdfSize;
 
     if (file.size > maxSize) {
-      Swal.fire({ title: "File Too Large", text: `File size must be less than ${maxSize === maxSizePayslips ? '4MB' : '2MB'}`, icon: "error" });
-      e.target.value = '';
+      Swal.fire({
+        title: "File Too Large",
+        text: `File size must be less than ${
+          maxSize === maxLargePdfSize ? "500kb" : "200kb"
+        }`,
+        icon: "error",
+      });
+      e.target.value = "";
       return;
     }
+  }
 
-    setFormData(prev => ({ ...prev, [name]: file }));
-  };
+  // ---------- SAVE FILE ----------
+  setFormData(prev => ({ ...prev, [name]: file }));
+};
+
+
 
   const handleRemoveFile = (name) => {
     setFormData(prev => ({ ...prev, [name]: null }));
@@ -287,7 +529,7 @@ const RecruitmentForm = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const maxSize = (field === 'PAYSLIPS' || field === 'BANK_STATEMENTS') ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
+    const maxSize = (field === 'PAYSLIPS' || field === 'BANK_STATEMENTS') ? 500 * 1024 : 200 * 1024;
     const isMultiple = field === 'PAYSLIPS' || field === 'BANK_STATEMENTS';
 
     if (isMultiple) {
@@ -300,7 +542,7 @@ const RecruitmentForm = () => {
           return;
         }
         if (file.size > maxSize) {
-          invalidFiles.push(`${file.name} - File size must be less than 4MB`);
+          invalidFiles.push(`File size must be less than 500kb`);
           return;
         }
         validFiles.push(file);
@@ -309,7 +551,7 @@ const RecruitmentForm = () => {
       if (invalidFiles.length > 0) {
         Swal.fire({
           title: "Invalid Files",
-          html: `<ul style="text-align:left">${invalidFiles.map(err => `<li>• ${err}</li>`).join("")}</ul>`,
+            text: "File size must be less than 500KB",
           icon: "error",
         });
         e.target.value = '';
@@ -338,7 +580,7 @@ const RecruitmentForm = () => {
       if (file.size > maxSize) {
         Swal.fire({
           title: "File Too Large",
-          text: "File size must be less than 2MB",
+          text: "File size must be less than 200KB",
           icon: "error",
         });
         e.target.value = '';
@@ -358,6 +600,81 @@ const RecruitmentForm = () => {
       });
     }
   };
+
+
+  const handleDraft  = async () => {
+
+
+
+
+
+      
+    const data = new FormData();
+
+    // Add form data fields - only include File objects and regular strings (not file paths)
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!value) return;
+
+      // If it's a File object (new upload), append it
+      if (value instanceof File) {
+        data.append(key, value);
+      }
+      // If it's a string that does NOT look like a file path, append it as a regular field
+      else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
+        data.append(key, String(value));
+      }
+      // If it's a string that is a file path (existing file), skip it - we don't send it
+      // The backend should keep the existing file
+    });
+
+
+  data.append('status', "draft");
+
+
+//   data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
+// data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
+// data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
+// data.append('EMAIL', formData.EMAIL || '');
+
+   const experiencesArray = experiences.map((exp, index) => {
+        const experienceObj = {
+          companyname: exp.COMPANY_NAME || '',
+          designation: exp.DESIGNATION || '',
+          fromdate: exp.FROM_DATE || '',
+          todate: exp.TO_DATE || '',
+          duration: exp.DURATION || '',
+          currentCTC: exp.CURRENT_CTC || '',
+          expectedCTC: exp.EXP_CTC || '',
+          stage: index,
+          isCurrent: exp.isCurrent || false
+        };
+
+        if (exp.isCurrent) {
+          experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+          experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
+          experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
+          experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
+          experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
+          experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
+        }
+
+        return experienceObj;
+      });
+
+      data.append('experiences', JSON.stringify(experiencesArray));
+
+
+          const response = await axios.post(
+       `${API_BASE_URL}/recruitStore`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken.token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+  }
 
   const handleExperienceRemoveFile = (id, field, index = null) => {
     setExperiences(prev => prev.map(exp => {
@@ -412,11 +729,15 @@ const RecruitmentForm = () => {
     if (!formData.MARITAL_STATUS) newErrors.MARITAL_STATUS = "Marital Status is required";
     if (!formData.LANG_KNOWN?.trim()) newErrors.LANG_KNOWN = "Languages Known is required";
     if (!formData.MOTHER_TONGUE?.trim()) newErrors.MOTHER_TONGUE = "Mother Tongue is required";
+
+        if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
     if (!formData.EMAIL?.trim()) {
       newErrors.EMAIL = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.EMAIL)) {
       newErrors.EMAIL = "Invalid email format";
     }
+
+    
     if (!formData.PHONE_NUMBER?.trim()) {
       newErrors.PHONE_NUMBER = "Phone Number is required";
     } else if (formData.PHONE_NUMBER.length !== 10) {
@@ -433,7 +754,7 @@ const RecruitmentForm = () => {
     // Permanent Address
     if (!formData.HNO?.trim()) newErrors.HNO = "House No/Street is required";
     if (!formData.CITY?.trim()) newErrors.CITY = "City is required";
-    if (!formData.MANDAL?.trim()) newErrors.MANDAL = "Mandal is required";
+
     if (!formData.DISTRICT?.trim()) newErrors.DISTRICT = "District is required";
     if (!formData.STATE?.trim()) newErrors.STATE = "State is required";
     if (!formData.PINCODE?.trim()) newErrors.PINCODE = "Pincode is required";
@@ -442,7 +763,6 @@ const RecruitmentForm = () => {
     if (sameAsPermanent !== true) {
       if (!formData.PRESENT_HNO?.trim()) newErrors.PRESENT_HNO = "House No/Street is required";
       if (!formData.PRESENT_CITY?.trim()) newErrors.PRESENT_CITY = "City is required";
-      if (!formData.PRESENT_MANDAL?.trim()) newErrors.PRESENT_MANDAL = "Mandal is required";
       if (!formData.PRESENT_DISTRICT?.trim()) newErrors.PRESENT_DISTRICT = "District is required";
       if (!formData.PRESENT_STATE?.trim()) newErrors.PRESENT_STATE = "State is required";
       if (!formData.PRESENT_PINCODE?.trim()) newErrors.PRESENT_PINCODE = "Pincode is required";
@@ -462,11 +782,18 @@ const RecruitmentForm = () => {
     if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_NAME?.trim()) {
       newErrors.SRC_REFER_NAME = "Reference Name is required";
     }
+
+       if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_DEPT?.trim()) {
+      newErrors.SRC_REFER_DEPT = "Reference dept is required";
+    }
+
+
+
     if (formData.PASSPORT_NUMBER?.trim() && !formData.PASSPORT_EXPIRY) {
       newErrors.PASSPORT_EXPIRY = "Passport Expiry date is required";
     }
-    if (formData.DRIVING_LICENCE?.trim() && !formData.DRIVING_LICENCE_EXPIRY) {
-      newErrors.DRIVING_LICENCE_EXPIRY = "Licence Expiry date is required";
+    if (formData.DRIVING_LICENSE?.trim() && !formData.DRIVING_LICENSE) {
+      newErrors.DRIVING_LICENSE_EXPIRY = "Licence Expiry date is required";
     }
 
     // Education (mandatory)
@@ -509,125 +836,329 @@ const RecruitmentForm = () => {
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const validationErrors = validateForm();
+  const validationErrors = validateForm();
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      setShowErrors(true);
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    setShowErrors(true);
 
-      const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
-      if (firstErrorField) {
-        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      Swal.fire({
-        title: "Validation Error",
-        text: "Please fill all required fields correctly",
-        icon: "error",
-      });
-      return;
+    const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+    if (firstErrorField) {
+      firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    const result = await Swal.fire({
-      title: "Confirm Submission",
-      text: "Are you sure you want to submit this form?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Submit!",
-      cancelButtonText: "No, Cancel"
+    Swal.fire({
+      title: "Validation Error",
+      text: "Please fill all required fields correctly",
+      icon: "error",
+    });
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: "Confirm Submission",
+    text: "Are you sure you want to submit this form?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Submit!",
+    cancelButtonText: "No, Cancel"
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    Swal.fire({
+      title: "Processing...",
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      }
     });
 
-    if (!result.isConfirmed) return;
+    const data = new FormData();
 
-    try {
-      Swal.fire({
-        title: "Processing...",
-        showConfirmButton: false,
-        allowOutsideClick: false,
-        willOpen: () => {
-          Swal.showLoading();
-        }
-      });
+    // Add form data fields - only include File objects and regular strings (not file paths)
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!value) return;
 
-      const data = new FormData();
-
-      Object.entries(formData).forEach(([key, value]) => {
-        if (!value) return;
-        if (value instanceof File) {
-          data.append(key, value);
-        } else {
-          data.append(key, String(value));
-        }
-      });
-
-      const experiencesArray = experiences.map((exp, index) => {
-        const experienceObj = {
-          companyname: exp.COMPANY_NAME || '',
-          designation: exp.DESIGNATION || '',
-          fromdate: exp.FROM_DATE || '',
-          todate: exp.TO_DATE || '',
-          duration: exp.DURATION || '',
-          currentCTC: exp.CURRENT_CTC || '',
-          expectedCTC: exp.EXP_CTC || '',
-          stage: index,
-          isCurrent: exp.isCurrent || false
-        };
-
-        if (exp.isCurrent) {
-          experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-          experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
-          experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
-          experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
-          experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
-          experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
-        }
-
-        return experienceObj;
-      });
-
-      data.append('experiences', JSON.stringify(experiencesArray));
-
-      const response = await axios.post(
-        `${API_BASE_URL}/recruitStore`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      Swal.close();
-
-      if (response.data.success) {
-        await Swal.fire({
-          title: "Success",
-          text: "Recruitment data updated successfully",
-          icon: "success",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-
-        resetForm();
-      } else {
-        await Swal.fire("Failed", response.data.message, "error");
+      // If it's a File object (new upload), append it
+      if (value instanceof File) {
+        data.append(key, value);
       }
-    } catch (error) {
-      Swal.close();
-      console.error(error);
-      await Swal.fire(
-        "Error",
-        error.response?.data?.message || "Something went wrong",
-        "error"
-      );
+      // If it's a string that does NOT look like a file path, append it as a regular field
+      else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
+        data.append(key, String(value));
+      }
+      // If it's a string that is a file path (existing file), skip it - we don't send it
+      // The backend should keep the existing file
+    });
+
+    // Add status and other fields that might be missing
+    data.append('status', "submit");
+
+
+    // Process experiences (similar logic)
+    const experiencesArray = experiences.map((exp, index) => {
+      const experienceObj = {
+        companyname: exp.COMPANY_NAME || '',
+        designation: exp.DESIGNATION || '',
+        fromdate: exp.FROM_DATE || '',
+        todate: exp.TO_DATE || '',
+        duration: exp.DURATION || '',
+        currentCTC: exp.CURRENT_CTC || '',
+        expectedCTC: exp.EXP_CTC || '',
+        stage: index,
+        isCurrent: exp.isCurrent || false
+      };
+
+      if (exp.isCurrent) {
+        experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+        
+        // Pay slips: if they are File objects, append; if they are strings (existing), skip
+        experienceObj.payslips = [];
+        if (exp.PAYSLIPS && exp.PAYSLIPS.length > 0) {
+          exp.PAYSLIPS.forEach((file, i) => {
+            if (file instanceof File) {
+              const fileName = `PAYSLIP_${index}_${i}_${file.name}`;
+              data.append(`PAYSLIPS_${index}_${i}`, file);
+              experienceObj.payslips.push({ filename: fileName });
+            } else if (typeof file === 'string') {
+              // Existing file - we don't upload again, just record its name
+              experienceObj.payslips.push({ filename: file.split('/').pop() });
+            }
+          });
+        }
+
+        // Bank statements
+        experienceObj.bank_statements = [];
+        if (exp.BANK_STATEMENTS && exp.BANK_STATEMENTS.length > 0) {
+          exp.BANK_STATEMENTS.forEach((file, i) => {
+            if (file instanceof File) {
+              const fileName = `BANK_STMT_${index}_${i}_${file.name}`;
+              data.append(`BANK_STATEMENTS_${index}_${i}`, file);
+              experienceObj.bank_statements.push({ filename: fileName });
+            } else if (typeof file === 'string') {
+              experienceObj.bank_statements.push({ filename: file.split('/').pop() });
+            }
+          });
+        }
+
+        // Single files
+        if (exp.RELIEVING_LETTER instanceof File) {
+          const fileName = `RELIEVING_${index}_${exp.RELIEVING_LETTER.name}`;
+          data.append(`RELIEVING_LETTER_${index}`, exp.RELIEVING_LETTER);
+          experienceObj.relieving_letter = fileName;
+        } else if (typeof exp.RELIEVING_LETTER === 'string') {
+          experienceObj.relieving_letter = exp.RELIEVING_LETTER.split('/').pop();
+        }
+
+        if (exp.OFFER_LETTER instanceof File) {
+          const fileName = `OFFER_${index}_${exp.OFFER_LETTER.name}`;
+          data.append(`OFFER_LETTER_${index}`, exp.OFFER_LETTER);
+          experienceObj.offer_letter = fileName;
+        } else if (typeof exp.OFFER_LETTER === 'string') {
+          experienceObj.offer_letter = exp.OFFER_LETTER.split('/').pop();
+        }
+
+        if (exp.EXP_LETTER instanceof File) {
+          const fileName = `EXP_${index}_${exp.EXP_LETTER.name}`;
+          data.append(`EXP_LETTER_${index}`, exp.EXP_LETTER);
+          experienceObj.exp_letter = fileName;
+        } else if (typeof exp.EXP_LETTER === 'string') {
+          experienceObj.exp_letter = exp.EXP_LETTER.split('/').pop();
+        }
+      }
+
+      return experienceObj;
+    });
+
+    data.append('experiences', JSON.stringify(experiencesArray));
+
+    // Log what we're sending for debugging
+    console.log('Submitting FormData with entries:');
+    for (let [key, value] of data.entries()) {
+      if (value instanceof File) {
+        console.log(key, 'File:', value.name);
+      } else {
+        console.log(key, value);
+      }
     }
-  };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/recruitStore`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    Swal.close();
+
+    if (response.data.success) {
+      await Swal.fire({
+        title: "Success",
+        text: "Recruitment data updated successfully",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // Optionally reset or redirect
+    } else {
+      await Swal.fire("Failed", response.data.message, "error");
+    }
+  } catch (error) {
+    Swal.close();
+    console.error(error);
+    await Swal.fire(
+      "Error",
+      error.response?.data?.message || "Something went wrong",
+      "error"
+    );
+  }
+};
+
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     const validationErrors = validateForm();
+
+//     if (Object.keys(validationErrors).length > 0) {
+//       setErrors(validationErrors);
+//       setShowErrors(true);
+
+//       const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+//       if (firstErrorField) {
+//         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+//       }
+
+//       Swal.fire({
+//         title: "Validation Error",
+//         text: "Please fill all required fields correctly",
+//         icon: "error",
+//       });
+//       return;
+//     }
+
+//     const result = await Swal.fire({
+//       title: "Confirm Submission",
+//       text: "Are you sure you want to submit this form?",
+//       icon: "question",
+//       showCancelButton: true,
+//       confirmButtonColor: "#3085d6",
+//       cancelButtonColor: "#d33",
+//       confirmButtonText: "Yes, Submit!",
+//       cancelButtonText: "No, Cancel"
+//     });
+
+//     if (!result.isConfirmed) return;
+
+//     try {
+//       Swal.fire({
+//         title: "Processing...",
+//         showConfirmButton: false,
+//         allowOutsideClick: false,
+//         willOpen: () => {
+//           Swal.showLoading();
+//         }
+//       });
+
+//       const data = new FormData();
+
+//       Object.entries(formData).forEach(([key, value]) => {
+//         if (!value) return;
+//         if (value instanceof File) {
+//           data.append(key, value);
+//         } else {
+//           data.append(key, String(value));
+//         }
+//       });
+
+//       const experiencesArray = experiences.map((exp, index) => {
+//         const experienceObj = {
+//           companyname: exp.COMPANY_NAME || '',
+//           designation: exp.DESIGNATION || '',
+//           fromdate: exp.FROM_DATE || '',
+//           todate: exp.TO_DATE || '',
+//           duration: exp.DURATION || '',
+//           currentCTC: exp.CURRENT_CTC || '',
+//           expectedCTC: exp.EXP_CTC || '',
+//           stage: index,
+//           isCurrent: exp.isCurrent || false
+//         };
+
+//         if (exp.isCurrent) {
+//           experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+//           experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
+//           experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
+//           experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
+//           experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
+//           experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
+//         }
+
+//         return experienceObj;
+//       });
+
+//       data.append('experiences', JSON.stringify(experiencesArray));
+
+// // data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
+// // data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
+// // data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
+// // data.append('EMAIL', formData.EMAIL || '');
+
+
+//       data.append('status', "submit")
+
+//    data.append('address_status', sameAsPermanent ? "YES" : "NO");
+
+
+
+//       const response = await axios.post(
+//        `${API_BASE_URL}/recruitStore`,
+//         data,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${userToken.token}`,
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       Swal.close();
+
+//       if (response.data.success) {
+//         await Swal.fire({
+//           title: "Success",
+//           text: "Recruitment data updated successfully",
+//           icon: "success",
+//           timer: 1500,
+//           showConfirmButton: false,
+//         });
+
+//         // resetForm();
+//       } else {
+//         await Swal.fire("Failed", response.data.message, "error");
+//       }
+//     } catch (error) {
+//       Swal.close();
+//       console.error(error);
+//       await Swal.fire(
+//         "Error",
+//         error.response?.data?.message || "Something went wrong",
+//         "error"
+//       );
+//     }
+//   };
 
   const resetForm = () => {
     setFormData({
@@ -636,6 +1167,7 @@ const RecruitmentForm = () => {
       FIRST_NAME: '',
       LAST_NAME: '',
       EMAIL: '',
+          ADDRSS_STATUS: "",
       PHONE_NUMBER: '',
       ORIGINAL_DOB: '',
       GENDER: '',
@@ -663,11 +1195,12 @@ const RecruitmentForm = () => {
       ESI_NUM: '',
       SRC_TYPE: '',
       SRC_REFER_NAME: '',
+      SRC_REFER_DEPT: '',
       EMER_CONTACT_NUM: '',
       PASSPORT_NUMBER: '',
       PASSPORT_EXPIRY: '',
-      DRIVING_LICENCE: '',
-      DRIVING_LICENCE_EXPIRY: '',
+      DRIVING_LICENSE: '',
+      DRIVING_LICENSE_EXPIRY: '',
       BLOOD_GROUP: '',
       SSC_SCHOOL_NAME: '',
       SSC_BOARD: '',
@@ -706,6 +1239,7 @@ const RecruitmentForm = () => {
       CURRENT_CTC: '',
       EXP_CTC: '',
       AGE: '',
+      HIGHEST_QUA: '',
     });
     setExperiences([
       {
@@ -761,76 +1295,84 @@ const RecruitmentForm = () => {
   };
 
   // Table file upload component for education rows
-  const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error }) => {
-    const inputRef = React.useRef();
+ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error }) => {
+  const inputRef = React.useRef();
 
-    const handleChange = (e) => {
-      onChange(e);
-    };
+  const getFileNameFromPath = (path) => {
+    if (!path) return null;
+    if (typeof path === 'string') {
+      const parts = path.split('/');
+      return parts[parts.length - 1];
+    }
+    return path?.name; // File object
+  };
 
-    const handleRemove = () => {
-      if (inputRef.current) inputRef.current.value = '';
-      onRemove(name);
-    };
+  const handleChange = (e) => onChange(e);
+  const handleRemove = () => {
+    if (inputRef.current) inputRef.current.value = '';
+    onRemove(name);
+  };
 
-    return (
-      <div>
-        <label style={{ cursor: 'pointer' }}>
-          <input
-            ref={inputRef}
-            type="file"
-            name={name}
-            accept="application/pdf"
-            onChange={handleChange}
-            style={{ display: 'none' }}
-          />
-          <span
+  const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
+
+  return (
+    <div>
+      <label style={{ cursor: 'pointer' }}>
+        <input
+          ref={inputRef}
+          type="file"
+          name={name}
+          accept="application/pdf"
+          onChange={handleChange}
+          style={{ display: 'none' }}
+        />
+        <span
+          style={{
+            padding: '4px 8px',
+            background: selectedFile ? '#10b981' : '#3b82f6',
+            color: 'white',
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontWeight: '600',
+            display: 'inline-block',
+            cursor: 'pointer'
+          }}
+        >
+          {selectedFile ? '📎 File' : '📁 Upload'}
+        </span>
+      </label>
+
+      {selectedFile && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+          <span style={{ fontSize: '9px', color: '#1e40af', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {fileName}
+          </span>
+          <button
+            type="button"
+            onClick={handleRemove}
             style={{
-              padding: '4px 8px',
-              background: selectedFile ? '#10b981' : '#3b82f6',
+              background: '#ef4444',
               color: 'white',
-              borderRadius: '4px',
-              fontSize: '10px',
-              fontWeight: '600',
-              display: 'inline-block',
-              cursor: 'pointer'
+              border: 'none',
+              borderRadius: '50%',
+              width: '16px',
+              height: '16px',
+              fontSize: '9px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0
             }}
           >
-            {selectedFile ? '📎 File' : '📁 Upload'}
-          </span>
-        </label>
-
-        {selectedFile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-            <span style={{ fontSize: '9px', color: '#1e40af', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {selectedFile.name}
-            </span>
-            <button
-              type="button"
-              onClick={handleRemove}
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '50%',
-                width: '16px',
-                height: '16px',
-                fontSize: '9px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
-      </div>
-    );
-  };
+            ✕
+          </button>
+        </div>
+      )}
+      {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
+    </div>
+  );
+};
 
   return (
     <div style={{
@@ -965,12 +1507,24 @@ const RecruitmentForm = () => {
                   <InputField label={<>DOB (as per Aadhar) <span style={{ color: '#ef4444' }}>*</span></>} name="DOB_ASPER_ADHAR" type="date" value={formData.DOB_ASPER_ADHAR} onChange={handleInputChange} error={showErrors ? errors.DOB_ASPER_ADHAR : ''} />
                   <InputField label="Age" name="AGE" value={formData.AGE} disabled />
 
+               <InputField label={<>Highest Qualification <span style={{ color: '#ef4444' }}>*</span></>} name="HIGHEST_QUA" value={formData.HIGHEST_QUA} onChange={handleInputChange} error={showErrors ? errors.HIGHEST_QUA : ''} />
+
                   <InputField label={<>Aadhaar Number <span style={{ color: "#ef4444" }}>*</span></>} name="AADHAR_NUM" value={formData.AADHAR_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "AADHAR_NUM", value: val } }); }} error={showErrors ? errors.AADHAR_NUM : ""} />
                   <InputField label={<>PAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="PAN_NUM" value={formData.PAN_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PAN_NUM", value: val } }); }} error={showErrors ? errors.PAN_NUM : ""} />
                   <InputField label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="UAN_NUM" value={formData.UAN_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "UAN_NUM", value: val } }); }} error={showErrors ? errors.UAN_NUM : ""} />
 
-                  {(formData.UAN_NUM || '').length === 12 && (
-                    <FileUpload label={<>UAN Document <span style={{ color: '#ef4444' }}>*</span></>} name="UAN_FILE" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.UAN_FILE} error={showErrors ? errors.UAN_FILE : ''} />
+                  {
+                  (formData.UAN_NUM || '').length == 12 && (
+                    
+                    <FileUpload 
+                    label={<>UAN Document 
+                    <span style={{ color: '#ef4444' }}>*</span></>} 
+                    name="UAN_FILE" onChange={handleFileChange}
+                     onRemove={handleRemoveFile} 
+                     selectedFile={formData.UAN_FILE} 
+                     error={showErrors ? errors.UAN_FILE : ''} />
+         
+                  
                   )}
 
                   <InputField label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} name="ESI_NUM" value={formData.ESI_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "ESI_NUM", value: val } }); }} error={showErrors ? errors.ESI_NUM : ""} />
@@ -999,6 +1553,7 @@ const RecruitmentForm = () => {
                   </div>
 
                   {formData.SRC_TYPE === "reference" && (
+                    <>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
                         Reference Name <span style={{ color: '#ef4444' }}>*</span>
@@ -1007,7 +1562,24 @@ const RecruitmentForm = () => {
                         style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_NAME ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
                       />
                       {showErrors && errors.SRC_REFER_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_NAME}</p>}
+
+                      
                     </div>
+
+                          <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                      DEPT(Referal Person) <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input type="text" name="SRC_REFER_DEPT" value={formData.SRC_REFER_DEPT || ''} onChange={handleInputChange} placeholder="Enter reference dept"
+                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_DEPT ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
+                      />
+                      {showErrors && errors.SRC_REFER_DEPT && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_DEPT}</p>}
+
+                      
+                    </div>
+
+</>
+
                   )}
 
                   <div>
@@ -1049,17 +1621,17 @@ const RecruitmentForm = () => {
                     </div>
                   )}
 
-                  <InputField label="Driving Licence Number" name="DRIVING_LICENCE" value={formData.DRIVING_LICENCE} maxLength={16} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENCE", value: val } }); }} error={showErrors ? errors.DRIVING_LICENCE : ''} />
+                  <InputField label="Driving Licence Number" name="DRIVING_LICENSE" value={formData.DRIVING_LICENSE} maxLength={16} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENSE", value: val } }); }} error={showErrors ? errors.DRIVING_LICENSE : ''} />
 
-                  {(formData.DRIVING_LICENCE || '').length > 0 && (
+                  {(formData.DRIVING_LICENSE || '').length > 0 && (
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
                         Driving Licence Expiry Date <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <input type="date" name="DRIVING_LICENCE_EXPIRY" value={formData.DRIVING_LICENCE_EXPIRY || ''} onChange={handleInputChange}
-                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENCE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
+                      <input type="date" name="DRIVING_LICENSE_EXPIRY" value={formData.DRIVING_LICENSE_EXPIRY || ''} onChange={handleInputChange}
+                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENSE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
                       />
-                      {showErrors && errors.DRIVING_LICENCE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENCE_EXPIRY}</p>}
+                      {showErrors && errors.DRIVING_LICENSE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENSE_EXPIRY}</p>}
                     </div>
                   )}
                 </div>
@@ -1076,7 +1648,7 @@ const RecruitmentForm = () => {
                     <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
                       {[
                         { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
-                        { name: 'CITY', label: 'City', err: errors.CITY },
+                        { name: 'CITY', label: 'Village / City', err: errors.CITY },
                         { name: 'MANDAL', label: 'Mandal', err: errors.MANDAL },
                         { name: 'DISTRICT', label: 'District', err: errors.DISTRICT },
                         { name: 'STATE', label: 'State', err: errors.STATE },
@@ -1109,7 +1681,7 @@ const RecruitmentForm = () => {
                     <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <input
                         type="radio"
-                        name="sameAddress"
+                        name="address_status"
                         checked={sameAsPermanent === true}
                         onChange={() => {
                           setSameAsPermanent(true);
@@ -1128,7 +1700,7 @@ const RecruitmentForm = () => {
                     <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <input
                         type="radio"
-                        name="sameAddress"
+                        name="address_status"
                         checked={sameAsPermanent === false}
                         onChange={() => {
                           setSameAsPermanent(false);
@@ -1156,7 +1728,7 @@ const RecruitmentForm = () => {
                     <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
                       {[
                         { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
-                        { name: 'PRESENT_CITY', label: 'City', err: errors.PRESENT_CITY },
+                        { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
                         { name: 'PRESENT_MANDAL', label: 'Mandal', err: errors.PRESENT_MANDAL },
                         { name: 'PRESENT_DISTRICT', label: 'District', err: errors.PRESENT_DISTRICT },
                         { name: 'PRESENT_STATE', label: 'State', err: errors.PRESENT_STATE },
@@ -1208,7 +1780,16 @@ const RecruitmentForm = () => {
                   <FileUpload label={<>Aadhaar Card <span style={{ color: '#ef4444' }}>*</span></>} name="AADHAR_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.AADHAR_PATH} error={showErrors ? errors.AADHAR_PATH : ''} />
                   <FileUpload label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} name="RESUME_UPLOAD" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.RESUME_UPLOAD} error={showErrors ? errors.RESUME_UPLOAD : ''} />
                   <FileUpload label={<>PAN Card <span style={{ color: '#ef4444' }}>*</span></>} name="PAN_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PAN_PATH} error={showErrors ? errors.PAN_PATH : ''} />
-                  <FileUpload label={<>Photo <span style={{ color: '#ef4444' }}>*</span></>} name="PHOTO" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PHOTO} error={showErrors ? errors.PHOTO : ''} />
+
+                  <FileUpload
+  label={<>Photo <span style={{ color: "#ef4444" }}>*</span></>}
+  name="PHOTO"
+  accept=".jpg,.jpeg,.png"
+  onChange={handleFileChange}
+  selectedFile={formData.PHOTO}
+  error={showErrors ? errors.PHOTO : ""}
+/>
+                 
                 </div>
               </>
             )}
@@ -1490,11 +2071,11 @@ const RecruitmentForm = () => {
                       <FileUp size={13} color="#0f3f8b" />
                       Document Uploads
                     </div>
-                    <ExperienceFileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} multiple={true} maxSize="4MB" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} />
+                    <ExperienceFileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} />
                     <ExperienceFileUpload label="Offer Letter" name={`exp_${exp.id}_OFFER_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'OFFER_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'OFFER_LETTER')} selectedFiles={exp.OFFER_LETTER ? [exp.OFFER_LETTER] : []} />
                     <ExperienceFileUpload label="Relieving Letter" name={`exp_${exp.id}_RELIEVING_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'RELIEVING_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'RELIEVING_LETTER')} selectedFiles={exp.RELIEVING_LETTER ? [exp.RELIEVING_LETTER] : []} />
                     <ExperienceFileUpload label="Experience Letter" name={`exp_${exp.id}_EXP_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'EXP_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'EXP_LETTER')} selectedFiles={exp.EXP_LETTER ? [exp.EXP_LETTER] : []} />
-                    <ExperienceFileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_BANK_STATEMENTS`} onChange={(e) => handleExperienceFileChange(exp.id, 'BANK_STATEMENTS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'BANK_STATEMENTS', index)} multiple={true} maxSize="4MB" error={showErrors ? errors[`exp_${exp.id}_BANK_STATEMENTS`] : ''} selectedFiles={exp.BANK_STATEMENTS || []} />
+                    <ExperienceFileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_BANK_STATEMENTS`} onChange={(e) => handleExperienceFileChange(exp.id, 'BANK_STATEMENTS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'BANK_STATEMENTS', index)}  maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_BANK_STATEMENTS`] : ''} selectedFiles={exp.BANK_STATEMENTS || []} />
                   </div>
                 )}
               </div>
@@ -1502,15 +2083,24 @@ const RecruitmentForm = () => {
           </div>
 
           {/* ================= ACTION BUTTONS ================= */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-            <button type="button" onClick={resetForm} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', color: '#475569', borderRadius: '8px', border: '1.5px solid #cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 1px 4px rgba(100,116,139,0.12)', transition: 'all 0.2s' }}>
-              <RotateCcw size={13} /> Reset
-            </button>
-            <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+      <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
               <Send size={13} /> Submit Form
             </button>
-          </div>
+
+                 <button type="button" onClick={resetForm} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', color: '#475569', borderRadius: '8px', border: '1.5px solid #cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 1px 4px rgba(100,116,139,0.12)', transition: 'all 0.2s' }}>
+              <RotateCcw size={13} /> Reset
+            </button>
         </form>
+
+    
+
+                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+             <button type="submit" onClick={handleDraft} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+              <Send size={13} /> Save Draft
+            </button>
+           
+         
+          </div>
       </div>
     </div>
   );
@@ -1553,6 +2143,24 @@ const FileUpload = ({ label, name, onChange, onRemove, multiple = false, error, 
   const inputRef = React.useRef();
   const handleChange = (e) => onChange(e);
   const handleRemove = () => { if (inputRef.current) inputRef.current.value = ''; onRemove(name); };
+
+
+  const getFileNameFromPath = (path) => {
+    if (!path) return null;
+    if (typeof path === 'string') {
+      // Extract filename from path (e.g., "/storage/verification_files/UAN_FILE_1772449576_Offer_Letter.pdf")
+      const parts = path.split('/');
+      return parts[parts.length - 1];
+    }
+    return path?.name; // If it's a File object
+  };
+  const isFilePath = (file) => {
+    return typeof file === 'string' && (file.startsWith('/storage/') || file.startsWith('http'));
+  };
+
+
+  const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
+  const isExistingFile = isFilePath(selectedFile);
   return (
     <div>
       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>{label}</label>
@@ -1564,16 +2172,22 @@ const FileUpload = ({ label, name, onChange, onRemove, multiple = false, error, 
       </label>
       {selectedFile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-          <p style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{selectedFile.name}</p>
+          <p style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}> {fileName || 'Selected file'}</p>
           <button type="button" onClick={handleRemove} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, padding: 0 }}>✕</button>
         </div>
       )}
+              
       {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>{error}</p>}
     </div>
   );
 };
 
-const ExperienceFileUpload = ({ label, name, onChange, onRemove, multiple = false, maxSize = '2MB', error, selectedFiles = [] }) => {
+
+
+
+
+
+const ExperienceFileUpload = ({ label, name, onChange, onRemove, multiple = false, maxSize = '200kB', error, selectedFiles = [] }) => {
   const inputRef = React.useRef();
   const handleChange = (e) => onChange(e);
   const handleRemoveSingle = () => { if (inputRef.current) inputRef.current.value = ''; onRemove(); };
@@ -1610,3 +2224,6 @@ const ExperienceFileUpload = ({ label, name, onChange, onRemove, multiple = fals
 };
 
 export default RecruitmentForm;
+
+
+

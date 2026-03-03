@@ -42,26 +42,38 @@ const [personalData, setPersonalData] = useState([]);
 
 
 
-  const EmpVerify = async () => {
-    if (!userToken?.token) return;
+ const EmpVerify = async () => {
+  if (!userToken?.token) return;
+
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/emp-verify-data`,
+      {
+        headers: { Authorization: `Bearer ${userToken.token}` },
+      }
+    );
+
+  
+    const submitOnly = (response.data?.data || []).filter(
+      (item) => item.status?.toLowerCase() == "submit"
+    );
+
 
  
-    try {
-      const response = await axios.get(`${API_BASE_URL}/emp-verify-data`, {
-        headers: { Authorization: `Bearer ${userToken.token}` },
-      });
 
-      console.log("ressssssssssssss",response.data.data);
-      setPersonalData(response.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching verify data", err);
-      setPersonalData([]);
-    }
-  };
+    setPersonalData(submitOnly);
 
-  useEffect(() => {
-    EmpVerify(); // Call EmpVerify within useEffect
-  }, [userToken?.token]);
+    console.log("Filtered submit data:", submitOnly);
+
+  } catch (err) {
+    console.error("Error fetching verify data", err);
+    setPersonalData([]);
+  }
+};
+
+useEffect(() => {
+  EmpVerify();
+}, [userToken?.token]);
 
 
   
@@ -88,39 +100,127 @@ const [personalData, setPersonalData] = useState([]);
       result = result.filter(user => user.status === statusFilter);
     }
 
+    console.log(result,"ggggtrttttttttttttttt");
    
-    return result.map((item, index) => ({
-      id: item.id || `row-${index}`,
-      SNO: index + 1,
-      Verification_Id: item.Verification_Id,
-      CHILD_CASEID: item.child_caseid || 'N/A',
-      PLANT: item.plant || 'N/A', 
-      NAME: item.name || 'N/A',
-      EMAIL: item.email || 'N/A',
-      ADDRESS: item.address || 'N/A',
-      DEPT: item.DEPT || "N/A",
-      PHONE_NUMBER: item.phone_number || 'N/A',
-      DOB: item.dob || 'N/A',
-      AADHAR_NUM: item.aadhar_number || 'N/A',
-   STATUS: item.status,
-         verification_status: item.verification_status,
-      PAN_NUM: item.pan_number || 'N/A',
-      SSC_MARKS: item.ssc_marks || 'N/A',
-      INTER_MARKS: item.inter_marks || 'N/A',
-      BTECH_MARKS: item.btech_marks || 'N/A',
-      PG_MARKS: item.pg_marks || 'N/A',
-      CURRENT_CTC: item.current_ctc || 'N/A',
-      EXP_CTC: item.expected_ctc || 'N/A',
-      OFFER_CTC: item.offer_ctc || 'N/A',
-      NOTICE_PERIOD: item.notice_period || 'N/A',
-      PREVIOUS_COMPANY: item.previous_company || 'N/A',
-      DURATION: item.duration || 'N/A',
-      remarks: item.remarks || 'No remarks',
-      submitted_date: item.created_at || 'N/A',
-      documents: item.documents || {},
- experienceData: item.experienceData || {}
+   return result.map((item, index) => ({
+  id: item.id || `row-${index}`,
+  SNO: index + 1,
 
-    }));
+  // Basic
+  Verification_Id: item.Verification_Id,
+  CHILD_CASEID: item.child_caseid || 'N/A',
+  PLANT: item.PLANT || 'N/A',
+  NAME: item.name || 'N/A',
+  EMAIL: item.email || 'N/A',
+  DEPT: item.DEPT || 'N/A',
+  DESIG: item.DESIG || 'N/A',
+  MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
+  GENDER: item.GENDER || 'N/A',
+  MARITAL_STATUS: item.MARITAL_STATUS || 'N/A',
+SRC_REFER_DEPT: item.SRC_REFER_DEPT || 'N/A',
+  PHONE_NUMBER: item.phone_number || 'N/A',
+  EMER_CONTACT_NUM: item.EMER_CONTACT_NUM || 'N/A',
+DRIVING_LICENSE_EXPIRY: item.DDRIVING_LICENSE_EXPIRY || 'N/A',
+
+DRIVING_LICENSE: item.DRIVING_LICENSE || 'N/A',
+
+  // DOB & Personal
+  ORIGINAL_DOB: item.ORIGINAL_DOB || 'N/A',
+  DOB_ASPER_ADHAR: item.DOB_ASPER_ADHAR || 'N/A',
+  AGE: item.AGE || 'N/A',
+  BLOOD_GROUP: item.BLOOD_GROUP || item.BLOOD_GRP || 'N/A',
+  LANG_KNOWN: item.LANG_KNOWN || 'N/A',
+  MOTHER_TONGUE: item.MOTHER_TONGUE || 'N/A',
+HIGHEST_QUA: item.HIGHEST_QUA, 
+  // IDs
+  AADHAR_NUMBER: item.aadhar_number
+ || 'N/A',
+  PAN_NUM: item.pan_number || 'N/A',
+  UAN_NUM: item.UAN_NUM || item.UAN_NUMBER || 'N/A',
+  ESI_NUM: item.ESI_NUM || item.ESINO || 'N/A',
+
+  // Passport & Driving
+  PASSPORT_NUMBER: item.PASSPORT_NUMBER || item.PASSPORT_NUM || 'N/A',
+  PASSPORT_EXPIRY: item.PASSPORT_EXPIRY || item.PASS_EXPIR_DATE || 'N/A',
+  DRIVING_LICENSE: item.DRIVING_LICENSE || 'N/A',
+  DRIVING_LICENSE_EXPIRY: item.DRIVING_LICENSE_EXPIRY || item.DRIVING_EXPIRE_DATE || 'N/A',
+
+    STARTDATE:  item.STARTDATE,
+
+  // Address - Permanent
+  HNO: item.HNO || 'N/A',
+  CITY: item.CITY || 'N/A',
+  MANDAL: item.MANDAL || 'N/A',
+  DISTRICT: item.DISTRICT || 'N/A',
+  STATE: item.STATE || 'N/A',
+  PINCODE: item.PINCODE || 'N/A',
+
+  // Address - Present
+  PRESENT_HNO: item.PRESENT_HNO || 'N/A',
+  PRESENT_CITY: item.PRESENT_CITY || 'N/A',
+  PRESENT_MANDAL: item.PRESENT_MANDAL || 'N/A',
+  PRESENT_DISTRICT: item.PRESENT_DISTRICT || 'N/A',
+  PRESENT_STATE: item.PRESENT_STATE || 'N/A',
+  PRESENT_PINCODE: item.PRESENT_PINCODE || 'N/A',
+
+  // Education - SSC
+  SSC_BOARD: item.SSC_BOARD || 'N/A',
+  SSC_SCHOOL_NAME: item.SSC_SCHOOL_NAME || 'N/A',
+  SSC_PASSED_YEAR: item.SSC_PASSED_YEAR || 'N/A',
+  SSC_MARKS: item.ssc_marks || 'N/A',
+
+  // Education - Inter
+  INTER_BOARD: item.INTER_BOARD || 'N/A',
+  INTER_COLLEGE_NAME: item.INTER_COLLEGE_NAME || 'N/A',
+  INTER_PASSED_YEAR: item.INTER_PASSED_YEAR || 'N/A',
+  INTER_MARKS: item.inter_marks || 'N/A',
+
+  // Graduation
+  GRAD_COLLEGE_NAME: item.GRAD_COLLEGE_NAME || 'N/A',
+  DEGREE_UNIVERSITY: item.DEGREE_UNIVERSITY || 'N/A',
+  DEGREE_PASSED_YEAR: item.DEGREE_PASSED_YEAR || 'N/A',
+  BTECH_MARKS: item.btech_marks || 'N/A',
+
+  // PG
+  PG_COLLEGE_NAME: item.PG_COLLEGE_NAME || 'N/A',
+  PG_UNIVERSITY: item.PG_UNIVERSITY || 'N/A',
+  PG_PASSED_YEAR: item.PG_PASSED_YEAR || 'N/A',
+  PG_MARKS: item.pg_marks || 'N/A',
+
+  // PHD
+  PHD_COLLEGE_NAME: item.PHD_COLLEGE_NAME || 'N/A',
+  PHD_UNIVERSITY: item.PHD_UNIVERSITY || 'N/A',
+  PHD_PASSED_YEAR: item.PHD_PASSED_YEAR || 'N/A',
+  PHD_MARKS: item.PHD_MARKS || 'N/A',
+
+  // Other Education
+  OTHER_COLLEGE_NAME: item.OTHER_COLLEGE_NAME || 'N/A',
+  OTHER_UNIVERSITY: item.OTHER_UNIVERSITY || 'N/A',
+  OTHER_PASSED_YEAR: item.OTHER_PASSED_YEAR || 'N/A',
+  OTHER_MARKS: item.OTHER_MARKS || 'N/A',
+
+  // Experience & Salary
+  TOTAL_EXP: item.TOTAL_EXP || 'N/A',
+  CURRENT_CTC: item.current_ctc || 'N/A',
+  EXP_CTC: item.expected_ctc || 'N/A',
+  OFFER_CTC: item.offer_ctc || 'N/A',
+  PERCENTOF_HIKE: item.PERCENTOF_HIKE || 'N/A',
+  NOTICE_PERIOD: item.notice_period || 'N/A',
+
+  // Source
+  SRC_TYPE: item.SRC_TYPE || 'N/A',
+  SRC_REFER_NAME: item.SRC_REFER_NAME || 'N/A',
+  SRC_REFER_DEPT: item.SRC_REFER_DEPT || 'N/A',
+
+  // Meta
+  STATUS: item.status || 'N/A',
+  verification_status: item.verification_status || 'N/A',
+  submitted_date: item.created_at || 'N/A',
+
+  // Extra
+  documents: item.documents || {},
+  experienceData: item.experienceData || {}
+}));
   }, [personalData, searchTerm, statusFilter]);
   const getStatusChip = (status) => {
     
@@ -284,17 +384,7 @@ minWidth: 70,
         </Box>
       ),
     },
-    {
-      field: 'AADHAR_NUM',
-      headerName: 'Aadhar',
-       flex:1,
-    minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontFamily: 'monospace', fontSize: '11px' }}>
-          {formatNumber(params.value)}
-        </Box>
-      ),
-    },
+
     {
       field: 'SSC_MARKS',
       headerName: 'SSC %',
@@ -365,13 +455,13 @@ minWidth: 70,
     //     </Box>
     //   ),
     // },
-    {
-      field: 'STATUS',
-      headerName: 'Status',
-      minWidth:110,
-      flex:0.8,
-      renderCell: (params) => getStatusChip(params.value),
-    },
+    // {
+    //   field: 'STATUS',
+    //   headerName: 'Status',
+    //   minWidth:110,
+    //   flex:0.8,
+    //   renderCell: (params) => getStatusChip(params.value),
+    // },
     {
       field: 'submitted_date',
       headerName: 'Submitted',
@@ -460,7 +550,7 @@ minWidth: 70,
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
               pageSizeOptions={[5, 10, 20, 50]}
-              rowHeight={40}
+              rowHeight={50}
               columnHeaderHeight={50}
               sx={{
                 border: "none",

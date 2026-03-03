@@ -25,6 +25,8 @@ import RoleRoute from "./ProtectRoute/RoleRoute.jsx";
 import SidebarRoutes from "./Components/SidebarRoutes.jsx";
 
 import History from "./RecruitmentProcess/History";
+import HODHistory from "./HODHistory.jsx";
+
 
 
 
@@ -157,6 +159,24 @@ export default function App() {
         </div>
         <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
           <History />
+        </div>
+      </div>
+    </section>
+  )
+},
+
+
+{
+  path: "/HODHistory",
+  element: (
+    <section className='main'>
+      <Header />
+      <div className='contentMain flex'>
+        <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+          <Sidebar/>
+        </div>
+        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+          <HODHistory />
         </div>
       </div>
     </section>

@@ -96,70 +96,7 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
   }
 };
 
-  // const handleSelect = async (employee) => {
-
-  //      const result = await Swal.fire({
-  //         title: 'Are you sure?',
-  //       text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
-  //         icon: 'warning',
-  //         showCancelButton: true,
-  //         confirmButtonText: 'Yes, Send Email',
-  //         cancelButtonText: 'Cancel',
-  //         confirmButtonColor: '#10b981',
-  //         cancelButtonColor: '#6b7280',
-  //       });
-  //   try {
-  //     const response = await axios.post(
-  //       `${API_BASE_URL}/task-Assign-StoreData`,
-  //       {
-  //         case_id: row.CHILD_CASEID,
-  //         assigned_to: employee.Emp_Name,
-  //         legacy_id: employee.Legacy_Id,
-  //         current_task: "HR",
-  //         status: "Pending"
-  //       },
-  //       {
-  //         headers: {
-  //           Accept: "application/json",
-  //           Authorization: `Bearer ${userToken.token}`,
-  //         },
-  //       }
-  //     );
-
-  //     const message = response.data?.message || `Case assigned to ${employee.Emp_Name}`;
-      
-  //     setSelectedName(employee.Emp_Name);
-  //     handleClose();
-
-  //   //   Swal.fire({
-  //   //     title: 'Assigned!',
-  //   //     text: message,
-  //   //     icon: 'success',
-  //   //     confirmButtonColor: '#10b981',
-  //   //   });
-  //    await Swal.fire({
-  //     icon: "Assigned",
-  //     title: message,
-  //     text: " Assigned successfully",
-  //     timer: 1500,
-  //     showConfirmButton: false,
-  //   });
-
-    
-  //     if (onAssignmentComplete) {
-  //       await onAssignmentComplete();
-  //     }
-  //   } catch (error) {
-  //     console.error("Assignment failed:", error.response?.data || error);
-  //     Swal.fire({
-  //       title: 'Error',
-  //       text: error.response?.data?.message || 'Assignment failed',
-  //       icon: 'error',
-  //       confirmButtonColor: '#ef4444',
-  //     });
-  //   }
-  // };
-
+  
   return (
     <div>
       <Button
@@ -302,76 +239,76 @@ const HODInbox = () => {
     }));
   };
 
-  const handleSubmitEmail = async (caseId, rowData) => {
-    const email = emailInputs[caseId];
-    if (!email) {
-      Swal.fire('Error', 'Please enter email', 'error');
-      return;
-    }
+  // const handleSubmitEmail = async (caseId, rowData) => {
+  //   const email = emailInputs[caseId];
+  //   if (!email) {
+  //     Swal.fire('Error', 'Please enter email', 'error');
+  //     return;
+  //   }
 
-    if (!validateEmail(email)) {
-      Swal.fire('Error', 'Please enter a valid email address', 'error');
-      return;
-    }
+  //   if (!validateEmail(email)) {
+  //     Swal.fire('Error', 'Please enter a valid email address', 'error');
+  //     return;
+  //   }
 
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Do you want to send the onboarding form link to ${email}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Send Email',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-    });
+  //   const result = await Swal.fire({
+  //     title: 'Are you sure?',
+  //     text: `Do you want to send the onboarding form link to ${email}?`,
+  //     icon: 'warning',
+  //     showCancelButton: true,
+  //     confirmButtonText: 'Yes, Send Email',
+  //     cancelButtonText: 'Cancel',
+  //     confirmButtonColor: '#10b981',
+  //     cancelButtonColor: '#6b7280',
+  //   });
 
-    if (!result.isConfirmed) {
-      return;
-    }
+  //   if (!result.isConfirmed) {
+  //     return;
+  //   }
 
-    setSubmitting(prev => ({ ...prev, [caseId]: true }));
+  //   setSubmitting(prev => ({ ...prev, [caseId]: true }));
 
 
-    const payload2 = {
-      email: email,
-      child_caseId: caseId,
-    }
+  //   const payload2 = {
+  //     email: email,
+  //     child_caseId: caseId,
+  //   }
 
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/emp-email`,
-        payload2,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/emp-email`,
+  //       payload2,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${userToken.token}`,
+  //           "Content-Type": "application/json",
+  //           Accept: "application/json",
+  //         },
+  //       }
+  //     );
    
 
-      if (response.data) {
+  //     if (response.data) {
    
 
-              await Swal.fire({
-                      icon: "success",
-                      text: 'Onboarding form link sent to employee email!',
+  //             await Swal.fire({
+  //                     icon: "success",
+  //                     text: 'Onboarding form link sent to employee email!',
                     
-                      timer: 1500,
-                      showConfirmButton: false,
-                    });
-        setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
+  //                     timer: 1500,
+  //                     showConfirmButton: false,
+  //                   });
+  //       setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
 
         
-      }
-    } catch (error) {
-      console.error('Email send error:', error);
-      Swal.fire('Error', 'Failed to send email', 'error');
-    } finally {
-      setSubmitting(prev => ({ ...prev, [caseId]: false }));
-    }
-  };
+  //     }
+  //   } catch (error) {
+  //     console.error('Email send error:', error);
+  //     Swal.fire('Error', 'Failed to send email', 'error');
+  //   } finally {
+  //     setSubmitting(prev => ({ ...prev, [caseId]: false }));
+  //   }
+  // };
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -449,6 +386,47 @@ const HODInbox = () => {
         </Box>
       ),
     },
+
+     {
+      field: 'PLANT',
+      headerName: 'Plant',
+      flex: 1.2,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'DEPT',
+      headerName: 'Department',
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+       {
+      field: 'MANPOWER_DESG',
+      headerName: 'Designation',
+      flex: 1.2,
+      minWidth: 130,
+      renderCell: (params) => (
+        <Box sx={{
+          color: '#374151',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}>
+          {params.value || 'N/A'}
+        </Box>
+      ),
+    },
     {
       field: 'RAISER',
       headerName: 'Raiser',
@@ -471,45 +449,8 @@ const HODInbox = () => {
         </Box>
       ),
     },
-    {
-      field: 'PLANT',
-      headerName: 'Plant',
-      flex: 1.2,
-      minWidth: 140,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'DEPT',
-      headerName: 'Department',
-      flex: 1,
-      minWidth: 120,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'MANPOWER_DESG',
-      headerName: 'Designation',
-      flex: 1.2,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{
-          color: '#374151',
-          padding: '2px 8px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          fontWeight: 600,
-        }}>
-          {params.value || 'N/A'}
-        </Box>
-      ),
-    },
+   
+ 
     {
       field: 'ACTION_STATUS',
       headerName: 'Status',
@@ -535,7 +476,7 @@ const HODInbox = () => {
             },
           }}
         >
-          Shortlisted
+          Approved
         </Button>
       ),
     },

@@ -18,7 +18,7 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
     {/* Employee Info Box */}
     <div className="grid grid-cols-2 border border-gray-300 rounded overflow-hidden">
       <div className="p-2 border-r border-b border-gray-300 font-bold bg-gray-50 text-[10px]">NAME</div>
-      <div className="p-2 border-b border-gray-300 text-xs uppercase">{data?.NAME}</div>
+      <div className="p-2 border-b border-gray-300 text-xs uppercase">{data?.FIRST_NAME}</div>
 
       <div className="p-2 border-r border-b border-gray-300 font-bold bg-gray-50 text-[10px]">JOB TITLE</div>
       <div className="p-2 border-b border-gray-300 text-xs uppercase">{data?.DEPT || 'N/A'}</div>
@@ -181,7 +181,9 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
 const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }) => {
 
 
-  const [activeTab, setActiveTab] = useState('salary'); // 'personal', 'company', 'salary'
+
+
+  const [activeTab, setActiveTab] = useState('salary');
 
   const [token, userToken] = useState(() => {
     const authToken = JSON.parse(localStorage.getItem("userInfo"));
@@ -567,45 +569,7 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
     }
   };
 
-  // Personal Details Component
-  // const PersonalDetails = () => (
-  //   <div className="p-6 space-y-4">
-  //     <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Personal Details</h2>
-
-  //     <div className="grid grid-cols-2 gap-4">
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Name</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.FIRST_NAME || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Present Company</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.DESIGNATION || data?.DEPT || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Current Salary</label>
-  //         <p className="text-sm font-semibold text-green-700">₹{data?.CURRENT_CTC ? parseFloat(data.CURRENT_CTC).toLocaleString('en-IN') : '0'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Experience</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Notice Period</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || 'N/A'}</p>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
-
+console.log(data,"ggggggggggg");
    const PersonalDetails = () => {
     // Calculate hike percentage
     const currentCTC = parseFloat(data?.CURRENT_CTC || 0);
@@ -628,25 +592,30 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
               <p className="text-sm font-semibold text-gray-800">{data?.FIRST_NAME || data?.NAME || 'N/A'}</p>
             </div>
 
-            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-500 uppercase">Present Company:</label>
-              <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
-            </div>
-
-            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-500 uppercase">Total Experience:</label>
-              <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
-            </div>
-
-            <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+    <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
               <label className="text-xs font-bold text-gray-500 uppercase">Current CTC:</label>
               <p className="text-sm font-semibold text-green-700">₹{currentCTC.toLocaleString('en-IN')}</p>
             </div>
 
+
+    <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Present Company:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.PRESENT_COMPANY || 'N/A'}</p>
+            </div>
+
+              <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Total Experience:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.EXPERIENCE || 'N/A'} years</p>
+            </div>
+
+        
             <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
               <label className="text-xs font-bold text-gray-500 uppercase">Designation:</label>
               <p className="text-sm font-semibold text-gray-800">{data?.DESIGNATION || data?.DEPT || 'N/A'}</p>
             </div>
+
+        
+          
 
           </div>
 
@@ -656,12 +625,31 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
               <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">PROPOSED DETAILS</span>
             </h3>
 
-            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+           <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Source Type:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.SRC_TYPE || data?.SOURCE || 'N/A'}</p>
+            </div>
+                <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
               <label className="text-xs font-bold text-gray-500 uppercase">Offered CTC:</label>
               <p className="text-sm font-semibold text-blue-700">₹{offerCTC.toLocaleString('en-IN')}</p>
             </div>
 
-            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+      <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Hike Percentage:</label>
+              <p className={`text-sm font-semibold ${parseFloat(hikePercentage) > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {hikePercentage}%
+              </p>
+            </div>
+          
+
+         <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-500 uppercase">Joining Duration:</label>
+              <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || data?.NOTICE_PERIOD || 'N/A'}</p>
+            </div>
+            
+  
+            
+                  <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
               <label className="text-xs font-bold text-gray-500 uppercase">
                 Offered Designation:
               </label>
@@ -669,111 +657,68 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
                 {data?.OFFERED_DESIGNATION || 'N/A'}
               </p>
             </div>
+      
 
-            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-500 uppercase">Hike Percentage:</label>
-              <p className={`text-sm font-semibold ${parseFloat(hikePercentage) > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {hikePercentage}%
-              </p>
-            </div>
+      
 
-            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-500 uppercase">Joining Duration:</label>
-              <p className="text-sm font-semibold text-gray-800">{data?.NOTICE_PERIOD || data?.NOTICE_PERIOD || 'N/A'}</p>
-            </div>
+             
 
-            <div className="bg-green-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-500 uppercase">Source Type:</label>
-              <p className="text-sm font-semibold text-gray-800">{data?.SRC_TYPE || data?.SOURCE || 'N/A'}</p>
-            </div>
+
+   
+        
           </div>
         </div>
       </div>
     );
   };
 
-  // Company Requirements Component
-  // const CompanyRequirements = () => (
-  //   <div className="p-6 space-y-4">
-  //     <h2 className="text-xl font-bold text-blue-900 mb-4 border-b-2 border-blue-900 pb-2">Company Requirements</h2>
-
-  //     <div className="grid grid-cols-2 gap-4">
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Case ID</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.CHILD_CASEID || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Plant</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.PLANT || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Designation</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.DEPT || 'N/A'}</p>
-  //       </div>
-
-  //       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  //         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Years of Experience Required</label>
-  //         <p className="text-sm font-semibold text-gray-800">{data?.REQUIRED_EXPERIENCE || data?.EXPERIENCE || 'N/A'} years</p>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
 
 
-     const CompanyRequirements = () => (
-    <div className="p-6 space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-          <label className="text-xs font-bold text-gray-500 uppercase">Case ID:</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.CHILD_CASEID || 'N/A'}</p>
-        </div>
 
-        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-          <label className="text-xs font-bold text-gray-500 uppercase">Plant:</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.PLANT || 'N/A'}</p>
-        </div>
-
-        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-          <label className="text-xs font-bold text-gray-500 uppercase">Designation:</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.DEPT || 'N/A'}</p>
-        </div>
-
-        <div className="bg-blue-100 p-2 rounded-lg border border-gray-200 flex items-center justify-between">
-          <label className="text-xs font-bold text-gray-500 uppercase">Years of Experience Required:</label>
-          <p className="text-sm font-semibold text-gray-800">{data?.REQUIRED_EXPERIENCE || data?.EXPERIENCE || 'N/A'} years</p>
-        </div>
-      </div>
-    </div>
-  );
+ 
 
   // Salary Stackup Component (your existing salary sheet)
 
 
-  return (
+ return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-lg w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col" style={{ height: '600px' }}>
-
-        {/* Top Header */}
+        {/* === UPDATED HEADER === */}
         <div className="bg-white p-4 border-b flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-              <img
-                src={logo}
-                alt="Logo"
-                className="h-15 w-15 rounded-full object-cover"
-              />
-            </div>
+          <div className="flex items-center gap-3 ">
+            <img src={logo} alt="Logo" className="w-20 h-20 rounded-full object-cover pb-6" />
             <div>
-              <h1 className="text-lg font-bold text-blue-900 leading-tight">MY HOME GROUP</h1>
-              <div className="flex justify-between items-center w-full">
+              <h1 className="text-lg font-bold text-blue-900">MY HOME GROUP</h1>
+              <div className="flex items-center flex-wrap gap-3 mt-1">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
                   Candidate Details
                 </p>
-                <p className="text-xs font-semibold pl-100 text-gray-500">
+
+                      <p className="text-xs font-semibold text-gray-500 ml-auto">
                   Date: {new Date().toLocaleDateString('en-GB')}
                 </p>
+                {/* Badges */}
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center gap-1">
+                    <span className="text-xs font-bold text-gray-600">Case ID:</span>
+                    <span className="text-xs font-semibold text-blue-800">
+                      {data?.CHILD_CASEID || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="bg-green-50 px-3 py-1 rounded-full border border-green-200 flex items-center gap-1">
+                    <span className="text-xs font-bold text-gray-600">Plant:</span>
+                    <span className="text-xs font-semibold text-green-800">
+                      {data?.PLANT || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="bg-purple-50 px-3 py-1 rounded-full border border-purple-200 flex items-center gap-1">
+                    <span className="text-xs font-bold text-gray-600">Designation:</span>
+                    <span className="text-xs font-semibold text-purple-800">
+                      {data?.DEPT || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+          
               </div>
             </div>
           </div>
@@ -786,44 +731,32 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
 
         {/* Tab Navigation */}
         <div className="flex border-b bg-gray-50 flex-shrink-0">
-
           <button
             onClick={() => setActiveTab('salary')}
-            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'salary'
-              ? 'bg-blue-900 text-white border-b-2 border-blue-900'
-              : 'text-gray-600 hover:bg-gray-100'
-              }`}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${
+              activeTab === 'salary'
+                ? 'bg-blue-900 text-white border-b-2 border-blue-900'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
           >
             Salary Stackup
           </button>
           <button
-            onClick={() => setActiveTab('company')}
-            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'company'
-              ? 'bg-blue-900 text-white border-b-2 border-blue-900'
-              : 'text-gray-600 hover:bg-gray-100'
-              }`}
-          >
-            Company Requirements
-          </button>
-
-               <button
             onClick={() => setActiveTab('personal')}
-            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${activeTab === 'personal'
-              ? 'bg-blue-900 text-white border-b-2 border-blue-900'
-              : 'text-gray-600 hover:bg-gray-100'
-              }`}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-all ${
+              activeTab === 'personal'
+                ? 'bg-blue-900 text-white border-b-2 border-blue-900'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
           >
             Personal Details
           </button>
-     
         </div>
 
-        {/* Content Area - Fixed height with scroll */}
+        {/* Content Area */}
         <div className="overflow-y-auto" style={{ height: activeTab === 'salary' ? '380px' : '468px' }}>
           {activeTab === 'personal' && <PersonalDetails />}
-          {activeTab === 'company' && <CompanyRequirements />}
           {activeTab === 'salary' && (
-
             <SalaryStackup
               data={data}
               salary={salary}
@@ -834,10 +767,9 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange,note }
               token={token}
             />
           )}
-
         </div>
 
-        {/* Footer Buttons - Only show on Salary Stackup tab */}
+        {/* Footer Buttons */}
         {activeTab === 'salary' && (
           <div className="px-4 py-2 bg-gray-50 border-t flex justify-end gap-2 flex-shrink-0">
             <button

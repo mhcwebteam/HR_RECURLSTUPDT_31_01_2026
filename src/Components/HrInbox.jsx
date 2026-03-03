@@ -17,7 +17,6 @@ const HrInbox = () => {
   const [hrData, setHrData] = useState([]);
 
 
-  console.log(hrData,"ffffffffff");
 
 
 
@@ -52,7 +51,7 @@ const hrAprvlFetchData = async () => {
     
    
     if (data.counts) {
-      // You can store these counts in state if needed
+  
       console.log("Counts from API:", data.counts);
     }
   } catch (err) {

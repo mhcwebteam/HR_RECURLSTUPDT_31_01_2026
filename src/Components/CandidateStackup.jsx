@@ -1,3 +1,7 @@
+
+
+
+
 import { useState,useMemo } from "react";
 import Swal from "sweetalert2";
 import { BadgeCheck, CheckCircle } from "lucide-react";
@@ -9,11 +13,9 @@ const CandidateStackup = () => {
   const [remarks, setRemarks] = useState("");
   const [errors, setErrors] = useState({});
 
-
+const [modifyDate, setModifyDate] = useState("");
 
   const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
-
-
 
 
   const validate = () => {
@@ -22,7 +24,11 @@ const CandidateStackup = () => {
     if (!status) {
       newErrors.status = "Status is required";
     }
-
+    // added on 24-02-2026---------------------------------
+     if (status === "Modify" && !modifyDate) {
+    newErrors.modifyDate = "Modify date is required";
+  }
+//--------------------------------------------------------------
     if (status !== "Reject" && !file) {
       newErrors.file = "Please upload duly signed copy";
     }
@@ -35,8 +41,14 @@ const CandidateStackup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+
+
+// added on 24-02-2026------------------------------------------------------
 const handleSubmit = async (e) => {
   e.preventDefault();
+  if (!validate()) {
+    return; 
+  }
 
   const confirm = await Swal.fire({
     title: "Confirm Submission",
@@ -52,10 +64,17 @@ const handleSubmit = async (e) => {
   formData.append("status", status);
   formData.append("remarks", remarks);
   formData.append("hiddenCaseId", userToken?.Emp_Id);
-  if (file) formData.append("file", file);
 
-  console.log("Sending data:");
+  if (status == "Modify") {
+
+    
  
+    // formData.append("modify_date", modifyDate);
+  }
+
+
+
+  if (file) formData.append("file", file);
 
   try {
     const response = await axios.post(
@@ -68,45 +87,39 @@ const handleSubmit = async (e) => {
       }
     );
 
-    console.log("API response:", response.data);
-setRemarks("");
-setFile(null);
-setStatus("");
+    setRemarks("");
+    setFile(null);
+    setStatus("");
+    setModifyDate("");
 
+    Swal.fire({
+      icon: "success",
+      title: "Success!",
+      text: "Submitted successfully!",
+      timer: 1500,
+      showConfirmButton: false,
+    });
 
-
-
-
-         Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: 'Submitted successfully!',
-          timer: 1500,
-          showConfirmButton: false,
-        });
   } catch (err) {
-    console.error(err);
     Swal.fire("Error", "API failed", "error");
   }
 };
-
-
-
+//------------------------------------------------------------------------
   return (
     <div style={{ 
       background: 'linear-gradient(to bottom right, #faf5ff, #f9f5ff)', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
-      padding: '12px' 
+      padding: '2px' // on 24-02-2026---------------------------------------------------------------------------
     }}>
       <div style={{ 
         background: '#ffffff', 
         borderRadius: '12px', 
         boxShadow: '0 4px 12px rgba(168, 85, 247, 0.15)', 
-        padding: '20px', 
+        padding: '10px', //---------------24-02-2026-----------------------------------------------------------------
         width: '100%', 
-        maxWidth: '450px', 
+        maxWidth: '480px',// -------------------------24-02-2026---------------------------------------------------- 
         border: '3px solid #a855f7' 
       }}>
         <h2 style={{ 
@@ -204,7 +217,47 @@ setStatus("");
             </p>
           )}
         </div>
+{/* added on 24-02-2026------------------------------------------------------------------ */}
+{/* Modify Date */}
+{status === "Modify" && (
+  <div style={{ marginBottom: '12px' }}>
+    <label
+      style={{
+        display: 'block',
+        fontWeight: '600',
+        marginBottom: '6px',
+        fontSize: '13px',
+        color: '#7c3aed'
+      }}
+    >
+      Modify Date <span style={{ color: '#ef4444' }}>*</span>
+    </label>
 
+    <input
+      type="date"
+      value={modifyDate}
+      onChange={(e) => {
+        setModifyDate(e.target.value);
+        setErrors({ ...errors, modifyDate: "" });
+      }}
+      style={{
+        width: '100%',
+        border: `2px solid ${errors.modifyDate ? '#ef4444' : '#e9d5ff'}`,
+        borderRadius: '8px',
+        padding: '8px 12px',
+        fontSize: '13px',
+        outline: 'none'
+      }}
+    />
+
+    {errors.modifyDate && (
+      <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+        {errors.modifyDate}
+      </p>
+    )}
+  </div>
+)}
+{/* =----------------------------------------------------------------------------------------------------------- */}
         {/* Remarks */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{ 

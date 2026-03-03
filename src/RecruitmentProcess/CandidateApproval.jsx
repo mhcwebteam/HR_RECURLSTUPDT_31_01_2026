@@ -521,27 +521,7 @@ const CandidateApproval = () => {
 
     },
 
-    {
-
-      field: 'DEPT',
-
-      headerName: 'Department',
-
-      flex: 1,
-
-      minWidth: 120,
-
-      renderCell: (params) => (
-
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-
-          {params.value}
-
-        </Box>
-
-      ),
-
-    },
+   
 
     {
 
@@ -587,6 +567,29 @@ const CandidateApproval = () => {
 
     },
 
+
+     {
+
+      field: 'DEPT',
+
+      headerName: 'Department',
+
+      flex: 1,
+
+      minWidth: 120,
+
+      renderCell: (params) => (
+
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
+    },
+    
     {
 
       field: 'CANDID_APPROVAL_STATUS',

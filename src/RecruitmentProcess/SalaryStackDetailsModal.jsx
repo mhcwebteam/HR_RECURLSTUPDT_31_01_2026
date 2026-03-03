@@ -11,6 +11,8 @@ import { jsPDF } from 'jspdf';
 import { Eye } from 'lucide-react';
 const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
+  
+
   const FIXED_COMPONENTS = {
     conveyance: 1600,
     education_allowance: 200
@@ -434,6 +436,8 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       employee_pf_contribution: salaryComponents.employee_pf_contribution,
       employee_esi_contribution: salaryComponents.employeeESIContribution,
       professional_tax: 200,
+      PERCENTOF_HIKE: data.PERCENTOF_HIKE || '',
+      DESIG: data?.DESIG || '',
       is_esi_applicable: salaryComponents.is_esi_applicable
     };
 
@@ -536,7 +540,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
-      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[94vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[94vh] overflow-hidden shadow-2xl">
         {/* Ultra Compact Header */}
         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 flex justify-between items-center">
           <div className="flex items-center gap-2.5">
@@ -571,7 +575,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
         <div className="overflow-y-auto max-h-[calc(94vh-115px)] p-3 bg-gradient-to-br from-gray-50 to-gray-100">
           {/* Employee Info - Pastel Blue */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm p-3 mb-2.5 border border-blue-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-blue-100">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">👤</span>
               <h3 className="text-sm font-bold text-blue-900">Employee Information</h3>
@@ -587,7 +591,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Compensation Components - Pastel Green */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl shadow-sm p-3 mb-2.5 border border-emerald-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-emerald-100">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <span className="text-base">💵</span>
@@ -621,7 +625,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Other Benefits - Pastel Purple */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-sm p-3 mb-2.5 border border-purple-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-purple-100">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">🎁</span>
               <h3 className="text-sm font-bold text-purple-900">II. Other Benefits</h3>
@@ -647,7 +651,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Deductions - Pastel Red */}
-          <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl shadow-sm p-3 mb-2.5 border border-red-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-red-100">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">➖</span>
               <h3 className="text-sm font-bold text-red-900">III. Deductions</h3>
@@ -672,7 +676,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Net Salary - Pastel Teal */}
-          <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl shadow-sm p-3 mb-2.5 border border-teal-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-teal-100">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">✅</span>
               <h3 className="text-sm font-bold text-teal-900">IV. Net Salary</h3>
@@ -694,7 +698,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Fixed CTC - Pastel Amber */}
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl shadow-sm p-3 mb-2.5 border border-amber-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-2.5 border border-amber-100">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">💼</span>
               <h3 className="text-sm font-bold text-amber-900">V. Fixed Cost to Company</h3>
@@ -716,7 +720,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
 
           {/* Offer CTC Input - Pastel Orange */}
-          <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl shadow-sm p-3 border border-orange-100 mb-2.5">
+          <div className="bg-white rounded-xl shadow-sm p-3 border border-orange-100 mb-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🏆</span>

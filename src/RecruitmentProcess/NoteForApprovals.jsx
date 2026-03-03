@@ -61,6 +61,7 @@ const NoteForApprovals = () => {
   });
 
 
+  console.log("tokennnnnnnnnnnnnnnnnnnn0",token?.Emp_Category);
  
 
 
@@ -296,7 +297,7 @@ if(noteFrAprvlData) {
           gap: '4px',
         }}>
           {icon}
-          {statusValue || "pending"}
+          {statusValue || ""}
         </Box>
       </Box>
     );
@@ -315,6 +316,8 @@ if(noteFrAprvlData) {
         </Box>
       ),
     },
+
+
 
      {
       field: "View",
@@ -343,41 +346,6 @@ if(noteFrAprvlData) {
     },
 
     
-    // {
-    //   field: "APPROVE_ACTION",
-    //   headerName: "Approve",
-    //   flex: 0.9,
-    //   minWidth: 100,
-    //   sortable: false,
-    //   renderCell: (params) => (
-
-    //     <Button
-    //       variant="contained"
-    //       size="small"
-    //       onClick={() => {
-    //         setApproveRow(params.row);
-    //         setApproveModalOpen(true);
-    //       }}
-    //       sx={{
-    //         background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    //         color: 'white',
-    //         fontSize: '10px',
-    //         padding: '4px 10px',
-    //         borderRadius: '6px',
-    //         textTransform: 'capitalize',
-    //         boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
-    //         fontWeight: 600,
-    //         '&:hover': {
-    //           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    //           transform: 'translateY(-1px)',
-    //           boxShadow: '0 4px 10px rgba(16, 185, 129, 0.4)',
-    //         },
-    //       }}
-    //     >
-    //       Approve
-    //     </Button>
-    //   ),
-    // },
     { 
       field: "CHILD_CASEID", 
       headerName: "Case ID", 
@@ -422,6 +390,17 @@ if(noteFrAprvlData) {
         </Box>
       ),
     },
+        { 
+      field: "PHONE_NUMBER", 
+      headerName: "Phone", 
+      flex: 0.9,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+          {params.value}
+        </Box>
+      ),
+    },
     { 
       field: "HR", 
       headerName: "HR", 
@@ -455,17 +434,7 @@ if(noteFrAprvlData) {
         </Box>
       ),
     },
-    { 
-      field: "PHONE_NUMBER", 
-      headerName: "Phone", 
-      flex: 0.9,
-      minWidth: 120,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-          {params.value}
-        </Box>
-      ),
-    },
+
     {
       field: "CURRENT_CTC",
       headerName: "Current CTC",
@@ -563,101 +532,13 @@ token?.Emp_Category == "HR" && {
         border: '1px solid #e2e8f0',
       }}>
         
-        {/* Compact Search bar matching RecruitmentMail */}
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ flex: 1, maxWidth: '400px' }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search name, email, case ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: '#667eea', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  height: '38px',
-                  fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
-                }
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
-                },
-              }}
-            />
-          </Box>
-          
-          <TextField
-            select
-            size="small"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{
-              minWidth: 150,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '10px',
-                backgroundColor: '#f8fafc',
-                height: '38px',
-                fontSize: '13px',
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-              },
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#cedef2ff",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#d1d6ebff",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#667eea",
-                },
-              },
-            }}
-          >
-            <MenuItem value="all">All Status</MenuItem>
-            <MenuItem value="verified">Verified</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="rejected">Rejected</MenuItem>
-          </TextField>
-          
-          <Typography variant="body2" sx={{
-            color: '#64748b',
-            minWidth: 'fit-content',
-            fontWeight: 500,
-            fontSize: '13px'
-          }}>
-            {filteredData.length} note approvals
-          </Typography>
-        </Box> */}
-
+      
         {/* DataGrid */}
         <Box sx={{
           width: "100%",
           borderRadius: "10px",
           overflow: "hidden",
+        
           border: "1px solid #dfe5f1ff",
           boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
         }}>
@@ -667,7 +548,7 @@ token?.Emp_Category == "HR" && {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
-           rowHeight={30}
+           rowHeight={50}
             columnHeaderHeight={44}
             sx={{
               border: "none",

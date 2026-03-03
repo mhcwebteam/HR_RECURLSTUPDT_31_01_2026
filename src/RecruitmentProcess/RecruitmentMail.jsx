@@ -16,8 +16,7 @@ import DataFlow from "../Components/DataFlow.jsx"
 import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
-import { ContextData } from '../Context/ContextData.jsx';
-import RecruitmentForm from './RecruitmentForm.jsx';
+
 import ManPowerView from '../Components/ManPowerView.jsx';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
@@ -120,31 +119,7 @@ useEffect(() => {
     if (!userToken.token) navigate('/');
   }, [navigate, userToken?.token]);
 
-  const handleSearch = (e) => {
-    const searchValue = e.target.value;
-    setSearchText(searchValue);
-    setPaginationModel(prev => ({ ...prev, page: 0 }));
-    if (!searchValue) {
-      setFilteredData(data);
-      return;
-    }
-    const filtered = data.filter(row => {
-      const search = searchValue.toLowerCase();
-      return (
-        (row.CASEID && row.CASEID.toLowerCase().includes(search)) ||
-        
-        (row.PROCESSNAME && row.PROCESSNAME.toLowerCase().includes(search)) ||
-        (row.RAISER && row.RAISER.toLowerCase().includes(search)) ||
-        (row.RAISER_DATE && row.RAISER_DATE.toLowerCase().includes(search)) ||
-        (row.CURRENT_USER && row.CURRENT_USER.toLowerCase().includes(search)) ||
-        (row.ACTION_STATUS && row.ACTION_STATUS.toLowerCase().includes(search)) ||
-        (row.PLANT && row.PLANT.toLowerCase().includes(search)) ||
-        (row.DEPT && row.DEPT.toLowerCase().includes(search)) ||
-        (row.MANPOWER_DESG && row.MANPOWER_DESG.toLowerCase().includes(search))
-      );
-    });
-    setFilteredData(filtered);
-  };
+ 
 
   const handleEmailChange = (caseId, email) => {
     setEmailInputs(prev => ({
@@ -213,23 +188,28 @@ useEffect(() => {
         timer: 1500,
         showConfirmButton: false,
       });
+
+     setEmailInputs(prev => ({
+  ...prev,
+  [caseId]: ''
+}));
       
       // Clear the email input
-      setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
+      // setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
       
-      // Remove the row from both data and filteredData
-      setData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
-      setFilteredData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
+      // // Remove the row from both data and filteredData
+      // setData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
+      // setFilteredData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
       
-      // Optional: Update HrData to mark as sent
-      setHrData(prevHrData => ({
-        ...prevHrData,
-        TaskAssignmentData: prevHrData.TaskAssignmentData?.map(row => 
-          row.CHILD_CASEID === caseId 
-            ? { ...row, verifyEmail: 'sent' } 
-            : row
-        )
-      }));
+      // // Optional: Update HrData to mark as sent
+      // setHrData(prevHrData => ({
+      //   ...prevHrData,
+      //   TaskAssignmentData: prevHrData.TaskAssignmentData?.map(row => 
+      //     row.CHILD_CASEID === caseId 
+      //       ? { ...row, verifyEmail: 'sent' } 
+      //       : row
+      //   )
+      // }));
     }
   } catch (error) {
     console.error('Email send error:', error);
@@ -240,75 +220,7 @@ useEffect(() => {
 };
 
 
-  // const handleSubmitEmail = async (caseId, rowData) => {
-  //   const email = emailInputs[caseId];
-  //   if (!email) {
-  //     Swal.fire('Error', 'Please enter email', 'error');
-  //     return;
-  //   }
-
-  //   if (!validateEmail(email)) {
-  //     Swal.fire('Error', 'Please enter a valid email address', 'error');
-  //     return;
-  //   }
-
-  //   const result = await Swal.fire({
-  //     title: 'Are you sure?',
-  //     text: `Do you want to send the onboarding form link to ${email}?`,
-  //     icon: 'warning',
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Yes, Send Email',
-  //     cancelButtonText: 'Cancel',
-  //     confirmButtonColor: '#10b981',
-  //     cancelButtonColor: '#6b7280',
-  //   });
-
-  //   if (!result.isConfirmed) {
-  //     return;
-  //   }
-
-  //   setSubmitting(prev => ({ ...prev, [caseId]: true }));
-
-
-  //   const payload2 = {
-  //     email: email,
-  //     child_caseId: caseId,
-  //   }
-
-  //   try {
-  //     const response = await axios.post(
-  //       `${API_BASE_URL}/emp-email`,
-  //       payload2,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${userToken.token}`,
-  //           "Content-Type": "application/json",
-  //           Accept: "application/json",
-  //         },
-  //       }
-  //     );
-     
-
-  //     if (response.data) {
-  //       Swal.fire({
-  //         title: 'Success!',
-  //         icon: "success",
-  //                     text: 'Onboarding form link sent to employee email!',
-                    
-  //                     timer: 1500,
-  //                     showConfirmButton: false,
-     
-    
-  //       });
-  //       setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
-  //     }
-  //   } catch (error) {
-  //     console.error('Email send error:', error);
-  //     Swal.fire('Error', 'Failed to send email', 'error');
-  //   } finally {
-  //     setSubmitting(prev => ({ ...prev, [caseId]: false }));
-  //   }
-  // };
+ 
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -387,28 +299,7 @@ useEffect(() => {
         </Box>
       ),
     },
-    {
-      field: 'RAISER',
-      headerName: 'Raiser',
-      flex: 1,
-      minWidth: 110,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'RAISER_DATE',
-      headerName: 'Raiser Date',
-      flex: 1,
-      minWidth: 110,
-      renderCell: (params) => (
-        <Box sx={{ color: '#6b7280' }}>
-          {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
-        </Box>
-      ),
-    },
+
     {
       field: 'PLANT',
       headerName: 'Plant',
@@ -448,6 +339,31 @@ useEffect(() => {
         </Box>
       ),
     },
+
+
+    {
+      field: 'RAISER',
+      headerName: 'Raiser',
+      flex: 1,
+      minWidth: 110,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'RAISER_DATE',
+      headerName: 'Raiser Date',
+      flex: 1,
+      minWidth: 110,
+      renderCell: (params) => (
+        <Box sx={{ color: '#6b7280' }}>
+          {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
+        </Box>
+      ),
+    },
+    
     {
       field: 'ACTION_STATUS',
       headerName: 'Status',
@@ -474,6 +390,35 @@ useEffect(() => {
           }}
         >
           Shortlisted
+        </Button>
+      ),
+    },
+       {
+      field: 'StatusTrack',
+      headerName: 'C.StatusTrack',
+      flex: 0.8,
+      minWidth: 100,
+           renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          sx={{
+            background: '#522952',
+            color: 'white',
+            fontSize: '11px',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            textTransform: 'capitalize',
+            fontWeight: 600,
+            minWidth: 'auto',
+            boxShadow: 'none',
+            '&:hover': {
+              background: '#059669',
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Pending
         </Button>
       ),
     },
@@ -695,7 +640,7 @@ useEffect(() => {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
-       rowHeight={40}
+       rowHeight={50}
        loading={loading}
 
             columnHeaderHeight={44}

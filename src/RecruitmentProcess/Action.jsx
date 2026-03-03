@@ -8,17 +8,19 @@ import axios from 'axios';
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Modal, Autocomplete,IconButton, FormControl, Typography, Button, Paper, Grid, CircularProgress, TextField, InputAdornment, Tooltip, Select, MenuItem, InputLabel } from '@mui/material';
+import { Box, Modal, Autocomplete,IconButton, FormControl, Typography, Button, Paper, Grid, CircularProgress, TextField, InputAdornment, Tooltip, Select, MenuItem, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
 import DataFlow from "../Components/DataFlow.jsx"
-import { ArrowLeftIcon, BriefcaseIcon, CircleAlert, RefreshCw } from 'lucide-react';
+import { ArrowLeftIcon, BadgeIcon, BriefcaseIcon, CircleAlert, DeleteIcon, InfoIcon, PersonStandingIcon, PhoneIcon, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config.jsx';
 import ManPowerView from '../Components/ManPowerView.jsx';
 import SearchIcon from "@mui/icons-material/Search";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TransferLetterModal from './TransferLetterModal .jsx';
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
+
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -52,7 +54,11 @@ const [letterOpen, setLetterOpen] = useState(false);
     const [plantList, setplantList] = useState([]);
 const [transferDate, setTransferDate] = useState('');
 
-console.log(transferDate,"r55555555555555");
+const [historyOpen, setHistoryOpen] = useState(false);
+const [historyData, setHistoryData] = useState([]);
+
+console.log(filteredData,"resssssss55555555555555");
+
 
     const [transferData, setTransferData] = useState({
         selectedPlant: '',
@@ -493,6 +499,39 @@ console.log(transferDate,"r55555555555555");
         setSelectedRowData(null);
     };
 
+
+    const handleHistoryClick = async (caseId) => {
+
+      
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/vrfy-Rjct-Hsty-Data/${caseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+        },
+      }
+    );
+
+    console.log("History Data:", response.data);
+
+    // Save data to state
+    setHistoryData(response?.data?.verifyHistoryData || []);
+
+    // Open modal
+    setHistoryOpen(true);
+
+  } catch (error) {
+    console.error("History fetch error:", error);
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to fetch history data",
+    });
+  }
+};
+
     const statusCounts = useMemo(() => {
         const counts = {
             total: filteredData.length,
@@ -610,6 +649,31 @@ console.log(transferDate,"r55555555555555");
                 </Box>
             ),
         },
+
+{
+  field: 'HISTORY',
+  headerName: 'History',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+
+    // If status is null or undefined → don't show button
+    if (params.row.status == null) {
+      return null;
+    }
+
+    return (
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => handleHistoryClick(params.row.CHILD_CASEID)}
+      >
+        View
+      </Button>
+    );
+  },
+},
+
         {
             field: 'ACTION_STATUS',
             headerName: 'Status',
@@ -639,6 +703,9 @@ console.log(transferDate,"r55555555555555");
                 </Button>
             ),
         },
+
+
+
         {
             field: 'ACTIONS',
             headerName: 'Actions',
@@ -742,6 +809,7 @@ console.log(transferDate,"r55555555555555");
     };
 
     return (
+        <>
         <Box sx={{
             maxWidth: "1400px",
             margin: "0 auto",
@@ -762,73 +830,81 @@ console.log(transferDate,"r55555555555555");
                     border: "1px solid #dfe5f1ff",
                     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
                 }}>
-                    <DataGrid
-                        rows={filteredData}
-                        columns={columns}
-                        getRowId={(row) => row.task_assignment_id}
-                        paginationModel={paginationModel}
-                        onPaginationModelChange={setPaginationModel}
-                        pageSizeOptions={[10, 20, 50]}
-                        rowHeight={40}
-                        loading={loading}
-                        columnHeaderHeight={44}
-                        slots={{
-                            loadingOverlay: () => (
-                                <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        top: '50px',
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                        zIndex: 10,
-                                    }}
-                                >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                        <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
-                                        <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
-                                            Loading...
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ),
-                        }}
-                        sx={{
-                            border: "none",
-                            "& .MuiDataGrid-columnHeaders": {
-                                borderBottom: "2px solid #e2e8f0",
-                            },
-                            "& .MuiDataGrid-columnHeader": {
-                                fontWeight: 600,
-                                fontSize: "13px",
-                                color: "#1e293b",
-                                backgroundColor: "rgba(188, 198, 238, 0.5)",
-                                borderRight: "1px solid #e2e8f0",
-                            },
-                            "& .MuiDataGrid-cell": {
-                                borderBottom: "1px solid #f1f5f9",
-                                borderRight: "1px solid #f1f5f9",
-                                fontSize: "12px",
-                                color: "#374151",
-                                padding: "0 8px",
-                                display: "flex",
-                                alignItems: "center",
-                            },
-                            "& .MuiDataGrid-row:hover": {
-                                backgroundColor: "#f0f9ff",
-                                cursor: "pointer",
-                            },
-                           "& .MuiDataGrid-footerContainer": {
-                                borderTop: "1px solid #e2e8f0",
-                                backgroundColor: "#f8fafc",
-                                minHeight: "48px",
-                            },
-                        }}
-                    />
+                <DataGrid
+  rows={filteredData}
+  columns={columns}
+  getRowId={(row) => row.task_assignment_id}
+  paginationModel={paginationModel}
+  onPaginationModelChange={setPaginationModel}
+  pageSizeOptions={[10, 20, 50]}
+  rowHeight={50}
+  loading={loading}
+  columnHeaderHeight={44}
+
+columnVisibilityModel={{
+  HISTORY: filteredData?.some(
+    (row) => row.status?.trim().toLowerCase() === "reject"
+  ) || false
+}}
+
+  slots={{
+    loadingOverlay: () => (
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          zIndex: 10,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+          <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
+            Loading...
+          </Typography>
+        </Box>
+      </Box>
+    ),
+  }}
+
+  sx={{
+    border: "none",
+    "& .MuiDataGrid-columnHeaders": {
+      borderBottom: "2px solid #e2e8f0",
+    },
+    "& .MuiDataGrid-columnHeader": {
+      fontWeight: 600,
+      fontSize: "13px",
+      color: "#1e293b",
+      backgroundColor: "rgba(188, 198, 238, 0.5)",
+      borderRight: "1px solid #e2e8f0",
+    },
+    "& .MuiDataGrid-cell": {
+      borderBottom: "1px solid #f1f5f9",
+      borderRight: "1px solid #f1f5f9",
+      fontSize: "12px",
+      color: "#374151",
+      padding: "0 8px",
+      display: "flex",
+      alignItems: "center",
+    },
+    "& .MuiDataGrid-row:hover": {
+      backgroundColor: "#f0f9ff",
+      cursor: "pointer",
+    },
+    "& .MuiDataGrid-footerContainer": {
+      borderTop: "1px solid #e2e8f0",
+      backgroundColor: "#f8fafc",
+      minHeight: "48px",
+    },
+  }}
+/>
                 </Box>
             </Paper>
 
@@ -1335,8 +1411,251 @@ console.log(transferDate,"r55555555555555");
   </Box>
 </Modal>
         </Box>
+
+
+<Dialog 
+  open={historyOpen} 
+  onClose={() => setHistoryOpen(false)}
+  maxWidth="md"
+  fullWidth
+  PaperProps={{
+    sx: {
+      borderRadius: 2,
+      boxShadow: 24
+    }
+  }}
+>
+  <DialogTitle sx={{ 
+    m: 0, 
+    p: 2, 
+    display: 'flex', 
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    bgcolor: '#f5f5f5'
+  }}>
+    <Box display="flex" alignItems="center" gap={1}>
+      <DeleteIcon color="error" />
+      <Typography variant="h6" component="span">
+        Deleted Records History
+      </Typography>
+    </Box>
+    <IconButton
+      onClick={() => setHistoryOpen(false)}
+      sx={{ color: 'grey.500' }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  
+  <DialogContent dividers sx={{ p: 0 }}>
+    {historyData.length === 0 ? (
+      <Box 
+        sx={{ 
+          p: 4, 
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}
+      >
+        <InfoIcon sx={{ fontSize: 48, color: 'grey.400' }} />
+        <Typography color="textSecondary">
+          No history records found
+        </Typography>
+      </Box>
+    ) : (
+      <Box sx={{ p: 2 }}>
+        {historyData.map((item, index) => (
+          <Paper
+            key={index}
+            elevation={1}
+            sx={{
+              mb: 2,
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              '&:last-child': { mb: 0 }
+            }}
+          >
+            {/* Header with delete badge */}
+            <Box sx={{ 
+              p: 1.5, 
+              bgcolor: '#fff5f5',
+              borderBottom: '1px solid',
+              borderColor: 'grey.200',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Chip 
+                  label={`Record ${index + 1}`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Chip
+                  icon={<DeleteIcon />}
+                  label="Deleted"
+                  size="small"
+                  color="error"
+                />
+              </Box>
+              <Typography variant="caption" color="textSecondary">
+                ID: {item.verifyDelete_Id}
+              </Typography>
+            </Box>
+
+            {/* Content Grid */}
+            <Box sx={{ p: 2 }}>
+              <Grid container spacing={2}>
+                {/* Personal Information */}
+                <Grid item xs={12} md={6}>
+                  <Box display="flex" flexDirection="column" gap={1.5}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <PersonStandingIcon color="primary" sx={{ fontSize: 20 }} />
+                      <Typography variant="body1" fontWeight="500">
+                        {item.name}
+                      </Typography>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <ExclamationCircleIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" color="textSecondary">
+                        {item.email}
+                      </Typography>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" color="textSecondary">
+                       Phone: {item?.Phone}
+                      </Typography>
+                    </Box>
+
+        
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" color="textSecondary">
+                        Date: {item?.deleted_at}
+                      </Typography>
+                    </Box>
+
+
+                           <Box display="flex" alignItems="center" gap={1}>
+                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2" color="textSecondary">
+                        Rejected By: {item?.rejected_by}
+                      </Typography>
+                    </Box>
+
+
+                  </Box>
+                </Grid>
+
+                {/* Document Information */}
+                <Grid item xs={12} md={6}>
+                  <Box display="flex" flexDirection="column" gap={1.5}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <BadgeIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2">
+                        <strong>Aadhar:</strong> {item.Aadhar}
+                      </Typography>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <BadgeIcon color="action" sx={{ fontSize: 18 }} />
+                      <Typography variant="body2">
+                        <strong>PAN:</strong> {item.Pan}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {/* Case Information */}
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Box display="flex" flexWrap="wrap" gap={2}>
+                    <Chip
+                      label={`Case ID: ${item.caseId}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={`Revision: ${item.revisionId}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
+                </Grid>
+
+
+                
+
+                {/* Remarks */}
+                {item.remarks && (
+                  <Grid item xs={12}>
+                    <Paper 
+                      variant="outlined" 
+                      sx={{ 
+                        p: 1.5, 
+                        bgcolor: '#fafafa',
+                        borderRadius: 1
+                      }}
+                    >
+                      <Typography variant="caption" color="textSecondary">
+                        Remarks:
+                      </Typography>
+                      <Typography variant="body2">
+                        {item.remarks}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                )}
+
+                {/* Timestamps */}
+                {/* <Grid item xs={12}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <EventIcon sx={{ fontSize: 16, color: 'grey.500' }} />
+                      <Typography variant="caption" color="textSecondary">
+                        Created: {item.created_at}
+                      </Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <DeleteIcon sx={{ fontSize: 16, color: 'error.light' }} />
+                      <Typography variant="caption" color="error" fontWeight="500">
+                        Deleted: {item.deleted_at}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid> */}
+              </Grid>
+            </Box>
+          </Paper>
+        ))}
+      </Box>
+    )}
+  </DialogContent>
+  
+  <DialogActions sx={{ p: 2, bgcolor: '#fafafa' }}>
+    <Button 
+      onClick={() => setHistoryOpen(false)}
+      variant="contained"
+      color="primary"
+      sx={{ minWidth: 100 }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+</>
         
     );
+
+    
     
 };
 
