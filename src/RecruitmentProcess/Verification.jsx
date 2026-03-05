@@ -100,7 +100,9 @@ useEffect(() => {
       result = result.filter(user => user.status === statusFilter);
     }
 
-    console.log(result,"ggggtrttttttttttttttt");
+
+    console.log("yyyyyyyyyyyyyyyyyyyyyy",result);
+  
    
    return result.map((item, index) => ({
   id: item.id || `row-${index}`,
@@ -123,6 +125,7 @@ SRC_REFER_DEPT: item.SRC_REFER_DEPT || 'N/A',
 DRIVING_LICENSE_EXPIRY: item.DDRIVING_LICENSE_EXPIRY || 'N/A',
 
 DRIVING_LICENSE: item.DRIVING_LICENSE || 'N/A',
+  REVID: item.CUR_REV_ID || '00',
 
   // DOB & Personal
   ORIGINAL_DOB: item.ORIGINAL_DOB || 'N/A',
@@ -336,6 +339,18 @@ minWidth: 70,
         </Box>
       ),
     },
+
+{
+  field: 'REVID',  // Change from 'CUR_REV_ID' to 'REVID'
+  headerName: 'REVID',
+  flex: 1,
+  minWidth: 110,
+  renderCell: (params) => (
+    <Box sx={{ color: '#374151' }}>
+      {params.value || "00"}  
+    </Box>
+  ),
+},
     {
       field: 'NAME',
       headerName: 'Name',
@@ -363,6 +378,18 @@ minWidth: 70,
       {
       field: 'DEPT',
       headerName: 'Department',
+      flex: 1.5,
+      minWidth: 200,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+          {
+      field: 'MANPOWER_DESG',
+      headerName: 'Designation',
       flex: 1.5,
       minWidth: 200,
       renderCell: (params) => (
@@ -445,23 +472,7 @@ minWidth: 70,
         </Box>
       ),
     },
-    // {
-    //   field: 'OFFER_CTC',
-    //   headerName: 'Offer CTC',
-    //   width: 100,
-    //   renderCell: (params) => (
-    //     <Box sx={{ color: '#7c3aed', display: 'flex', alignItems: 'center', height: '100%', fontWeight: 600, fontSize: '12px' }}>
-    //       ₹{formatNumber(params.value)}L
-    //     </Box>
-    //   ),
-    // },
-    // {
-    //   field: 'STATUS',
-    //   headerName: 'Status',
-    //   minWidth:110,
-    //   flex:0.8,
-    //   renderCell: (params) => getStatusChip(params.value),
-    // },
+
     {
       field: 'submitted_date',
       headerName: 'Submitted',
@@ -472,6 +483,11 @@ minWidth: 70,
         </Box>
       ),
     },
+
+
+
+
+    
     {
       field: 'actions',
       headerName: 'Actions',
@@ -552,6 +568,9 @@ minWidth: 70,
               pageSizeOptions={[5, 10, 20, 50]}
               rowHeight={50}
               columnHeaderHeight={50}
+
+
+
               sx={{
                 border: "none",
                 "& .MuiDataGrid-columnHeaders": {

@@ -147,7 +147,7 @@ useEffect(() => {
 
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: `Do you want to send the onboarding form link to ${email}?`,
+    text: `Do you want to send the  Recruitment form link to ${email}?`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, Send Email',
@@ -287,6 +287,17 @@ useEffect(() => {
         </Box>
       ),
     },
+        {
+                field: 'CUR_REV_ID',
+                headerName: 'REVID',
+                flex: 1,
+                minWidth: 110,
+                renderCell: (params) => (
+                    <Box sx={{ color: '#374151' }}>
+                       {params.value || "00"} 
+                    </Box>
+                ),
+            },
 
         {
       field: 'CHILD_CASEID',

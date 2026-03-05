@@ -19,7 +19,8 @@ import {
   CircularProgress,
   Dialog,
   DialogContent,
-  DialogActions
+  DialogActions,
+  DialogTitle
 } from '@mui/material';
 import {
   Search,
@@ -27,12 +28,18 @@ import {
   Cancel,
   Visibility,
   Refresh,
-  Download
+  Download,
+  Close,
+  BadgeOutlined,
+  CommentOutlined,
+  EventAvailable,
+  EventNote
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { ContextData } from '../Context/ContextData';
 import {API_BASE_URL} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
+import { Info, UndoDot } from 'lucide-react';
 
 const OfferLetter = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +52,9 @@ const OfferLetter = () => {
   const [offerLetterOpen, setOfferLetterOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [ofrList,setOfferLetterData]=useState([]);
+ const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
+ const [selectedRejectedRow, setSelectedRejectedRow] = useState(null);
 
 
   const [token] = useState(() => {
@@ -55,16 +64,107 @@ const OfferLetter = () => {
 
   const handleJoiningDateChange = (caseId, date) => {
 
-
     setJoiningDates(prev => ({
       ...prev,
       [caseId]: date
     }));
   };
+
+
+    const handleViewRejectedDetails = (row) => {
+    setSelectedRejectedRow(row);
+    setDetailsDialogOpen(true);
+  };
+
+
+
+        const handleMoveNextTab = async (row) => {
+
+
+  try {
+
+     const result = await Swal.fire({
+      title: 'Confirm Move',
+      text: `Move to the next approval stage?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Move',
+      cancelButtonText: 'Cancel'
+    });
+
+    // If user cancelled, stop here
+    if (!result.isConfirmed) {
+      return;
+    }
+//  setSubmitting(prev => ({ ...prev, [row.CHILD_CASEID]: true }));
+
+
+
+
+    const payload = {
+        CHILD_CASEID: row?.CHILD_CASEID,
+        RevisionTrackStatus:"Offer Letter"
+    
+      };
+
+      const response = await axios.post(
+       `${API_BASE_URL}/delete-verification-case`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+
+
+    await Swal.fire({
+      icon: "success",
+      title: "Moved Successfully!",
+      text: `The row is moved to the action tab`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    if(fetchOfrData) {
+
+  await   fetchOfrData()
+    }
+
+  
+
+    console.log("Response:", response.data);
+  } catch (error) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error!',
+      text: error.response?.data?.message || 'Failed to move to next stage',
+      confirmButtonColor: '#ef4444'
+        });
+    console.error("Move next tab error:", error);
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
  
   const handleOfferLterEmail=async(rowData)=>
-
 
   {
     try
@@ -85,7 +185,7 @@ const OfferLetter = () => {
     // 🔵 Show confirmation dialog
     const confirm = await Swal.fire({
       title: "Confirm Send Email",
-      text: `Send offer letter to ${rowData.FIRST_NAME} ${rowData.LAST_NAME}?`,
+      text: `Send offer letter to ${rowData.FIRST_NAME}?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Yes, Send Email",
@@ -107,8 +207,6 @@ const OfferLetter = () => {
       }
     });
    
-
-
 
 
         const  payload =
@@ -146,12 +244,10 @@ const OfferLetter = () => {
      await  fetchOfrData()
     }
 
-
            
          } else {
 
            await Swal.fire("Failed", response.data.message, "error");
-
 
          }
        } catch (error) {
@@ -163,6 +259,10 @@ const OfferLetter = () => {
          );
        }
   }
+
+
+
+  
   
   //---------------Fetch the Offer Letter from Api--------------//
   const fetchOfrData = async()=>
@@ -182,7 +282,6 @@ const OfferLetter = () => {
       })
       setOfferLetterData(ofrdata.data.evcVerifiedData || []);
 
-
   
 
     }
@@ -201,16 +300,11 @@ useEffect(() => {
 
 
 
-
-
   const handleViewOfferLetter = async (user) => {
 
   try {
 
-
-
  const date_only = joiningDates[user.CHILD_CASEID];
-
 
     const payload = {
       CHILD_CASEID: user.CHILD_CASEID,
@@ -228,6 +322,7 @@ useEffect(() => {
         },
       }
     );
+
 
 
 setOfferLetterOpen(true);
@@ -251,7 +346,7 @@ setSelectedCandidate({ ...user });
   }
 };
 
-
+console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
 
 
   const filteredData = useMemo(() => {
@@ -377,7 +472,6 @@ setSelectedCandidate({ ...user });
       ),
     },
  
-
 
  {
   field: 'FIRST_NAME',
@@ -552,6 +646,137 @@ setSelectedCandidate({ ...user });
         </Tooltip>
       ),
     },
+
+        {
+      field: 'ofrLetterStatus',
+      headerName: 'C.Status',
+      flex: 0.9,
+      minWidth: 120,
+      renderCell: (params) => getStatusChip(params.value),
+    },
+
+
+     {
+  
+        field: 'ACTIONTAB',
+  
+        headerName: 'Action Tab',
+  
+        flex: 1,
+  
+        minWidth: 110,
+  
+        sortable: false,
+  
+        filterable: false,
+  
+        renderCell: (params) => {
+  
+          // const isSubmitting = submitting[params.row.CASEID] || false;
+  
+          return (
+  
+            <Button
+  
+              variant="contained"
+  
+              size="small"
+  
+          onClick={() => handleMoveNextTab(params.row)}
+  
+       
+  
+  
+              sx={{
+  
+                // background: isSubmitting
+  
+                //   ? '#9ca3af'
+  
+                //   : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+  
+                color: 'white',
+  
+                fontSize: '9px',
+  
+                padding: '4px 10px',
+  
+                borderRadius: '6px',
+  
+                textTransform: 'capitalize',
+  
+                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+  
+                minWidth: '90px',
+  
+                // '&:hover': {
+  
+                //   background: isSubmitting
+  
+                //     ? '#9ca3af'
+  
+                //     : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+  
+                //   transform: isSubmitting ? 'none' : 'translateY(-1px)',
+  
+                //   boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+  
+                // },
+  
+                '&:disabled': {
+  
+                  background: '#9ca3af',
+  
+                  color: '#e5e7eb',
+  
+                }
+  
+              }}
+  
+            >
+  
+         
+                Move to ActionTab
+  
+           
+  
+            </Button>
+  
+          );
+  
+        },
+  
+      },
+
+    {
+  field: 'History',
+  headerName: 'C.History',
+  flex: 0.6,
+  minWidth: 100,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => {
+    return (
+      <Button
+        variant="contained"
+        size="small"
+        onClick={() => handleViewRejectedDetails(params.row)}
+        sx={{
+          backgroundColor: '#3b82f6',
+          textTransform: 'capitalize',
+          fontSize: '11px',
+          padding: '3px 10px',
+          borderRadius: '6px',
+          '&:hover': {
+            backgroundColor: '#2563eb',
+          },
+        }}
+      >
+        History
+      </Button>
+    );
+  },
+},
     {
   field: 'actions',
   headerName: 'Actions',
@@ -579,6 +804,139 @@ setSelectedCandidate({ ...user });
 }
   ], [joiningDates]);
 
+
+      const RejectedDetailsDialog = ({ open, onClose, data }) => {
+    if (!data) return null;
+    
+    return (
+     <Dialog
+  open={open}
+  onClose={onClose}
+  maxWidth="sm"
+  fullWidth
+  PaperProps={{
+    sx: {
+      borderRadius: '16px',
+      overflow: 'hidden',
+      boxShadow: '0 24px 60px rgba(115,93,201,0.2), 0 6px 20px rgba(0,0,0,0.08)',
+    }
+  }}
+>
+  {/* HEADER */}
+  <Box sx={{
+    background: 'linear-gradient(135deg, #3b2790 0%, #735dc9 60%, #9b7fe8 100%)',
+    px: 3, pt: 2.5, pb: 2.8,
+    position: 'relative', overflow: 'hidden',
+  }}>
+    <Box sx={{ position: 'absolute', top: -28, right: -28, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+    <Box sx={{ position: 'absolute', bottom: -20, right: 80, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
+
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <Box>
+        
+        <Typography sx={{ fontSize: '17px', fontWeight: 700, color: 'white', lineHeight: 1.25 }}>
+          {data?.ofrLetterStatus || 'Offer Letter'} Candidate Details
+        </Typography>
+        <Typography sx={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.6)', mt: 0.4 }}>
+          Case ID &nbsp;·&nbsp; <strong style={{ color: 'rgba(255,255,255,0.92)' }}>{data?.CHILD_CASEID || '—'}</strong>
+        </Typography>
+      </Box>
+      <IconButton
+        onClick={onClose} size="small"
+        sx={{ color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', width: 28, height: 28,
+              '&:hover': { background: 'rgba(255,255,255,0.2)', color: 'white' } }}
+      >
+        <Close sx={{ fontSize: 15 }} />
+      </IconButton>
+    </Box>
+  </Box>
+
+  {/* BODY */}
+  <DialogContent sx={{ p: 0, background: '#fff' }}>
+    <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.1 }}>
+
+      {/* Status */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#735dc908', border: '1px solid #735dc91a', transition: 'all 0.15s', '&:hover': { background: '#735dc912', borderColor: '#735dc933', transform: 'translateX(2px)' } }}>
+        <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#735dc918', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <BadgeOutlined sx={{ fontSize: 15, color: '#735dc9' }} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Status</Typography>
+          <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.ofrLetterStatus ? '#111827' : '#c4c4c4', fontStyle: data?.ofrLetterStatus ? 'normal' : 'italic' }}>
+            {data?.ofrLetterStatus || 'Not provided'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Remarks */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#0ea5e908', border: '1px solid #0ea5e91a', transition: 'all 0.15s', '&:hover': { background: '#0ea5e912', borderColor: '#0ea5e933', transform: 'translateX(2px)' } }}>
+        <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#0ea5e918', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <CommentOutlined sx={{ fontSize: 15, color: '#0ea5e9' }} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Remarks</Typography>
+          <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.ofrLetterRemarks ? '#111827' : '#c4c4c4', fontStyle: data?.ofrLetterRemarks ? 'normal' : 'italic' }}>
+            {data?.ofrLetterRemarks || 'No remarks provided'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Dates side by side */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#10b98108', border: '1px solid #10b9811a', transition: 'all 0.15s', '&:hover': { background: '#10b98112', transform: 'translateX(2px)' } }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#10b98118', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <EventAvailable sx={{ fontSize: 15, color: '#10b981' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Joining Date</Typography>
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.joiningDate ? '#111827' : '#c4c4c4', fontStyle: data?.joiningDate ? 'normal' : 'italic' }}>
+              {data?.joiningDate ? new Date(data.joiningDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#f59e0b08', border: '1px solid #f59e0b1a', transition: 'all 0.15s', '&:hover': { background: '#f59e0b12', transform: 'translateX(2px)' } }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#f59e0b18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <EventNote sx={{ fontSize: 15, color: '#f59e0b' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Requested Join Date</Typography>
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.Candid_Reqstd_Join_date ? '#111827' : '#c4c4c4', fontStyle: data?.Candid_Reqstd_Join_date ? 'normal' : 'italic' }}>
+              {data?.Candid_Reqstd_Join_date ? new Date(data.Candid_Reqstd_Join_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+    </Box>
+  </DialogContent>
+
+  {/* FOOTER */}
+  <DialogActions sx={{ px: 2.5, py: 1.8, background: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
+    <Button
+      onClick={onClose}
+      variant="contained"
+      sx={{
+        background: 'linear-gradient(135deg, #3b2790, #735dc9)',
+        borderRadius: '8px', textTransform: 'none',
+        fontWeight: 600, fontSize: '13px', px: 3, py: '7px',
+        boxShadow: '0 4px 14px rgba(115,93,201,0.35)',
+        '&:hover': {
+          background: 'linear-gradient(135deg, #2e1e73, #5e4ab5)',
+          boxShadow: '0 6px 20px rgba(115,93,201,0.45)',
+          transform: 'translateY(-1px)',
+        },
+        transition: 'all 0.15s ease',
+      }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+
+    );
+  };
+
   return (
     <Box sx={{
       maxWidth: "1400px",
@@ -594,95 +952,7 @@ setSelectedCandidate({ ...user });
         border: '1px solid #e2e8f0',
       }}>
         
-        {/* Compact Search bar matching RecruitmentMail */}
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ flex: 1, maxWidth: '400px' }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search name, email, case ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: '#667eea', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  height: '38px',
-                  fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
-                }
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
-                },
-              }}
-            />
-          </Box>
-          
-          <TextField
-            select
-            size="small"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{
-              minWidth: 150,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '10px',
-                backgroundColor: '#f8fafc',
-                height: '38px',
-                fontSize: '13px',
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-              },
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#cedef2ff",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#d1d6ebff",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#667eea",
-                },
-              },
-            }}
-          >
-            <MenuItem value="all">All Status</MenuItem>
-            <MenuItem value="verified">Verified</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="rejected">Rejected</MenuItem>
-          </TextField>
-          
-          <Typography variant="body2" sx={{
-            color: '#64748b',
-            minWidth: 'fit-content',
-            fontWeight: 500,
-            fontSize: '13px'
-          }}>
-            {filteredData.length} offer letters
-          </Typography>
-        </Box> */}
+        
 
         <Box sx={{
           width: "100%",
@@ -698,6 +968,18 @@ setSelectedCandidate({ ...user });
             getRowId={(row) => row.CHILD_CASEID}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
+
+            columnVisibilityModel={{
+  ACTIONTAB: filteredData?.some((row) => {
+    const status = row.ofrLetterStatus?.trim().toLowerCase();
+    return status == "reject";
+  }) || false,
+
+  History: filteredData?.some((row) => {
+    const status = row.ofrLetterStatus?.trim().toLowerCase();
+    return status == "reject" || status == "modify";
+  }) || false,
+}}
         rowHeight={40}
             columnHeaderHeight={42}
             sx={{
@@ -743,8 +1025,19 @@ setSelectedCandidate({ ...user });
         onClose={() => setOfferLetterOpen(false)}
         candidate={selectedCandidate}
       />
+
+                 <RejectedDetailsDialog
+        open={detailsDialogOpen}
+        onClose={() => setDetailsDialogOpen(false)}
+        data={selectedRejectedRow}
+      />
     </Box>
   );
 };
 
 export default OfferLetter;
+
+
+
+
+

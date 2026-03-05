@@ -8,12 +8,16 @@ import axios from 'axios';
 import {
   Paper, Box, Typography, IconButton, Tooltip, TextField,
   InputAdornment, MenuItem, Button, CircularProgress, Snackbar,
-  Alert, Autocomplete
+  Alert, Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { Search, CheckCircle, Cancel, Visibility, Refresh } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import SalaryStackDetailsModal from './SalaryStackDetailsModal';
-import { CirclePlus } from 'lucide-react';
+import { CirclePlus, Info, UndoDot } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const Salarystackup = () => {
@@ -30,51 +34,70 @@ const Salarystackup = () => {
   const [offerCtcValues, setOfferCtcValues] = useState({});
   const [confirmedOffers, setConfirmedOffers] = useState({});
   const [desig, setDesig] = useState([]);
+   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  
+   const [selectedRejectedRow, setSelectedRejectedRow] = useState(null);
   const [loading, setLoading] = useState(true); // overall loading state
   const [token, setToken] = useState(() => {
     const userInfo = localStorage.getItem('userInfo');
     return userInfo ? JSON.parse(userInfo) : null;
   });
 
-  // Fetch all data sequentially: first designations, then salary data
-  useEffect(() => {
-    const fetchAllData = async () => {
-      if (!token?.token) return;
-      setLoading(true);
-      try {
-        // 1. Fetch designations first
-        const deptRes = await axios.get(`${API_BASE_URL}/employee-dept`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token.token}`,
-          },
-        });
-        const designations = deptRes.data?.employeeData?.map(item => item.DESIGNATION) || [];
-        setDesig(designations);
+  console.log("stackupDatastackupDatastackupData",stackupData);
 
-        // 2. Fetch salary stack data
-        const salaryRes = await axios.get(`${API_BASE_URL}/salaryStackGetData`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token.token}`,
-          },
-        });
-        console.log(salaryRes,"tyyyyyyyyyyyyyyyy");
-        setStackupData(salaryRes.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setSnackbar({ open: true, message: 'Failed to load data', severity: 'error' });
-      } finally {
-        setLoading(false);
+const fetchAllData = async () => {
+  if (!token?.token) return;
+
+  setLoading(true);
+  try {
+    const deptRes = await axios.get(`${API_BASE_URL}/employee-dept`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token.token}`,
+      },
+    });
+
+    const designations =
+      deptRes.data?.employeeData?.map(item => item.DESIGNATION) || [];
+
+    setDesig(designations);
+
+    const salaryRes = await axios.get(
+      `${API_BASE_URL}/salaryStackGetData`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token.token}`,
+        },
       }
-    };
+    );
 
-    fetchAllData();
-  }, [token?.token]);
 
-  // Filtered data (exclude accepted candidates)
+console.log(salaryRes,"66666666666688888888888888888");
+
+    setStackupData(salaryRes.data);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    setSnackbar({
+      open: true,
+      message: "Failed to load data",
+      severity: "error",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+useEffect(() => {
+  fetchAllData();
+}, [token?.token]);
+
+
+
+
   const filteredData = useMemo(() => {
     if (!stackupData?.salaryStackUpGetData || stackupData.salaryStackUpGetData.length === 0) {
       return [];
@@ -82,8 +105,13 @@ const Salarystackup = () => {
 
     let result = [...stackupData.salaryStackUpGetData];
 
-    // Remove accepted candidates
+    
+
+
+
     result = result.filter(item => item.cand_aprvl_status !== 'Accept');
+
+    
 
     // Search filter
     if (searchTerm) {
@@ -154,10 +182,10 @@ const Salarystackup = () => {
     // }
 
     // Simulate success
-    setTimeout(() => {
-      setSavingOfferCtc(prev => ({ ...prev, [rowId]: false }));
-      setSnackbar({ open: true, message: `Offer CTC ₹${Number(typedValue).toLocaleString('en-IN')} saved!`, severity: 'success' });
-    }, 500);
+    // setTimeout(() => {
+    //   setSavingOfferCtc(prev => ({ ...prev, [rowId]: false }));
+    //   setSnackbar({ open: true, message: `Offer CTC ₹${Number(typedValue).toLocaleString('en-IN')} saved!`, severity: 'success' });
+    // }, 500);
   };
 
   // Send email
@@ -209,6 +237,83 @@ const Salarystackup = () => {
     setModalOpen(true);
   };
 
+
+      const handleViewRejectedDetails = (row) => {
+    setSelectedRejectedRow(row);
+    setDetailsDialogOpen(true);
+  };
+
+    const handleMoveNextTab = async (row) => {
+
+
+  try {
+
+     const result = await Swal.fire({
+      title: 'Confirm Move',
+      text: `Move to the next approval stage?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Move',
+      cancelButtonText: 'Cancel'
+    });
+
+    // If user cancelled, stop here
+    if (!result.isConfirmed) {
+      return;
+    }
+//  setSubmitting(prev => ({ ...prev, [row.CHILD_CASEID]: true }));
+
+
+
+
+    const payload = {
+        CHILD_CASEID: row?.CHILD_CASEID,
+        RevisionTrackStatus: "Salary Stack Up"
+    
+      };
+
+      const response = await axios.post(
+       `${API_BASE_URL}/delete-verification-case`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+
+
+    await Swal.fire({
+      icon: "success",
+      title: "Moved Successfully!",
+      text: `The row is moved to the Action stage`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    if(fetchAllData) {
+
+  await   fetchAllData()
+    }
+
+  
+
+    console.log("Response:", response.data);
+  } catch (error) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error!',
+      text: error.response?.data?.message || 'Failed to move to next stage',
+      confirmButtonColor: '#ef4444'
+        });
+    console.error("Move next tab error:", error);
+  }
+};
+
   // Status chip helper
   const getStatusChip = (status) => {
     const statusValue = status?.toLowerCase();
@@ -234,7 +339,7 @@ const Salarystackup = () => {
 
   // Handle status change from modal
   const handleStatusChange = (updateData) => {
-    if (updateData.status === 'approved') {
+    if (updateData.status === 'pending') {
       setApprovedRows(prev => ({ ...prev, [updateData.id]: true }));
     }
     if (updateData.offer_ctc && updateData.id) {
@@ -253,42 +358,124 @@ const Salarystackup = () => {
   const columns = useMemo(() => [
     { field: 'SNO', headerName: 'S.NO', flex: 0.5, minWidth: 70, renderCell: (params) => <Box sx={{ fontWeight: 600, color: '#374151' }}>{params.value}</Box> },
     { field: 'CHILD_CASEID', headerName: 'Case ID', flex: 1, minWidth: 130, renderCell: (params) => <Box sx={{ fontWeight: 500, color: '#1f2937' }}>{params.value}</Box> },
+
+         {
+                    field: 'CUR_REV_ID',
+                    headerName: 'REVID',
+                    flex: 1,
+                    minWidth: 110,
+                    renderCell: (params) => (
+                        <Box sx={{ color: '#374151' }}>
+                             {params.value || "00"} 
+                        </Box>
+                    ),
+                },
+    
     { field: 'PLANT', headerName: 'Plant Name', flex: 1.2, minWidth: 160, renderCell: (params) => <Box sx={{ color: '#374151' }}>{params.value}</Box> },
     { field: 'NAME', headerName: 'Name', flex: 1, minWidth: 140, renderCell: (params) => <Box sx={{ fontWeight: 600, color: '#1f2937' }}>{params.value}</Box> },
     { field: 'EMAIL', headerName: 'Email', flex: 1.5, minWidth: 200, renderCell: (params) => <Box sx={{ color: '#374151', fontSize: '12px' }}>{params.value}</Box> },
     { field: 'PHONE_NUMBER', headerName: 'Phone Number', flex: 0.9, minWidth: 120, renderCell: (params) => <Box sx={{ color: '#374151', fontWeight: 500 }}>{formatNumber(params.value)}</Box> },
     { field: 'DEPT', headerName: 'Department', flex: 1, minWidth: 120, renderCell: (params) => <Box sx={{ color: '#374151', fontWeight: 500 }}>{formatNumber(params.value)}</Box> },
-    {
-      field: 'DESIG',
-      headerName: 'Offer Designation',
-      flex: 1,
-    
-      minWidth: 200,
-      renderCell: (params) => {
-        const rowId = params.row.id;
-        const currentValue = params.row.DESIG || '';
+{
+            field: 'MANPOWER_DESG',
+            headerName: 'Designation',
+            flex: 1.2,
+            minWidth: 130,
+            renderCell: (params) => (
+                <Box sx={{
+                    color: '#374151',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                }}>
+                    {params.value || 'N/A'}
+                </Box>
+            ),
+        },
 
-        return (
-          <Autocomplete
-            size="small"
-            options={desig}
-            value={currentValue}
-            onChange={(event, newValue) => handleDesignationChange(rowId, newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder="Select Designation"
-                sx={{
-                  '& .MuiOutlinedInput-root': { height: '35px', fontSize: '12px', marginTop:'5px' }
-                }}
-              />
-            )}
-            sx={{ width: '100%' }}
-            disableClearable
+   {
+  field: 'DESIG',
+  headerName: 'Offer Designation',
+  flex: 1,
+  minWidth: 200,
+  renderCell: (params) => {
+    const rowId = params.row.id;
+    const currentValue = params.row.DESIG || '';
+
+    return (
+      <Autocomplete
+        size="small"
+        options={desig}
+        value={currentValue}
+        onChange={(event, newValue) => handleDesignationChange(rowId, newValue)}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            placeholder="Select Designation"
+            sx={{
+              '& .MuiOutlinedInput-root': { 
+                height: '35px', 
+                fontSize: '12px', 
+                marginTop: '5px',
+                fontWeight: 500,
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                color: '#374151'
+              },
+              '& .MuiInputBase-input': {
+                fontSize: '12px',
+                fontWeight: 500,
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                color: '#374151',
+                padding: '8px'
+              }
+            }}
           />
-        );
-      },
-    },
+        )}
+        sx={{ 
+          width: '100%',
+          '& .MuiAutocomplete-inputRoot': {
+            fontSize: '12px',
+            fontWeight: 500,
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            color: '#374151'
+          }
+        }}
+        disableClearable
+        // Customize dropdown to match cell styles
+        componentsProps={{
+          paper: {
+            sx: {
+              fontSize: '12px',
+              fontFamily: 'Arial, Helvetica, sans-serif',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              borderRadius: '4px',
+              marginTop: '2px',
+              '& .MuiAutocomplete-listbox': {
+                padding: '4px 0',
+                '& .MuiAutocomplete-option': {
+                  fontSize: '12px',
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  fontWeight: 500,
+                  color: '#374151',
+                  minHeight: '32px',
+                  padding: '6px 12px',
+                  '&:hover': {
+                    backgroundColor: '#f3f4f6'
+                  },
+                  '&[aria-selected="true"]': {
+                    backgroundColor: '#e5e7eb',
+                    fontWeight: 600
+                  }
+                }
+              }
+            }
+          }
+        }}
+      />
+    );
+  },
+},
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
@@ -314,6 +501,7 @@ const Salarystackup = () => {
       renderCell: (params) => {
         const rowId = params.row.id;
         const dbValue = params.row.OFFER_CTC;
+        
         const localSavedValue = confirmedOffers[rowId];
         const isSaving = savingOfferCtc[rowId];
         const isLocked = (dbValue && dbValue !== 'N/A' && dbValue !== '0') || localSavedValue;
@@ -396,7 +584,7 @@ const Salarystackup = () => {
     );
   }
 },
-    { field: 'status', headerName: 'Salary Status', flex: 0.9, minWidth: 120, renderCell: (params) => getStatusChip(params.value) },
+    { field: 'cand_aprvl_status',  headerName: 'C.Salary Status', flex: 0.9, minWidth: 120, renderCell: (params) => getStatusChip(params.value) },
     {
       field: 'create',
       headerName: 'Create',
@@ -417,6 +605,146 @@ const Salarystackup = () => {
         );
       },
     },
+
+
+
+        {
+  field: 'History',
+  headerName: 'History',
+  flex: 0.5,
+  minWidth: 70,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => {
+    return (
+      <Tooltip title="View History">
+        <IconButton
+          size="small"
+          onClick={() => handleViewRejectedDetails(params.row)} // Fixed: arrow function
+          sx={{
+            padding: '4px',
+            '&:hover': {
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            },
+          }}
+        >
+          <UndoDot fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    );
+  },
+},
+
+
+
+      {
+
+      field: 'ACTIONTAB',
+
+      headerName: 'Action Tab',
+
+      flex: 1,
+
+      minWidth: 110,
+
+      sortable: false,
+
+      filterable: false,
+
+      renderCell: (params) => {
+
+        // const isSubmitting = submitting[params.row.CASEID] || false;
+
+        return (
+
+          <Button
+
+            variant="contained"
+
+            size="small"
+
+        onClick={() => handleMoveNextTab(params.row)}
+
+     
+
+
+            sx={{
+
+              // background: isSubmitting
+
+              //   ? '#9ca3af'
+
+              //   : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+
+              color: 'white',
+
+              fontSize: '9px',
+
+              padding: '4px 10px',
+
+              borderRadius: '6px',
+
+              textTransform: 'capitalize',
+
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+
+              minWidth: '90px',
+
+              // '&:hover': {
+
+              //   background: isSubmitting
+
+              //     ? '#9ca3af'
+
+              //     : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+
+              //   transform: isSubmitting ? 'none' : 'translateY(-1px)',
+
+              //   boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+
+              // },
+
+              '&:disabled': {
+
+                background: '#9ca3af',
+
+                color: '#e5e7eb',
+
+              }
+
+            }}
+
+          >
+
+       
+              Move to ActionTab
+
+         
+
+          </Button>
+
+        );
+
+      },
+
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     {
       field: 'ACTIONS',
       headerName: 'Actions',
@@ -447,6 +775,64 @@ const Salarystackup = () => {
       },
     },
   ], [offerCtcValues, submitting, savingOfferCtc, confirmedOffers, approvedRows, desig]);
+  
+
+
+     const RejectedDetailsDialog = ({ open, onClose, data }) => {
+    if (!data) return null;
+    
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ 
+          bgcolor: '#735dc9', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Info /> {data?.cand_aprvl_status} Candidate Details
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Case ID:</Typography>
+              <Typography sx={{ color: '#111827' }}>{data.CHILD_CASEID}</Typography>
+            </Box>
+         
+      
+            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Status:</Typography>
+              <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
+                {data?.cand_aprvl_status || ''}
+              </Typography>
+            </Box>
+
+                 { data?.cand_aprvl_status == "Modify" &&   <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Exp Salary:</Typography>
+              <Typography sx={{ color: '#111827' }}>
+                {data?.CandidSalaryModify}
+              </Typography>
+            </Box>}
+     
+       
+            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Remarks:</Typography>
+              <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
+                {data?.cand_aprvl_remarks
+ || 'No remarks provided'}
+              </Typography>
+            </Box>
+   
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} variant="contained" color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
 
   // Show loading spinner until both data sets are ready
   if (loading) {
@@ -467,6 +853,23 @@ const Salarystackup = () => {
             rows={filteredData}
             columns={columns}
             getRowId={(row) => row.verification_id}
+
+            
+columnVisibilityModel={{
+  ACTIONTAB: filteredData?.some((row) => {
+    const status = row.cand_aprvl_status?.trim().toLowerCase();
+    return status === "reject";
+  }) || false,
+
+  History: filteredData?.some((row) => {
+    const status = row.cand_aprvl_status?.trim().toLowerCase();
+    return status == "reject" || status == "modify";
+  }) || false,
+}}
+
+
+
+
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
@@ -517,11 +920,21 @@ const Salarystackup = () => {
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
       </Snackbar>
+
+             <RejectedDetailsDialog
+        open={detailsDialogOpen}
+        onClose={() => setDetailsDialogOpen(false)}
+        data={selectedRejectedRow}
+      />
     </Box>
   );
 };
 
 export default Salarystackup;
+
+
+
+
 
 
 

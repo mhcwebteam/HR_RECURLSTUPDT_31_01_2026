@@ -27,7 +27,7 @@ import SidebarRoutes from "./Components/SidebarRoutes.jsx";
 import History from "./RecruitmentProcess/History";
 import HODHistory from "./HODHistory.jsx";
 
-
+import PreviewPage from "./RecruitmentProcess/previewPage.jsx";
 
 
 
@@ -217,6 +217,22 @@ export default function App() {
 
         ]
       },
+
+
+      {
+  path: "/PreviewPage",
+  element: (
+    <section className='main'>
+     
+      <div className='contentMain flex'>
+        
+        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+          <PreviewPage />
+        </div>
+      </div>
+    </section>
+  )
+},
 
    
       {

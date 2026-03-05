@@ -177,6 +177,7 @@ const EmpVerify = async () => {
           PLANT: draftData.PLANT || '',
           FIRST_NAME: draftData.name || '',
           EMAIL: draftData.email || '',
+          HIGHEST_QUA: draftData.HIGHEST_QUA || '',
           PHONE_NUMBER: draftData.phone_number || '',
           ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
           GENDER: draftData.GENDER || '',
@@ -605,7 +606,19 @@ useEffect(() => {
   const handleDraft  = async () => {
 
 
+// For Draft confirmation
+const draftResult = await Swal.fire({
+    title: "Save as Draft?",
+    text: "Do you want to save this form as a draft?",
+    icon: "info",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, Save Draft!",
+    cancelButtonText: "No, Continue Editing"
+});
 
+if (!draftResult.isConfirmed) return;
 
 
       
@@ -629,12 +642,13 @@ useEffect(() => {
 
 
   data.append('status', "draft");
+  
+         if (formData.AGE) {
+      data.append('AGE', String(formData.AGE));
+    }
 
+  data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
 
-//   data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
-// data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
-// data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
-// data.append('EMAIL', formData.EMAIL || '');
 
    const experiencesArray = experiences.map((exp, index) => {
         const experienceObj = {
@@ -885,6 +899,8 @@ const handleSubmit = async (e) => {
 
     // Add form data fields - only include File objects and regular strings (not file paths)
     Object.entries(formData).forEach(([key, value]) => {
+
+
       if (!value) return;
 
       // If it's a File object (new upload), append it
@@ -902,6 +918,10 @@ const handleSubmit = async (e) => {
     // Add status and other fields that might be missing
     data.append('status', "submit");
 
+        if (formData.AGE) {
+      data.append('AGE', String(formData.AGE));
+    }
+    data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
 
     // Process experiences (similar logic)
     const experiencesArray = experiences.map((exp, index) => {
@@ -1386,7 +1406,9 @@ const handleSubmit = async (e) => {
       background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe, #eff6ff)'
     }}>
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <form        
+        id="recruitmentForm" 
+        onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
           {/* ================= BASIC INFORMATION ================= */}
           <div style={{
@@ -2083,25 +2105,144 @@ const handleSubmit = async (e) => {
           </div>
 
           {/* ================= ACTION BUTTONS ================= */}
-      <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+      {/* <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
               <Send size={13} /> Submit Form
             </button>
 
                  <button type="button" onClick={resetForm} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', color: '#475569', borderRadius: '8px', border: '1.5px solid #cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 1px 4px rgba(100,116,139,0.12)', transition: 'all 0.2s' }}>
               <RotateCcw size={13} /> Reset
-            </button>
+            </button> */}
         </form>
+
+<div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    gap: '15px', 
+    marginTop: '25px',
+    marginBottom: '10px',
+    flexWrap: 'wrap',
+    padding: '15px 0'
+  }}>
+    {/* Submit Button - triggers form submission via form ID */}
+        <button 
+          type="button" 
+          onClick={() => {
+            // Create a fake event and call handleSubmit directly
+            const fakeEvent = { preventDefault: () => {} };
+            handleSubmit(fakeEvent);
+          }} 
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        padding: '10px 35px', 
+        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', 
+        color: '#fff', 
+        borderRadius: '8px', 
+        border: 'none', 
+        cursor: 'pointer', 
+        fontSize: '15px', 
+        fontWeight: '600', 
+        boxShadow: '0 4px 8px rgba(5,150,105,0.3)', 
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-2px)';
+        e.target.style.boxShadow = '0 6px 12px rgba(5,150,105,0.4)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = '0 4px 8px rgba(5,150,105,0.3)';
+      }}
+    >
+      <Send size={16} /> Submit Form
+    </button>
+
+    {/* Save Draft Button */}
+    <button 
+      type="button" 
+      onClick={handleDraft} 
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        padding: '10px 30px', 
+        background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)', 
+        color: '#fff', 
+        borderRadius: '8px', 
+        border: 'none', 
+        cursor: 'pointer', 
+        fontSize: '15px', 
+        fontWeight: '600', 
+        boxShadow: '0 4px 8px rgba(37,99,235,0.3)', 
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-2px)';
+        e.target.style.boxShadow = '0 6px 12px rgba(37,99,235,0.4)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = '0 4px 8px rgba(37,99,235,0.3)';
+      }}
+    >
+      <FileUp size={16} /> Save Draft
+    </button>
+
+    {/* Preview Button */}
+       <button 
+      type="button" 
+    onClick={() => {
+  const previewData = {
+    formData,
+    experiences,
+    sameAsPermanent
+  };
+
+  localStorage.setItem("previewData", JSON.stringify(previewData));
+
+  const base = window.location.origin + "/react/hrmprocess/PreviewPage";
+  window.open(base, "_blank");
+}}
+       
+      
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        padding: '10px 30px', 
+        background: 'linear-gradient(135deg, #6b7280 0%, #8b5cf6 100%)', 
+        color: '#fff', 
+        borderRadius: '8px', 
+        border: 'none', 
+        cursor: 'pointer', 
+        fontSize: '15px', 
+        fontWeight: '600', 
+        boxShadow: '0 4px 8px rgba(139,92,246,0.3)', 
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-2px)';
+        e.target.style.boxShadow = '0 6px 12px rgba(139,92,246,0.4)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = '0 4px 8px rgba(139,92,246,0.3)';
+      }}
+    >
+      <Info size={16} /> Preview
+    </button>
+
+    {/* Reset Button */}
+  
+  </div>
+</div>
 
     
 
-                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-             <button type="submit" onClick={handleDraft} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
-              <Send size={13} /> Save Draft
-            </button>
+                
            
-         
-          </div>
-      </div>
+
     </div>
   );
 };

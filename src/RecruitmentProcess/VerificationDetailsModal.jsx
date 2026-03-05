@@ -187,6 +187,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
       const payload = {
         CHILD_CASEID: data?.CHILD_CASEID,
         remarks,
+        RevisionTrackStatus: "Verification",
       };
 
       const response = await axios.post(
@@ -542,8 +543,8 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
             borderRadius: '6px',
             background: '#f0f7ff',
           }}>
-            <span style={{ fontSize: '11px', color: '#1e3a8a' }}>
-              {documentPath ? '📄 Document Available' : 'No file uploaded'}
+            <span style={{ fontSize: '8px', color: '#1e3a8a' }}>
+              {documentPath ? '📄 Document' : 'No file uploaded'}
             </span>
           </div>
           

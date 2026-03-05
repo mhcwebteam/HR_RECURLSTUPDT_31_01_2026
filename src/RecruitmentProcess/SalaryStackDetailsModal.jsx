@@ -400,14 +400,16 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
   };
 
   const handleSubmit = async (status) => {
+
+    console.log("staaaaaaaaaaaaaaaaaaaaaaaaaaaa",status);
   const result = await Swal.fire({
-    title: status === 'approved' ? 'Confirm Approval' : 'Confirm Rejection',
-    text: `Are you sure you want to ${status === 'approved' ? 'approve' : 'reject'} this salary breakup?`,
+    title: status === 'pending' ? 'Confirm Approval' : 'Confirm Rejection',
+    text: `Are you sure you want to ${status === 'pending' ? 'approve' : 'reject'} this salary breakup?`,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonColor: status === 'approved' ? '#10b981' : '#ef4444',
+    confirmButtonColor: status === 'pending' ? '#10b981' : '#ef4444',
     cancelButtonColor: '#6b7280',
-    confirmButtonText: status === 'approved' ? 'Yes, Approve!' : 'Yes, Reject!',
+    confirmButtonText: status === 'pending' ? 'Yes, Approve!' : 'Yes, Reject!',
     cancelButtonText: 'Cancel'
   });
 
@@ -458,11 +460,13 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
       await Swal.fire({
         icon: "success",
-        title: status === 'approved' ? 'Approved!' : 'Rejected!',
+        title: status === 'pending' ? 'Approved!' : 'Rejected!',
         text: response.data.message || `Salary breakup ${status} successfully!`,
         timer: 1500,
         showConfirmButton: false,
       });
+
+      console.log("ggggggggggggggggggggggg",status);
 
       if (onStatusChange) {
         onStatusChange({
@@ -778,11 +782,11 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
               <span className="text-xs">📄</span>
              Preview PDF
             </button>
-            <button onClick={() => handleSubmit('rejected')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-all flex items-center gap-1 disabled:opacity-50">
+            {/* <button onClick={() => handleSubmit('rejected')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-all flex items-center gap-1 disabled:opacity-50">
               <span className="text-xs">❌</span>
               Reject
-            </button>
-            <button onClick={() => handleSubmit('approved')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all flex items-center gap-1 disabled:opacity-50">
+            </button> */}
+            <button onClick={() => handleSubmit('pending')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all flex items-center gap-1 disabled:opacity-50">
               <span className="text-xs">✔️</span>
               Approve
             </button>

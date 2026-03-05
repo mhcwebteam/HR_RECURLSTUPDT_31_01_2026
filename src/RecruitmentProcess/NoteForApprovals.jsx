@@ -226,6 +226,9 @@ if(noteFrAprvlData) {
     HOD: item.HOD,
     EVC: item.EVC,
     STATUS: item.status,
+    REVID: item.CUR_REV_ID,
+     DESIG: item.DESIG,
+     DEPT: item.DEPT,
     SUBMITTED_DATE: item.created_at,
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
@@ -321,28 +324,37 @@ if(noteFrAprvlData) {
 
      {
       field: "View",
-      headerName: "View",
+      headerName: "APPROVE",
       width: 80,
       sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="View Details">
-          <IconButton
-            size="small"
-            onClick={() => {
-              setSelectedUser(params.row);
-              setModalOpen(true);
-            }}
-            sx={{
-              color: '#3b82f6',
-              '&:hover': {
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              },
-            }}
-          >
-            <Visibility fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
+   renderCell: (params) => (
+  <Button
+    variant="contained"
+    size="small"
+    onClick={() => {
+      setSelectedUser(params.row);
+      setModalOpen(true);
+    }}
+    sx={{
+      background: 'linear-gradient(135deg, #16a211 0%, #239a11 100%)',
+      color: 'white',
+      fontSize: '7px',
+      fontWeight: 600,
+      padding: '4px 12px',
+      borderRadius: '3px',
+      textTransform: 'uppercase',
+      boxShadow: '0 2px 6px rgba(60, 157, 89, 0.3)',
+      minWidth: '70px',
+      '&:hover': {
+        background: 'linear-gradient(135deg, #066332 0%, #1b780a 100%)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)',
+      },
+    }}
+  >
+    Approve
+  </Button>
+)
     },
 
     
@@ -357,6 +369,21 @@ if(noteFrAprvlData) {
         </Box>
       ),
     },
+
+
+        { 
+      field: "REVID", 
+      headerName: "REVID", 
+      flex: 1,
+      minWidth: 130,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+        {params.value || "00"} 
+        </Box>
+      ),
+    },
+
+
     { 
       field: "PLANT", 
       headerName: "Plant", 
@@ -400,6 +427,52 @@ if(noteFrAprvlData) {
           {params.value}
         </Box>
       ),
+    },
+
+
+      {
+
+      field: 'DEPT',
+
+      headerName: 'Department',
+
+      flex: 1,
+
+      minWidth: 120,
+
+      renderCell: (params) => (
+
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
+    },
+
+
+       {
+
+      field: 'DESIG',
+
+      headerName: 'Designation',
+
+      flex: 1,
+
+      minWidth: 130,
+
+      renderCell: (params) => (
+
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
     },
     { 
       field: "HR", 

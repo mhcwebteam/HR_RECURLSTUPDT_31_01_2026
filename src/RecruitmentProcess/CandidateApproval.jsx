@@ -120,6 +120,8 @@ const CandidateApproval = () => {
 
       const apiData = candidData?.data?.candidVerifiedData;
 
+      console.log("apppppppppppppp",apiData);
+
       // 🔥 normalize to array
 
       setCandidAprvlData(
@@ -250,6 +252,7 @@ const CandidateApproval = () => {
     );
 
  
+    console.log("resulteddddddddddddddddddddd",result);
 
 
 
@@ -294,9 +297,14 @@ const CandidateApproval = () => {
 
       NAME: item.NAME || 'N/A',
 
+      
+       REVID: item.CUR_REV_ID || 'N/A',
+
       EMAIL: item.EMAIL || 'N/A',
 
       DEPT: item.DEPT || 'N/A',
+
+      DESIG: item.DESIG || 'N/A',
 
       // Ikkada NULL unte frontend lo 'Pending' chupinchadam safe
 
@@ -499,6 +507,18 @@ const CandidateApproval = () => {
 
     },
 
+            {
+                    field: 'REVID',
+                  headerName: 'REVID',
+                    flex: 1,
+                    minWidth: 110,
+                    renderCell: (params) => (
+                        <Box sx={{ color: '#374151' }}>
+                             {params.value || "00"} 
+                        </Box>
+                    ),
+                },
+
     {
 
       field: 'PLANT',
@@ -520,6 +540,9 @@ const CandidateApproval = () => {
       ),
 
     },
+
+
+
 
    
 
@@ -581,6 +604,29 @@ const CandidateApproval = () => {
       renderCell: (params) => (
 
         <Box sx={{ color: '#374151', fontWeight: 500 }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
+    },
+
+
+       {
+
+      field: 'DESIG',
+
+      headerName: 'Designation',
+
+      flex: 1,
+
+      minWidth: 130,
+
+      renderCell: (params) => (
+
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
 
           {params.value}
 
