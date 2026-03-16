@@ -298,7 +298,7 @@ const CandidateApproval = () => {
       NAME: item.NAME || 'N/A',
 
       
-       REVID: item.CUR_REV_ID || 'N/A',
+       REVID: item.CUR_REV_ID || '00',
 
       EMAIL: item.EMAIL || 'N/A',
 
@@ -853,183 +853,7 @@ const CandidateApproval = () => {
 
 
 
-        {/* Compact Search bar matching RecruitmentMail */}
-
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-
-          <Box sx={{ flex: 1, maxWidth: '400px' }}>
-
-            <TextField
-
-              variant="outlined"
-
-              size="small"
-
-              placeholder="Search name, email..."
-
-              value={searchTerm}
-
-              onChange={(e) => setSearchTerm(e.target.value)}
-
-              fullWidth
-
-              InputProps={{
-
-                startAdornment: (
-
-                  <InputAdornment position="start">
-
-                    <Search sx={{ color: '#667eea', fontSize: '20px' }} />
-
-                  </InputAdornment>
-
-                ),
-
-                sx: {
-
-                  borderRadius: '10px',
-
-                  backgroundColor: '#f8fafc',
-
-                  height: '38px',
-
-                  fontSize: '13px',
-
-                  '&:hover': {
-
-                    backgroundColor: '#f1f5f9',
-
-                  },
-
-                  '&.Mui-focused': {
-
-                    backgroundColor: '#ffffff',
-
-                  }
-
-                }
-
-              }}
-
-              sx={{
-
-                "& .MuiOutlinedInput-root": {
-
-                  "& fieldset": {
-
-                    borderColor: "#cedef2ff",
-
-                  },
-
-                  "&:hover fieldset": {
-
-                    borderColor: "#d1d6ebff",
-
-                  },
-
-                  "&.Mui-focused fieldset": {
-
-                    borderColor: "#667eea",
-
-                  },
-
-                },
-
-              }}
-
-            />
-
-          </Box>
-
-
-
-          <TextField
-
-            select
-
-            size="small"
-
-            value={statusFilter}
-
-            onChange={(e) => setStatusFilter(e.target.value)}
-
-            sx={{
-
-              minWidth: 150,
-
-              '& .MuiOutlinedInput-root': {
-
-                borderRadius: '10px',
-
-                backgroundColor: '#f8fafc',
-
-                height: '38px',
-
-                fontSize: '13px',
-
-                '&:hover': {
-
-                  backgroundColor: '#f1f5f9',
-
-                },
-
-              },
-
-              "& .MuiOutlinedInput-root": {
-
-                "& fieldset": {
-
-                  borderColor: "#cedef2ff",
-
-                },
-
-                "&:hover fieldset": {
-
-                  borderColor: "#d1d6ebff",
-
-                },
-
-                "&.Mui-focused fieldset": {
-
-                  borderColor: "#667eea",
-
-                },
-
-              },
-
-            }}
-
-          >
-
-            <MenuItem value="all">All Status</MenuItem>
-
-            <MenuItem value="verified">Verified</MenuItem>
-
-            <MenuItem value="pending">Pending</MenuItem>
-
-            <MenuItem value="rejected">Rejected</MenuItem>
-
-          </TextField>
-
-
-
-          <Typography variant="body2" sx={{
-
-            color: '#64748b',
-
-            minWidth: 'fit-content',
-
-            fontWeight: 500,
-
-            fontSize: '13px'
-
-          }}>
-
-            {filteredData.length} candidate approvals
-
-          </Typography>
-
-        </Box> */}
+    
 
 
 
@@ -1156,7 +980,10 @@ const CandidateApproval = () => {
         data={selectedUser}
 
         onStatusChange={handleStatusChange}
-           note = ""
+          note = ""
+        personalData=""
+        filterParticularData = ""
+         
       />
 
     </Box>

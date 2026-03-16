@@ -14,7 +14,7 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material';
-import { Search, CheckCircle, Cancel, Visibility, Refresh } from '@mui/icons-material';
+import { Search, CheckCircle, Cancel, Visibility, Refresh, Close, BadgeOutlined, CommentOutlined, EventAvailable, EventNote } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import SalaryStackDetailsModal from './SalaryStackDetailsModal';
 import { CirclePlus, Info, UndoDot } from 'lucide-react';
@@ -151,6 +151,8 @@ useEffect(() => {
     setOfferCtcValues(prev => ({ ...prev, [rowId]: value }));
   };
 
+
+  
   // Save Offer CTC
   const handleSaveOfferCtc = async (rowId, row) => {
     const typedValue = offerCtcValues[rowId];
@@ -608,29 +610,33 @@ useEffect(() => {
 
 
 
-        {
+
+    {
   field: 'History',
-  headerName: 'History',
-  flex: 0.5,
-  minWidth: 70,
+  headerName: 'C.History',
+  flex: 0.6,
+  minWidth: 100,
   sortable: false,
   filterable: false,
   renderCell: (params) => {
     return (
-      <Tooltip title="View History">
-        <IconButton
-          size="small"
-          onClick={() => handleViewRejectedDetails(params.row)} // Fixed: arrow function
-          sx={{
-            padding: '4px',
-            '&:hover': {
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            },
-          }}
-        >
-          <UndoDot fontSize="small" />
-        </IconButton>
-      </Tooltip>
+      <Button
+        variant="contained"
+        size="small"
+        onClick={() => handleViewRejectedDetails(params.row)}
+        sx={{
+          backgroundColor: '#3b82f6',
+          textTransform: 'capitalize',
+          fontSize: '11px',
+          padding: '3px 10px',
+          borderRadius: '6px',
+          '&:hover': {
+            backgroundColor: '#2563eb',
+          },
+        }}
+      >
+        History
+      </Button>
     );
   },
 },
@@ -775,64 +781,185 @@ useEffect(() => {
       },
     },
   ], [offerCtcValues, submitting, savingOfferCtc, confirmedOffers, approvedRows, desig]);
+
+
+      const RejectedDetailsDialog = ({ open, onClose, data }) => {
+      if (!data) return null;
+      
+      return (
+       <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth="sm"
+    fullWidth
+    PaperProps={{
+      sx: {
+        borderRadius: '16px',
+        overflow: 'hidden',
+        boxShadow: '0 24px 60px rgba(115,93,201,0.2), 0 6px 20px rgba(0,0,0,0.08)',
+      }
+    }}
+  >
+    {/* HEADER */}
+    <Box sx={{
+      background: 'linear-gradient(135deg, #3b2790 0%, #735dc9 60%, #9b7fe8 100%)',
+      px: 3, pt: 2.5, pb: 2.8,
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <Box sx={{ position: 'absolute', top: -28, right: -28, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: -20, right: 80, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
+  
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          
+          <Typography sx={{ fontSize: '17px', fontWeight: 700, color: 'white', lineHeight: 1.25 }}>
+        <Info /> {data?.cand_aprvl_status} Candidate Details
+          </Typography>
+          <Typography sx={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.6)', mt: 0.4 }}>
+            Case ID &nbsp;·&nbsp; <strong style={{ color: 'rgba(255,255,255,0.92)' }}>{data?.CHILD_CASEID || '—'}</strong>
+          </Typography>
+        </Box>
+        <IconButton
+          onClick={onClose} size="small"
+          sx={{ color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', width: 28, height: 28,
+                '&:hover': { background: 'rgba(255,255,255,0.2)', color: 'white' } }}
+        >
+          <Close sx={{ fontSize: 15 }} />
+        </IconButton>
+      </Box>
+    </Box>
+  
+    {/* BODY */}
+    <DialogContent sx={{ p: 0, background: '#fff' }}>
+      <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.1 }}>
+  
+        {/* Status */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#735dc908', border: '1px solid #735dc91a', transition: 'all 0.15s', '&:hover': { background: '#735dc912', borderColor: '#735dc933', transform: 'translateX(2px)' } }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#735dc918', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <BadgeOutlined sx={{ fontSize: 15, color: '#735dc9' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Status</Typography>
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.cand_aprvl_status ? '#111827' : '#c4c4c4', fontStyle: data?.ofrLetterStatus ? 'normal' : 'italic' }}>
+          {data?.cand_aprvl_status || ''} 
+            </Typography>
+          </Box>
+        </Box>
+  
+        {/* Remarks */}
+      { data?.cand_aprvl_status == "Modify" &&     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#0ea5e908', border: '1px solid #0ea5e91a', transition: 'all 0.15s', '&:hover': { background: '#0ea5e912', borderColor: '#0ea5e933', transform: 'translateX(2px)' } }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#0ea5e918', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <CommentOutlined sx={{ fontSize: 15, color: '#0ea5e9' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Exp Salary</Typography>
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.CandidSalaryModify ? '#111827' : '#c4c4c4', fontStyle: data?.CandidSalaryModify ? 'normal' : 'italic' }}>
+              {data?.CandidSalaryModify || ''}
+            </Typography>
+          </Box>
+        </Box>
+      }
+        {/* Dates side by side */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: '9px 12px', borderRadius: '10px', background: '#10b98108', border: '1px solid #10b9811a', transition: 'all 0.15s', '&:hover': { background: '#10b98112', transform: 'translateX(2px)' } }}>
+            <Box sx={{ width: 30, height: 30, borderRadius: '8px', background: '#10b98118', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <EventAvailable sx={{ fontSize: 15, color: '#10b981' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Remarks</Typography>
+              <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.joiningDate ? '#111827' : '#c4c4c4', fontStyle: data?.joiningDate ? 'normal' : 'italic' }}>
+{data?.cand_aprvl_remarks || ''}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+  
+      </Box>
+    </DialogContent>
+  
+    {/* FOOTER */}
+    <DialogActions sx={{ px: 2.5, py: 1.8, background: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
+      <Button
+        onClick={onClose}
+        variant="contained"
+        sx={{
+          background: 'linear-gradient(135deg, #3b2790, #735dc9)',
+          borderRadius: '8px', textTransform: 'none',
+          fontWeight: 600, fontSize: '13px', px: 3, py: '7px',
+          boxShadow: '0 4px 14px rgba(115,93,201,0.35)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #2e1e73, #5e4ab5)',
+            boxShadow: '0 6px 20px rgba(115,93,201,0.45)',
+            transform: 'translateY(-1px)',
+          },
+          transition: 'all 0.15s ease',
+        }}
+      >
+        Close
+      </Button>
+    </DialogActions>
+  </Dialog>
+  
+      );
+    };
   
 
 
-     const RejectedDetailsDialog = ({ open, onClose, data }) => {
-    if (!data) return null;
+//      const RejectedDetailsDialog = ({ open, onClose, data }) => {
+//     if (!data) return null;
     
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ 
-          bgcolor: '#735dc9', 
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Info /> {data?.cand_aprvl_status} Candidate Details
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
-              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Case ID:</Typography>
-              <Typography sx={{ color: '#111827' }}>{data.CHILD_CASEID}</Typography>
-            </Box>
+//     return (
+//       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+//         <DialogTitle sx={{ 
+//           bgcolor: '#735dc9', 
+//           color: 'white',
+//           display: 'flex',
+//           alignItems: 'center',
+//           gap: 1
+//         }}>
+//           <Info /> {data?.cand_aprvl_status} Candidate Details
+//         </DialogTitle>
+//         <DialogContent sx={{ mt: 2 }}>
+//           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+//             <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+//               <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Case ID:</Typography>
+//               <Typography sx={{ color: '#111827' }}>{data.CHILD_CASEID}</Typography>
+//             </Box>
          
       
-            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
-              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Status:</Typography>
-              <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
-                {data?.cand_aprvl_status || ''}
-              </Typography>
-            </Box>
+//             <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+//               <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Status:</Typography>
+//               <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
+//                 {data?.cand_aprvl_status || ''}
+//               </Typography>
+//             </Box>
 
-                 { data?.cand_aprvl_status == "Modify" &&   <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
-              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Exp Salary:</Typography>
-              <Typography sx={{ color: '#111827' }}>
-                {data?.CandidSalaryModify}
-              </Typography>
-            </Box>}
+//                  { data?.cand_aprvl_status == "Modify" &&   <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+//               <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Exp Salary:</Typography>
+//               <Typography sx={{ color: '#111827' }}>
+//                 {data?.CandidSalaryModify}
+//               </Typography>
+//             </Box>}
      
        
-            <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
-              <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Remarks:</Typography>
-              <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
-                {data?.cand_aprvl_remarks
- || 'No remarks provided'}
-              </Typography>
-            </Box>
+//             <Box sx={{ display: 'flex', borderBottom: '1px solid #e5e7eb', pb: 1 }}>
+//               <Typography sx={{ width: '150px', fontWeight: 600, color: '#4b5563' }}>Candidate Remarks:</Typography>
+//               <Typography sx={{ color: '#111827', fontStyle: 'italic' }}>
+//                 {data?.cand_aprvl_remarks
+//  || 'No remarks provided'}
+//               </Typography>
+//             </Box>
    
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose} variant="contained" color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
+//           </Box>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={onClose} variant="contained" color="primary">
+//             Close
+//           </Button>
+//         </DialogActions>
+//       </Dialog>
+//     );
+//   };
 
   // Show loading spinner until both data sets are ready
   if (loading) {

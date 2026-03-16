@@ -56,8 +56,11 @@ const [transferDate, setTransferDate] = useState('');
 
 const [historyOpen, setHistoryOpen] = useState(false);
 const [historyData, setHistoryData] = useState([]);
+const [documentUploads, setDocumentUploads] = useState({});
+const [uploadingDoc, setUploadingDoc] = useState({});
 
-console.log(filteredData,"resssssss55555555555555");
+
+
 
 
     const [transferData, setTransferData] = useState({
@@ -174,6 +177,8 @@ console.log(filteredData,"resssssss55555555555555");
             remarks: remarks || ""
         };
 
+
+
         try {
             const response = await axios.post(
                 `${API_BASE_URL}/empTrsferStr`,
@@ -228,6 +233,10 @@ console.log(filteredData,"resssssss55555555555555");
             });
         }
     };
+
+
+ 
+    
 
     useEffect(() => {
         if (!userToken?.token) return;
@@ -311,13 +320,134 @@ console.log(filteredData,"resssssss55555555555555");
         }));
     };
 
+
+
+    const handleFileSelect = (caseId, file) => {
+    if (!file) return;
+    
+    // Validate file size (e.g., max 5MB)
+    if (file.size > 1 * 1024 * 1024) {
+        Swal.fire({
+            icon: 'error',
+            title: 'File Too Large',
+            text: 'File size must be less than 1MB',
+        });
+        return;
+    }
+
+    setDocumentUploads(prev => ({
+        ...prev,
+        [caseId]: file
+    }));
+};
+
+const handleDocumentUpload = async (caseId) => {
+
+
+    const file = documentUploads[caseId];
+    if (!file) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No File Selected',
+            text: 'Please select a file first',
+        });
+        return;
+    }
+
+    // Confirm upload
+    const result = await Swal.fire({
+        title: 'Confirm Upload',
+        text: `Do you want to upload "${file.name}" for Case ID: ${caseId}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Upload!',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setUploadingDoc(prev => ({ ...prev, [caseId]: true }));
+
+    try {
+        // Create FormData
+        const formData = new FormData();
+        formData.append('caseId', caseId);
+        formData.append('hrEvaldocument', file);
+
+  
+
+
+                for (let pair of formData.entries()) {
+            if (pair[1] instanceof File) {
+  
+                console.log('   - Name:', pair[1].name);
+                console.log('   - Type:', pair[1].type);
+                console.log('   - Size:', pair[1].size, 'bytes');
+                console.log('   - Last Modified:', new Date(pair[1].lastModified).toLocaleString());
+            } else {
+                console.log(pair[0] + ':', pair[1]);
+            }
+        }
+
+        // Dummy API call - Replace with your actual API endpoint
+        const response = await axios.post(
+            `${API_BASE_URL}/hr-Evalu-File-Updt`, // Replace with your actual endpoint
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${userToken.token}`,
+                },
+            }
+        );
+
+        // Handle success
+        if (response.data.success || response.status === 200) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Upload Successful!',
+                text: 'Document uploaded successfully',
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            // Clear the uploaded file
+      
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: error.response?.data?.message || 'Something went wrong. Please try again.',
+        });
+    } finally {
+        setUploadingDoc(prev => ({ ...prev, [caseId]: false }));
+    }
+};
+
     const handleActionTypeChange = (caseId, value, rowData) => {
         setActionTypeSelections(prev => ({
             ...prev,
             [caseId]: value
         }));
 
-        if (value === 'New') {
+        if (value == 'New') {
+           if (!documentUploads[caseId]) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'File Required',
+                text: 'Please upload the document before proceeding.',
+                confirmButtonColor: '#1e40af',
+            });
+            // Reset selection
+            setActionTypeSelections(prev => ({
+                ...prev,
+                [caseId]: ''
+            }));
+            return;
+        }
             const payload = {
                 CHILD_CASEID: caseId
             }
@@ -664,6 +794,110 @@ console.log(filteredData,"resssssss55555555555555");
                 </Box>
             ),
         },
+
+
+         {
+  field: 'DOCUMENT_UPLOAD',
+  headerName: 'Document',
+  flex: 1,
+  minWidth: 200,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => {
+    const caseId = params.row.CHILD_CASEID;
+    const selectedFile = documentUploads[caseId];
+    const isUploading = uploadingDoc[caseId];
+
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, width: '100%' }}>
+        
+        {/* Hidden File Input */}
+        <input
+          type="file"
+          id={`file-${caseId}`}
+          style={{ display: 'none' }}
+          onChange={(e) => handleFileSelect(caseId, e.target.files[0])}
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        />
+
+        {/* Choose File Button */}
+        <label htmlFor={`file-${caseId}`} style={{ flex: 1 }}>
+          <Button
+            component="span"
+            variant="outlined"
+            size="small"
+            startIcon={
+              <span style={{ fontSize: '13px' }}>
+                {selectedFile ? '📎' : '📁'}
+              </span>
+            }
+            sx={{
+              width: '100%',
+              fontSize: '11px',
+              padding: '4px 8px',
+              textTransform: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              backgroundColor: selectedFile ? '#f0fdf4' : '#f8faff',
+              borderColor: selectedFile ? '#22c55e' : '#93c5fd',
+              color: selectedFile ? '#15803d' : '#1e2022d8',
+              boxShadow: selectedFile
+                ? '0 1px 4px rgba(34,197,94,0.15)'
+                : '0 1px 4px rgba(59,130,246,0.10)',
+              '&:hover': {
+                backgroundColor: selectedFile ? '#dcfce7' : '#eff6ff',
+                borderColor: selectedFile ? '#16a34a' : '#60a5fa',
+              },
+            }}
+          >
+            {selectedFile
+              ? selectedFile.name.length > 12
+                ? selectedFile.name.substring(0, 12) + '...'
+                : selectedFile.name
+              : 'Choose File'}
+          </Button>
+        </label>
+
+        {/* Save Button */}
+        {selectedFile && (
+          <Button
+            size="small"
+            variant="contained"
+            disabled={isUploading}
+            onClick={() => handleDocumentUpload(caseId)}
+            sx={{
+              minWidth: '58px',
+              fontSize: '11px',
+              padding: '4px 10px',
+              textTransform: 'none',
+              borderRadius: '6px',
+              fontWeight: 600,
+              background: isUploading
+                ? '#bdbdbd'
+                : 'linear-gradient(135deg, #1e40af, #2563eb)',
+              boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)',
+                boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
+              },
+              '&:disabled': {
+                backgroundColor: '#e5e7eb',
+                color: '#9ca3af',
+              },
+            }}
+          >
+            {isUploading ? (
+              <CircularProgress size={13} sx={{ color: 'white' }} />
+            ) : (
+              '💾 Save'
+            )}
+          </Button>
+        )}
+
+      </Box>
+    );
+  },
+},
 
  {
       field: 'HISTORY',

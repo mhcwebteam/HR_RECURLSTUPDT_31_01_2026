@@ -260,36 +260,67 @@ const OfferLetter = () => {
        }
   }
 
+const fetchOfrData = async () => {
+  try {
+    const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token.token}`,
+      }
+    });
+    const list = ofrdata.data.evcVerifiedData || [];
 
+    console.log("listtttttttttttttt",list);
+    setOfferLetterData(list);
+
+    // ✅ Pre-fill joining dates from API response
+    const prefilled = {};
+    list.forEach((item) => {
+      const rawDate = item.JOINING_DATE || item.joiningDate || item.JOIN_DATE || item.DOJ;
+      if (rawDate) {
+        try {
+          const formatted = new Date(rawDate).toISOString().split('T')[0];
+          prefilled[item.CHILD_CASEID] = formatted;
+        } catch (e) {
+          prefilled[item.CHILD_CASEID] = rawDate;
+        }
+      }
+    });
+    setJoiningDates(prefilled);
+
+  } catch (err) {
+    console.error("Error In Fetching Offer List");
+  }
+};
 
   
   
   //---------------Fetch the Offer Letter from Api--------------//
-  const fetchOfrData = async()=>
+  // const fetchOfrData = async()=>
 
    
-  {
+  // {
 
-    try
-    {
-      const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`,
-      {
-        headers:
-        {
-            "Accept"       : "application/json",
-            "Authorization": `Bearer ${token.token}`,
-        }
-      })
-      setOfferLetterData(ofrdata.data.evcVerifiedData || []);
+  //   try
+  //   {
+  //     const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`,
+  //     {
+  //       headers:
+  //       {
+  //           "Accept"       : "application/json",
+  //           "Authorization": `Bearer ${token.token}`,
+  //       }
+  //     })
+  //     setOfferLetterData(ofrdata.data.evcVerifiedData || []);
 
   
 
-    }
-    catch(err)
-    {
-      console.error("Error In Fetching Offer List");
-    }
-  }
+  //   }
+  //   catch(err)
+  //   {
+  //     console.error("Error In Fetching Offer List");
+  //   }
+  // }
   
   //useEffect Calling here ----
 useEffect(() => {
@@ -803,6 +834,10 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
   ),
 }
   ], [joiningDates]);
+
+
+
+  
 
 
       const RejectedDetailsDialog = ({ open, onClose, data }) => {

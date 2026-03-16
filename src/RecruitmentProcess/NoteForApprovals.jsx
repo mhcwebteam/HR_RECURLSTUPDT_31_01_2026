@@ -52,7 +52,10 @@ const NoteForApprovals = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [approveRow, setApproveRow] = useState(null);
   const [approveOpen, setApproveOpen] = useState(false);
+ const [ personalData,setPersonalData] = useState([]);
 
+
+  console.log("personaaaaaaaaaaaaaaa",personalData);
 
 
   const [token] = useState(() => {
@@ -61,8 +64,40 @@ const NoteForApprovals = () => {
   });
 
 
-  console.log("tokennnnnnnnnnnnnnnnnnnn0",token?.Emp_Category);
+
+
+
+   const EmpVerify = async () => {
  
+
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/emp-verify-drftdata`,
+      {
+  headers: { Authorization: `Bearer ${token.token}` },
+      }
+    );
+
+
+
+
+
+  setPersonalData(response.data?.data);
+
+
+
+  } catch (err) {
+    console.error("Error fetching verify data", err);
+  
+  }
+};
+
+useEffect(() => {
+  EmpVerify();
+}, [token?.token]);
+
+
+
 
 
   
@@ -80,19 +115,9 @@ const noteFrAprvlData = async () => {
 
     const verifyData = res?.data?.VerifyData;
 
-    // const approvals =
-    //   token?.Emp_Category == "HR" &&
-    //   verifyData?.DIRECTOR == "Approved" &&
-    //   verifyData?.HOD == "Approved" &&
-    //   verifyData?.EVC == "Approved";
+ 
  setNoteAprvlData(verifyData);
-    
 
-    // if (approvals) {
-     
-    // } else {
-    //   setNoteAprvlData([]);
-    // }
 
     console.log("verifyDataverifyDataverifyData",verifyData);
 
@@ -322,9 +347,9 @@ if(noteFrAprvlData) {
 
 
 
-     {
+    {
       field: "View",
-      headerName: "APPROVE",
+      headerName: "Action",
       width: 80,
       sortable: false,
    renderCell: (params) => (
@@ -338,10 +363,10 @@ if(noteFrAprvlData) {
     sx={{
       background: 'linear-gradient(135deg, #16a211 0%, #239a11 100%)',
       color: 'white',
-      fontSize: '7px',
-      fontWeight: 600,
-      padding: '4px 12px',
-      borderRadius: '3px',
+      fontSize: '8px',
+      fontWeight: 700,
+      padding: '6px 8px',
+      borderRadius: '5px',
       textTransform: 'uppercase',
       boxShadow: '0 2px 6px rgba(60, 157, 89, 0.3)',
       minWidth: '70px',
@@ -799,7 +824,8 @@ token?.Emp_Category == "HR" && {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         data={selectedUser}
-         note = {noteFrAprvlData}
+         note = {noteAprvlData}
+         personalData = {personalData}
       />
     </Box>
   );
