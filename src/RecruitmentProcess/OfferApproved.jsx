@@ -31,7 +31,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { ContextData } from '../Context/ContextData';
-import {API_BASE_URL} from '../Config/Config.jsx';
+import {API_BASE_URL, API_BASE_URLss} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
 
 const OfferApproved = () => {
@@ -45,6 +45,8 @@ const OfferApproved = () => {
   const [offerLetterOpen, setOfferLetterOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [ofrList,setOfferLetterData]=useState([]);
+
+  const [draftData, setDraftData] = useState([]);
 
 
 
@@ -137,6 +139,8 @@ const OfferApproved = () => {
       }
     );
 
+
+
     setOfferLetterData(response.data?.candidAcptdOfr ?? []);
   } catch (err) {
     console.error("Error in fetching offer list:", err);
@@ -148,6 +152,15 @@ useEffect(() => {
     fetchOfrData();
   }
 }, [token?.token]);
+
+
+
+
+
+
+
+
+
 
 
 
@@ -458,6 +471,36 @@ useEffect(() => {
       ),
     },
 
+    
+{
+  field: "candidOfrLtrSigned",
+  headerName: "C.ofrLtrSigned",
+  width: 150,
+  sortable: false,
+  renderCell: (params) => {
+    if (!params.value) return "-";
+
+    const fileUrl = `${API_BASE_URLss}/storage/candid_apprvl/${params.value}`;
+    const fileName = params.value.split("_").pop();
+
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: "#1e40af",
+          fontSize: "12px",
+          textDecoration: "underline",
+          cursor: "pointer"
+        }}
+      >
+        {fileName}
+      </a>
+    );
+  }
+},
+
 
     
     {
@@ -484,7 +527,12 @@ useEffect(() => {
       </Button>
     </Tooltip>
   ),
-}
+},
+
+
+
+
+
   ], [joiningDates]);
 
   return (

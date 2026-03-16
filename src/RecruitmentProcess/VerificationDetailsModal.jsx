@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { 
-  User, Mail, Phone, Briefcase, GraduationCap, FileUp, Send, 
-  X, Eye, Download, FileText, Check, CheckCircle, XCircle, Clock, 
-  Maximize2, ChevronUp, ChevronDown, Calendar, MapPin, IdCard, 
-  FileCheck, Hash, Home, BookOpen, Award, Globe, Users, CreditCard, 
+import {
+  User, Mail, Phone, Briefcase, GraduationCap, FileUp, Send,
+  X, Eye, Download, FileText, Check, CheckCircle, XCircle, Clock,
+  Maximize2, ChevronUp, ChevronDown, Calendar, MapPin, IdCard,
+  FileCheck, Hash, Home, BookOpen, Award, Globe, Users, CreditCard,
   Shield, FileSignature, Building, DollarSign, AlertCircle, Heart,
   ThumbsUp, ThumbsDown, MessageCircle, UserCheck, PenTool, Map, Flag,
-  CreditCard as CreditCardIcon, Book, PhoneCall, Info
+  CreditCard as CreditCardIcon, Book, PhoneCall, Info,
+  Droplet
 } from 'lucide-react';
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
-
+import { useNavigate } from 'react-router-dom';
 const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh }) => {
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
   const [remarks, setRemarks] = useState('');
@@ -22,7 +23,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
   const [rejectedDocs, setRejectedDocs] = useState({});
   const [loading, setLoading] = useState(false);
   const [sameAsPermanent, setSameAsPermanent] = useState(data?.DESIG === 'YES');
-
+const navigate = useNavigate();
   // Section collapse states
   const [openSections, setOpenSections] = useState({
     basicInfo: true,
@@ -34,11 +35,11 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
 
   useEffect(() => {
     setSameAsPermanent(data?.DESIG === 'YES');
-    
+
     // Initialize approved/rejected docs from existing statuses
     const initialApproved = {};
     const initialRejected = {};
-    
+
     if (data?.documents) {
       // Map document IDs to their status
       const docStatusMap = {
@@ -54,7 +55,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
         PHD_DocId: 'PHD_Status',
         OTHER_DocId: 'OTHER_Status'
       };
-      
+
       Object.entries(docStatusMap).forEach(([docIdKey, statusKey]) => {
         if (data.documents[docIdKey]) {
           const docId = data.documents[docIdKey];
@@ -67,7 +68,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
         }
       });
     }
-    
+
     setApprovedDocs(initialApproved);
     setRejectedDocs(initialRejected);
   }, [data]);
@@ -103,7 +104,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
 
     try {
       let payload = {};
-      
+
       if (type === 'document') {
         payload.Document_Id = documentId;
         payload.Verification_Id = data?.Verification_Id;
@@ -231,7 +232,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
 
   const handleSubmit = async () => {
     const hasApproved = Object.values(approvedDocs).some(status => status === true);
-    
+
     if (!hasApproved) {
       return Swal.fire({
         title: "Approval Required",
@@ -260,7 +261,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
         child_caseId: data?.CHILD_CASEID,
         remarks,
       };
-      
+
       const response = await axios.post(`${API_BASE_URL}/verify-update`, payload, {
         headers: {
           Authorization: `Bearer ${userToken.token}`,
@@ -332,7 +333,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
           {label}
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
+          <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
@@ -348,7 +349,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
               {value || 'N/A'}
             </span>
           </div>
-          
+
           {documentPath && (
             <button
               onClick={() => handleViewDocument(documentPath, label)}
@@ -440,7 +441,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
           {label}
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
+          <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
@@ -456,7 +457,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
               {value || 'N/A'}
             </span>
           </div>
-          
+
           {documentPath && (
             <button
               onClick={() => handleViewDocument(documentPath, label)}
@@ -531,7 +532,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
           {label}
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
+          <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
@@ -543,30 +544,31 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
             background: '#f0f7ff',
           }}>
             <span style={{ fontSize: '11px', color: '#1e3a8a' }}>
-              {documentPath ? '📄 Document Available' : 'No file uploaded'}
+              {documentPath ? '📄 Doc Available' : 'No file uploaded'}
             </span>
+            {documentPath && (
+              <button
+                onClick={() => handleViewDocument(documentPath, label)}
+                style={{
+                  padding: '6px 10px',
+                  background: '#dbeafe',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#1e40af',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}
+              >
+                <Eye size={14} />
+              </button>
+            )}
           </div>
-          
-          {documentPath && (
-            <button
-              onClick={() => handleViewDocument(documentPath, label)}
-              style={{
-                padding: '6px 10px',
-                background: '#dbeafe',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#1e40af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <Eye size={14} /> View
-            </button>
-          )}
+
+
 
           {documentId && !isApproved && !isRejected && documentPath && (
             <button
@@ -628,7 +630,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div className={`bg-white rounded-2xl ${isMaximized ? 'w-full h-full' : 'max-w-7xl w-full max-h-[90vh]'} overflow-hidden shadow-2xl flex flex-col`}>
-          
+
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-4 flex justify-between items-center">
             <div>
@@ -659,7 +661,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
               border: '3px solid #87b5ee',
               background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe, #eff6ff)'
             }}>
-              
+
               {/* ================= BASIC INFORMATION ================= */}
               <div style={{
                 background: 'linear-gradient(160deg, #fafafa 0%, #ffffff 40%, #ffffff 100%)',
@@ -704,184 +706,184 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
                 {openSections.basicInfo && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px' }}>
-                      
+
                       {/* Row 1: Case Info */}
-                      <FieldWithApprove 
-                        label="Child Case ID" 
-                        value={data?.CHILD_CASEID} 
+                      <FieldWithApprove
+                        label="Child Case ID"
+                        value={data?.CHILD_CASEID}
                         icon={Hash}
                       />
-                      <FieldWithApprove 
-                        label="Plant" 
-                        value={data?.PLANT} 
+                      <FieldWithApprove
+                        label="Plant"
+                        value={data?.PLANT}
                         icon={Building}
                       />
-                      <FieldWithApprove 
-                        label="Department" 
-                        value={data?.DEPT} 
+                      <FieldWithApprove
+                        label="Department"
+                        value={data?.DEPT}
                         icon={Briefcase}
                       />
-                      <FieldWithApprove 
-                        label="Name *" 
-                        value={data?.NAME} 
+                      <FieldWithApprove
+                        label="Name *"
+                        value={data?.NAME}
                         icon={User}
                       />
 
                       {/* Row 2: Personal Info */}
-                      <SelectFieldWithApprove 
-                        label="Gender *" 
-                        value={data?.GENDER} 
+                      <SelectFieldWithApprove
+                        label="Gender *"
+                        value={data?.GENDER}
                         icon={Users}
                       />
-                      
-                      <SelectFieldWithApprove 
-                        label="Marital Status *" 
-                        value={data?.MARITAL_STATUS} 
+
+                      <SelectFieldWithApprove
+                        label="Marital Status *"
+                        value={data?.MARITAL_STATUS}
                         icon={Heart}
                       />
-                      
-                      <FieldWithApprove 
-                        label="Languages Known *" 
-                        value={data?.LANG_KNOWN} 
+
+                      <FieldWithApprove
+                        label="Languages Known *"
+                        value={data?.LANG_KNOWN}
                         icon={Globe}
                       />
-                      
-                      <FieldWithApprove 
-                        label="Mother Tongue *" 
-                        value={data?.MOTHER_TONGUE} 
+
+                      <FieldWithApprove
+                        label="Mother Tongue *"
+                        value={data?.MOTHER_TONGUE}
                         icon={Book}
                       />
 
                       {/* Row 3: Contact Info */}
-                      <FieldWithApprove 
-                        label="Email *" 
-                        value={data?.EMAIL} 
+                      <FieldWithApprove
+                        label="Email *"
+                        value={data?.EMAIL}
                         icon={Mail}
                       />
-                      
-                      <FieldWithApprove 
-                        label="Phone Number *" 
-                        value={data?.PHONE_NUMBER} 
+
+                      <FieldWithApprove
+                        label="Phone Number *"
+                        value={data?.PHONE_NUMBER}
                         icon={Phone}
                       />
-                      
-                      <FieldWithApprove 
-                        label="Emergency Contact *" 
-                        value={data?.EMER_CONTACT_NUM} 
+
+                      <FieldWithApprove
+                        label="Emergency Contact *"
+                        value={data?.EMER_CONTACT_NUM}
                         icon={PhoneCall}
                       />
 
                       {/* Row 4: DOB & Age */}
-                      <FieldWithApprove 
-                        label="DOB (as per original) *" 
-                        value={data?.ORIGINAL_DOB} 
+                      <FieldWithApprove
+                        label="DOB (as per original) *"
+                        value={data?.ORIGINAL_DOB}
                         icon={Calendar}
                       />
-                      
-                      <FieldWithApprove 
-                        label="DOB (as per Aadhar) *" 
-                        value={data?.DOB_ASPER_ADHAR} 
+
+                      <FieldWithApprove
+                        label="DOB (as per Aadhar) *"
+                        value={data?.DOB_ASPER_ADHAR}
 
                         icon={Calendar}
                       />
-                      
-                      <FieldWithApprove 
-                        label="Age" 
-                        value={data?.AGE} 
+
+                      <FieldWithApprove
+                        label="Age"
+                        value={data?.AGE}
                         icon={Award}
                       />
 
-                      <FieldWithApprove 
-                        label="Highest Qualification *" 
-                        value={data?.HIGHEST_QUA} 
+                      <FieldWithApprove
+                        label="Highest Qualification *"
+                        value={data?.HIGHEST_QUA}
                         icon={GraduationCap}
                       />
 
                       {/* Row 5: ID Numbers */}
-                      <FieldWithApprove 
-                        label="Aadhaar Number *" 
-                        value={data?.AADHAR_NUMBER} 
-              
+                      <FieldWithApprove
+                        label="Aadhaar Number *"
+                        value={data?.AADHAR_NUMBER}
+
                         icon={IdCard}
                       />
-                      
-                      <FieldWithApprove 
-                        label="PAN Number *" 
-                        value={data?.PAN_NUM} 
+
+                      <FieldWithApprove
+                        label="PAN Number *"
+                        value={data?.PAN_NUM}
                         icon={CreditCard}
                       />
-                      
-                      <FieldWithApprove 
-                        label="UAN Number *" 
-                        value={data?.UAN_NUM} 
-                 
+
+                      <FieldWithApprove
+                        label="UAN Number *"
+                        value={data?.UAN_NUM}
+
                         icon={Shield}
                       />
-                      
-                      <FieldWithApprove 
-                        label="ESI Number *" 
-                        value={data?.ESI_NUM} 
+
+                      <FieldWithApprove
+                        label="ESI Number *"
+                        value={data?.ESI_NUM}
                         icon={CreditCardIcon}
                       />
 
                       {/* Row 6: Source Info */}
-                      <SelectFieldWithApprove 
-                        label="Source *" 
-                        value={data?.SRC_TYPE} 
+                      <SelectFieldWithApprove
+                        label="Source *"
+                        value={data?.SRC_TYPE}
                         icon={Info}
                       />
-                      
+
                       {data?.SRC_TYPE === "reference" && (
                         <>
-                          <FieldWithApprove 
-                            label="Reference Name *" 
-                            value={data?.SRC_REFER_NAME} 
+                          <FieldWithApprove
+                            label="Reference Name *"
+                            value={data?.SRC_REFER_NAME}
                             icon={UserCheck}
                           />
-                          <FieldWithApprove 
-                            label="Reference Dept *" 
-                            value={data?.SRC_REFER_DEPT} 
+                          <FieldWithApprove
+                            label="Reference Dept *"
+                            value={data?.SRC_REFER_DEPT}
                             icon={Building}
                           />
                         </>
                       )}
 
                       {/* Row 7: Blood Group */}
-                      <SelectFieldWithApprove 
-                        label="Blood Group" 
-                        value={data?.BLOOD_GROUP} 
-                        icon={Heart}
+                      <SelectFieldWithApprove
+                        label="Blood Group"
+                        value={data?.BLOOD_GROUP}
+                        icon={Droplet}
                       />
 
                       {/* Row 8: Passport & License */}
-                      <FieldWithApprove 
-                        label="Passport Number" 
-                        value={data?.PASSPORT_NUMBER} 
+                      <FieldWithApprove
+                        label="Passport Number"
+                        value={data?.PASSPORT_NUMBER}
                         documentId={data?.documents?.PASSPORT_DocId}
                         documentPath={data?.documents?.PASSPORT_FILE}
                         icon={FileSignature}
                       />
-                      
+
                       {data?.PASSPORT_NUMBER && (
-                        <FieldWithApprove 
-                          label="Passport Expiry Date *" 
-                          value={data?.PASSPORT_EXPIRY} 
+                        <FieldWithApprove
+                          label="Passport Expiry Date *"
+                          value={data?.PASSPORT_EXPIRY}
                           icon={Calendar}
                         />
                       )}
 
-                      <FieldWithApprove 
-                        label="Driving Licence Number" 
-                        value={data?.DRIVING_LICENSE} 
+                      <FieldWithApprove
+                        label="Driving Licence Number"
+                        value={data?.DRIVING_LICENSE}
                         documentId={data?.documents?.LICENSE_DocId}
                         documentPath={data?.documents?.LICENSE_FILE}
                         icon={IdCard}
                       />
-                      
+
                       {data?.DRIVING_LICENSE && (
-                        <FieldWithApprove 
-                          label="Driving Licence Expiry *" 
-                          value={data?.DRIVING_LICENSE_EXPIRY} 
+                        <FieldWithApprove
+                          label="Driving Licence Expiry *"
+                          value={data?.DRIVING_LICENSE_EXPIRY}
                           icon={Calendar}
                         />
                       )}
@@ -889,7 +891,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
 
                     {/* ADDRESS SECTION */}
                     <div style={{ marginTop: '12px', borderTop: '1px solid rgba(147,197,253,0.45)', paddingTop: '8px' }}>
-                      
+
                       {/* Permanent Address */}
                       <div style={{ marginBottom: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
@@ -952,34 +954,34 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
                           Document Uploads
                         </span>
                       </div>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                        <FileFieldWithApprove 
-                          label="Aadhaar Card *" 
+                        <FileFieldWithApprove
+                          label="Aadhaar Card *"
                           documentPath={data?.documents?.Aadhar_certi}
                           documentId={data?.documents?.Aadhar_DocId}
                         />
-                        
-                        <FileFieldWithApprove 
-                          label="Resume with Sign *" 
+
+                        <FileFieldWithApprove
+                          label="Resume with Sign *"
                           documentPath={data?.documents?.RESUME_UPLOAD}
                           documentId={data?.documents?.RESUME_DocId}
                         />
-                        
-                        <FileFieldWithApprove 
-                          label="PAN Card *" 
+
+                        <FileFieldWithApprove
+                          label="PAN Card *"
                           documentPath={data?.documents?.Pan_certi}
                           documentId={data?.documents?.pan_DocId}
                         />
-                        
-                        <FileFieldWithApprove 
-                          label="Photo *" 
+
+                        <FileFieldWithApprove
+                          label="Photo *"
                           documentPath={data?.documents?.photo}
                           documentId={data?.documents?.photo_DocId}
                         />
-                        
-                        <FileFieldWithApprove 
-                          label="UAN Document" 
+
+                        <FileFieldWithApprove
+                          label="UAN Document"
                           documentPath={data?.documents?.UAN_FILE}
                           documentId={data?.documents?.UAN_DocId}
                         />
@@ -1206,109 +1208,113 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
                     width: '22px', height: '22px', fontSize: '9px', fontWeight: '700',
                     cursor: 'pointer'
                   }}>
+
                     {openSections.experience ? '▲' : '▼'}
                   </button>
                 </div>
 
-                {openSections.experience && data?.experienceData?.map((exp, index) => (
-                  <div key={index} style={{ 
-                    marginBottom: '10px', 
-                    padding: '10px', 
-                    border: '1.5px solid rgba(147,197,253,0.5)', 
-                    borderRadius: '10px',
-                    background: exp.END_DATE === new Date().toISOString().split('T')[0] ? '#f0f7ff' : '#ffffff'
-                  }}>
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ 
-                        padding: '2px 10px', 
-                        background: exp.END_DATE === new Date().toISOString().split('T')[0] ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)', 
-                        borderRadius: '20px', 
-                        fontSize: '11px', 
-                        fontWeight: '700', 
-                        color: exp.END_DATE === new Date().toISOString().split('T')[0] ? '#1d4ed8' : '#3b82f6' 
-                      }}>
-                        {exp.END_DATE === new Date().toISOString().split('T')[0] ? 'Current Company' : `Company ${index + 1}`}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
-                      <FieldWithApprove label="Company Name" value={exp.COMPANY_NAME} icon={Building} />
-                      <FieldWithApprove label="Designation" value={exp.DESIGNATION} icon={Briefcase} />
-                      <FieldWithApprove label="From Date" value={exp.START_DATE} icon={Calendar} />
-                      <FieldWithApprove label="To Date" value={exp.END_DATE === new Date().toISOString().split('T')[0] ? 'Present' : exp.END_DATE} icon={Calendar} />
-                    </div>
-
-                    {/* Experience Documents */}
-                    {exp.END_DATE === new Date().toISOString().split('T')[0] && (
-                      <div style={{ 
-                        marginTop: '8px',
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-                        gap: '8px',
-                        padding: '8px',
-                        background: 'rgba(255,255,255,0.8)',
-                        borderRadius: '8px',
-                        border: '1px dashed #93c5fd'
-                      }}>
-                        {exp.payslips?.map((payslip, pIdx) => (
-                          <FileFieldWithApprove 
-                            key={payslip.EMP_PAYSLIP_ID || pIdx}
-                            label={`Payslip ${pIdx + 1}`}
-                            documentPath={payslip.PAYSLIP_FILE}
-                            documentId={payslip.EMP_PAYSLIP_ID}
-                          />
-                        ))}
-                        
-                        {exp.OFFER_LETTER_DOC && (
-                          <FileFieldWithApprove 
-                            label="Offer Letter"
-                            documentPath={exp.OFFER_LETTER_DOC}
-                            documentId={exp.OFFER_DOC_ID}
-                          />
-                        )}
-                        
-                        {exp.RELIVING_LETTER_DOC && (
-                          <FileFieldWithApprove 
-                            label="Relieving Letter"
-                            documentPath={exp.RELIVING_LETTER_DOC}
-                            documentId={exp.RELIEVING_DOC_ID}
-                          />
-                        )}
-                        
-                        {exp.EXPERIENCE_DOC && (
-                          <FileFieldWithApprove 
-                            label="Experience Letter"
-                            documentPath={exp.EXPERIENCE_DOC}
-                            documentId={exp.EXP_DOC_ID}
-                          />
-                        )}
-                        
-                        {exp.BANK_STATEMENT_DOC && (
-                          <FileFieldWithApprove 
-                            label="Bank Statement"
-                            documentPath={exp.BANK_STATEMENT_DOC}
-                            documentId={exp.BANK_STATEMENT_DOC_ID}
-                          />
-                        )}
+                {openSections.experience && (
+                  <>{data?.experienceData?.map((exp, index) => (
+                    <div key={index} style={{
+                      marginBottom: '10px',
+                      padding: '10px',
+                      border: '1.5px solid rgba(147,197,253,0.5)',
+                      borderRadius: '10px',
+                      background: exp.END_DATE === new Date().toISOString().split('T')[0] ? '#f0f7ff' : '#ffffff'
+                    }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <span style={{
+                          padding: '2px 10px',
+                          background: exp.END_DATE === new Date().toISOString().split('T')[0] ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)',
+                          borderRadius: '20px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: exp.END_DATE === new Date().toISOString().split('T')[0] ? '#1d4ed8' : '#3b82f6'
+                        }}>
+                          {exp.END_DATE === new Date().toISOString().split('T')[0] ? 'Current Company' : `Company ${index + 1}`}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
 
-                {/* CTC Information */}
-                <div style={{ 
-                  marginTop: '12px', 
-                  padding: '10px', 
-                  background: 'rgba(37,99,235,0.05)', 
-                  borderRadius: '8px',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: '8px'
-                }}>
-                  <FieldWithApprove label="Current CTC" value={data?.CURRENT_CTC ? `₹${data.CURRENT_CTC}` : 'N/A'} icon={DollarSign} />
-                  <FieldWithApprove label="Expected CTC" value={data?.EXP_CTC ? `₹${data.EXP_CTC}` : 'N/A'} icon={DollarSign} />
-                  <FieldWithApprove label="Notice Period" value={data?.NOTICE_PERIOD ? `${data.NOTICE_PERIOD} days` : 'N/A'} icon={Clock} />
-                </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                        <FieldWithApprove label="Company Name" value={exp.COMPANY_NAME} icon={Building} />
+                        <FieldWithApprove label="Designation" value={exp.DESIGNATION} icon={Briefcase} />
+                        <FieldWithApprove label="From Date" value={exp.START_DATE} icon={Calendar} />
+                        <FieldWithApprove label="To Date" value={exp.END_DATE === new Date().toISOString().split('T')[0] ? 'Present' : exp.END_DATE} icon={Calendar} />
+                      </div>
+
+                      {/* Experience Documents */}
+                      {exp.END_DATE === new Date().toISOString().split('T')[0] && (
+                        <div style={{
+                          marginTop: '8px',
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: '8px',
+                          padding: '8px',
+                          background: 'rgba(255,255,255,0.8)',
+                          borderRadius: '8px',
+                          border: '1px dashed #93c5fd'
+                        }}>
+                          {exp.payslips?.map((payslip, pIdx) => (
+                            <FileFieldWithApprove
+                              key={payslip.EMP_PAYSLIP_ID || pIdx}
+                              label={`Payslip ${pIdx + 1}`}
+                              documentPath={payslip.PAYSLIP_FILE}
+                              documentId={payslip.EMP_PAYSLIP_ID}
+                            />
+                          ))}
+
+                          {exp.OFFER_LETTER_DOC && (
+                            <FileFieldWithApprove
+                              label="Offer Letter"
+                              documentPath={exp.OFFER_LETTER_DOC}
+                              documentId={exp.OFFER_DOC_ID}
+                            />
+                          )}
+
+                          {exp.RELIVING_LETTER_DOC && (
+                            <FileFieldWithApprove
+                              label="Relieving Letter"
+                              documentPath={exp.RELIVING_LETTER_DOC}
+                              documentId={exp.RELIEVING_DOC_ID}
+                            />
+                          )}
+
+                          {exp.EXPERIENCE_DOC && (
+                            <FileFieldWithApprove
+                              label="Experience Letter"
+                              documentPath={exp.EXPERIENCE_DOC}
+                              documentId={exp.EXP_DOC_ID}
+                            />
+                          )}
+
+                          {exp.BANK_STATEMENT_DOC && (
+                            <FileFieldWithApprove
+                              label="Bank Statement"
+                              documentPath={exp.BANK_STATEMENT_DOC}
+                              documentId={exp.BANK_STATEMENT_DOC_ID}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                    {/* CTC Information */}
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '10px',
+                      background: 'rgba(37,99,235,0.05)',
+                      borderRadius: '8px',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: '8px'
+                    }}>
+                      <FieldWithApprove label="Current CTC" value={data?.CURRENT_CTC ? `₹${data.CURRENT_CTC}` : 'N/A'} icon={DollarSign} />
+                      <FieldWithApprove label="Expected CTC" value={data?.EXP_CTC ? `₹${data.EXP_CTC}` : 'N/A'} icon={DollarSign} />
+                      <FieldWithApprove label="Notice Period" value={data?.NOTICE_PERIOD ? `${data.NOTICE_PERIOD} days` : 'N/A'} icon={Clock} />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* ================= REMARKS SECTION ================= */}
@@ -1346,11 +1352,21 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
             <button onClick={onClose} className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">
               Cancel
             </button>
+      <button
+  onClick={() => {
+    localStorage.setItem('VerifyPreviewPage', JSON.stringify({ data, sameAsPermanent }));
+    navigate('/VerifyPreviewPage');
+  }}
+  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+>
+  <Eye className="w-4 h-4" />
+  Preview
+</button>
             <button onClick={handleReject} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 flex items-center gap-2">
               <XCircle size={16} /> Reject
             </button>
-            <button 
-              onClick={handleSubmit} 
+            <button
+              onClick={handleSubmit}
               disabled={loading}
               className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
             >

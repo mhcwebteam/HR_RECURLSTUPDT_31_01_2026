@@ -1111,6 +1111,7 @@ const CandidateApproval = () => {
 
         onStatusChange={handleStatusChange}
            note = ""
+           personalData=""
       />
 
     </Box>

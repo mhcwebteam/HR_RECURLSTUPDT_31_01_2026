@@ -12,7 +12,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import HistoryIcon from '@mui/icons-material/History';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../Config/Config.jsx';
+import { API_BASE_URL, API_BASE_URLss } from '../Config/Config.jsx';
 import DocUpload from './DocUpload.jsx';
 import History from './History.jsx';
 import Swal from 'sweetalert2';
@@ -52,6 +52,8 @@ const JoiningReportList = () => {
 
       const apiData = response.data.data;
 
+     
+
   
 
 
@@ -77,8 +79,9 @@ const JoiningReportList = () => {
     offered_ctc: item.OFFER_CTC ?? '',
     joining_status: 'Joined',
     offer_letter: item.OfferLetterFlag ?? '',
+    candidOfrLtrSigned: item.candidOfrLtrSigned,
     bgv_status: item.verification_status ?? '',
-    documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+    documents_status: item.overallDocments_aprvl == '1' ? 'Complete' : 'Pending',
     current_stage: item.CURRENT_TASK,
     hr_owner: item.CURRENT_USER,
     created_at: item.created_at,
@@ -478,6 +481,38 @@ const date_only = joiningDates
       ),
     },
 
+{
+  field: "candidOfrLtrSigned",
+  headerName: "C.ofrLtrSigned",
+  width: 180,
+  sortable: false,
+  renderCell: (params) => {
+    if (!params.value) return "-";
+
+    const fileUrl = params.value;
+
+    // extract only filename from URL
+    const fullName = fileUrl.split("/").pop();
+
+    // remove timestamp and random id
+    const fileName = fullName.split("_").slice(2).join("_");
+
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: "#1e40af",
+          textDecoration: "underline",
+          fontSize: "12px"
+        }}
+      >
+        {fileName}
+      </a>
+    );
+  }
+},
    
 
 

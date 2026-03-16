@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useContext, useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Upload, User, Mail, Phone, Briefcase, BookOpen, Award, Plus, Trash2, GraduationCap, Info, FileUp, RotateCcw, Send } from 'lucide-react';
@@ -14,10 +9,12 @@ import { useParams } from 'react-router-dom';
 const RecruitmentForm = () => {
   const { case_Id } = useParams();
 
-    const [sameAsPermanent, setSameAsPermanent] = useState(null); 
-    const [personalData, setPersonalData] = useState([]);
+  const [sameAsPermanent, setSameAsPermanent] = useState(null);
+  const [personalData, setPersonalData] = useState([]);
 
-  
+  // ✅ CORRECT ORDER
+  const [formStatus, setFormStatus] = useState('');
+  const isPending = formStatus === 'pending';
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",
     PLANT: "",
@@ -45,6 +42,7 @@ const RecruitmentForm = () => {
     PRESENT_DISTRICT: '',
     PRESENT_STATE: '',
     PRESENT_PINCODE: '',
+    TOTAL_EXP: '',
     // IDs
     AADHAR_NUM: '',
     PAN_NUM: '',
@@ -59,7 +57,7 @@ const RecruitmentForm = () => {
     PASSPORT_NUMBER: '',
     PASSPORT_EXPIRY: '',
     DRIVING_LICENSE: '',
-   DRIVING_LICENSE_EXPIRY: '',
+    DRIVING_LICENSE_EXPIRY: '',
     BLOOD_GROUP: '',
     // Education
     SSC_SCHOOL_NAME: '',
@@ -82,7 +80,7 @@ const RecruitmentForm = () => {
     PG_MARKS: '',
     PG_PASSED_YEAR: '',
     PG_FILENAME: null,
-       PHD_COLLEGE_NAME: '',
+    PHD_COLLEGE_NAME: '',
     PHD_UNIVERSITY: '',
     PHD_MARKS: '',
     PHD_PASSED_YEAR: '',
@@ -97,7 +95,11 @@ const RecruitmentForm = () => {
     PAN_PATH: null,
     PHOTO: null,
     RESUME_UPLOAD: null,
-    // CTC
+    payslips: null,
+    relieving_letter: null,
+    offer_letter: null,
+    exp_letter: null,
+    bank_statements: null,
     CURRENT_CTC: '',
     EXP_CTC: '',
     AGE: "",
@@ -105,9 +107,9 @@ const RecruitmentForm = () => {
   });
 
 
- 
 
-// null = no selection
+
+  // null = no selection
   const [openSections, setOpenSections] = useState({
     basicInfo: true,
     education: false,
@@ -132,6 +134,7 @@ const RecruitmentForm = () => {
       NOTICE_PERIOD: '',
       PAYSLIPS: [],
       RELIEVING_LETTER: null,
+      COMPANY_STAGES: '',
       OFFER_LETTER: null,
       EXP_LETTER: null,
       BANK_STATEMENTS: [],
@@ -146,176 +149,209 @@ const RecruitmentForm = () => {
   const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
 
 
-  
-const EmpVerify = async () => {
-  if (!userToken?.token) return;
 
-  try {
-    const response = await axios.get(`${API_BASE_URL}/emp-verify-drftdata`, {
-      headers: { Authorization: `Bearer ${userToken.token}` },
-    });
+  console.log("experiences", experiences);
 
-    console.log("Draft Data Response:", response);
+  const EmpVerify = async () => {
+    if (!userToken?.token) return;
 
-    if (response.data?.success && response.data?.data) {
-      // Filter only draft records
-      const draftRecords = response.data.data.filter(
-        item => item.status?.toLowerCase() == "draft"
-      );
+    try {
+      const response = await axios.get(`${API_BASE_URL}/emp-verify-drftdata`, {
+        headers: { Authorization: `Bearer ${userToken.token}` },
+      });
 
-      if (draftRecords.length > 0) {
-     
-        
-        const draftData = draftRecords[0];
-        
-        console.log("Loading draft data:", draftData);
+      console.log("Draft Data Response:", response);
 
-        // Map API fields to form fields
-        setFormData(prev => ({
-          ...prev,
-          CHILD_CASEID: draftData.child_caseid || '',
-          PLANT: draftData.PLANT || '',
-          FIRST_NAME: draftData.name || '',
-          EMAIL: draftData.email || '',
-          PHONE_NUMBER: draftData.phone_number || '',
-          ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
-          GENDER: draftData.GENDER || '',
-          MARITAL_STATUS: draftData.MARITAL_STATUS || '',
-          LANG_KNOWN: draftData.LANG_KNOWN || '',
-          MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
-          DEPT: draftData.DEPT || '',
-          HNO: draftData.HNO || '',
-          CITY: draftData.CITY || '',
-          MANDAL: draftData.MANDAL || '',
-          DISTRICT: draftData.DISTRICT || '',
-          STATE: draftData.STATE || '',
-          PINCODE: draftData.PINCODE || '',
-          PRESENT_HNO: draftData.PRESENT_HNO || '',
-          PRESENT_CITY: draftData.PRESENT_CITY || '',
-          PRESENT_MANDAL: draftData.PRESENT_MANDAL || '',
-          PRESENT_DISTRICT: draftData.PRESENT_DISTRICT || '',
-          PRESENT_STATE: draftData.PRESENT_STATE || '',
-          PRESENT_PINCODE: draftData.PRESENT_PINCODE || '',
-          AADHAR_NUM: draftData.aadhar_number || '',
-          PAN_NUM: draftData.pan_number || '',
-          UAN_NUM: draftData.UAN_NUM || '',
-       '10TH_FILENAME': draftData.documents['10th_certi'] || '',  
-    INTER_FILENAME: draftData.documents.Inter_certi,
+      if (response.data?.success && response.data?.data) {
+        // Filter records for this specific candidate that are drafts
+        const userCaseId = userToken?.Manpower?.CHILD_CASEID || userToken?.CHILD_CASEID;
+        const draftRecords = response.data.data.filter(
+          item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
+            (item.status?.toLowerCase() === "draft" || item.status?.toLowerCase() === "pending")
+        );
+        console.log(draftRecords, "Filtered draft records");
 
-  UAN_FILE: draftData.documents?.UAN_FILE || '',
-            
-AADHAR_PATH: draftData.documents?.Aadhar_certi || '',
+        if (draftRecords.length > 0) {
+          // ✅ Get the FIRST record from the filtered array
+          const draftData = draftRecords[0];
 
-PAN_PATH:draftData.documents?.Pan_certi || '',
+          console.log("Using draft data:", draftData);
 
-RESUME_UPLOAD: draftData.documents?.RESUME_UPLOAD || '',
-PHOTO: draftData.documents?.photo || '',
+          // Map API fields to form fields
+          setFormData(prev => ({
+            ...prev,
+            CHILD_CASEID: draftData.child_caseid || '',
+            PLANT: draftData.PLANT || '',
+            FIRST_NAME: draftData.name || '',
+            EMAIL: draftData.email || '',
+            HIGHEST_QUA: draftData.HIGHEST_QUA || '',
+            PHONE_NUMBER: draftData.phone_number || '',
+            ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
+            GENDER: draftData.GENDER || '',
+            MARITAL_STATUS: draftData.MARITAL_STATUS || '',
+            LANG_KNOWN: draftData.LANG_KNOWN || '',
+            MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
+            DEPT: draftData.DEPT || '',
+            HNO: draftData.HNO || '',
+            CITY: draftData.CITY || '',
+            MANDAL: draftData.MANDAL || '',
+            DISTRICT: draftData.DISTRICT || '',
+            STATE: draftData.STATE || '',
+            PINCODE: draftData.PINCODE || '',
+            PRESENT_HNO: draftData.PRESENT_HNO || '',
+            PRESENT_CITY: draftData.PRESENT_CITY || '',
+            PRESENT_MANDAL: draftData.PRESENT_MANDAL || '',
+            PRESENT_DISTRICT: draftData.PRESENT_DISTRICT || '',
+            PRESENT_STATE: draftData.PRESENT_STATE || '',
+            PRESENT_PINCODE: draftData.PRESENT_PINCODE || '',
+            AADHAR_NUM: draftData.aadhar_number || '',
+            PAN_NUM: draftData.pan_number || '',
+            UAN_NUM: draftData.UAN_NUM || '',
 
+            // ✅ Safely access documents with optional chaining
+            '10TH_FILENAME': draftData.documents?.['10th_certi'] || '',
+            INTER_FILENAME: draftData.documents?.Inter_certi || '',
+            UAN_FILE: draftData.documents?.UAN_FILE || '',
+            AADHAR_PATH: draftData.documents?.Aadhar_certi || '',
+            PAN_PATH: draftData.documents?.Pan_certi || '',
+            RESUME_UPLOAD: draftData.documents?.RESUME_UPLOAD || '',
+            PHOTO: draftData.documents?.photo || '',
+            BTECH_FILENAME: draftData.documents?.Gradu_certi || '',
+            PG_FILENAME: draftData.documents?.Pg_certi || '',
+            PHD_FILENAME: draftData.documents?.PHD_FILENAME || '',
+            OTHER_FILENAME: draftData.documents?.OTHER_FILENAME || '',
 
-
-          DOB_ASPER_ADHAR: draftData.DOB_ASPER_ADHAR || '',
-          ESI_NUM: draftData.ESI_NUM || '',
-          SRC_TYPE: draftData.SRC_TYPE || '',
-          SRC_REFER_NAME: draftData.SRC_REFER_NAME || '',
-          SRC_REFER_DEPT: draftData.SRC_REFER_DEPT || '',
-          EMER_CONTACT_NUM: draftData.EMER_CONTACT_NUM || '',
-          PASSPORT_NUMBER: draftData.PASSPORT_NUMBER || '',
-          PASSPORT_EXPIRY: draftData.PASSPORT_EXPIRY || '',
-          DRIVING_LICENSE: draftData.DRIVING_LICENSE || '',
-          DRIVING_LICENSE_EXPIRY: draftData.DRIVING_LICENSE_EXPIRY || '',
-          BLOOD_GROUP: draftData.BLOOD_GROUP || '',
-          SSC_SCHOOL_NAME: draftData.SSC_SCHOOL_NAME || '',
-          SSC_BOARD: draftData.SSC_BOARD || '',
-          SSC_MARKS: draftData.ssc_marks || '',
-        BTECH_FILENAME:draftData?.documents?.Gradu_certi || '',
-
-          SSC_PASSED_YEAR: draftData.SSC_PASSED_YEAR || '',
-          INTER_COLLEGE_NAME: draftData.INTER_COLLEGE_NAME || '',
-          INTER_BOARD: draftData.INTER_BOARD || '',
-          INTER_MARKS: draftData.inter_marks || '',
-          INTER_PASSED_YEAR: draftData.INTER_PASSED_YEAR || '',
-          GRAD_COLLEGE_NAME: draftData.GRAD_COLLEGE_NAME || '',
-          DEGREE_UNIVERSITY: draftData.DEGREE_UNIVERSITY || '',
-          BTECH_MARKS: draftData.btech_marks || '',
-          DEGREE_PASSED_YEAR: draftData.DEGREE_PASSED_YEAR || '',
-          PG_COLLEGE_NAME: draftData.PG_COLLEGE_NAME || '',
-          PG_UNIVERSITY: draftData.PG_UNIVERSITY || '',
-          PG_MARKS: draftData.pg_marks || '',
-          PG_PASSED_YEAR: draftData.PG_PASSED_YEAR || '',
-           PG_FILENAME: draftData.documents.Pg_certi || '',
-
-            PHD_FILENAME: draftData.documents.PHD_FILENAME || '',
-            OTHER_FILENAME: draftData.documents.OTHER_FILENAME || '',
-          PHD_COLLEGE_NAME: draftData.PHD_COLLEGE_NAME || '',
-          PHD_UNIVERSITY: draftData.PHD_UNIVERSITY || '',
-          PHD_MARKS: draftData.PHD_MARKS || '',
-          PHD_PASSED_YEAR: draftData.PHD_PASSED_YEAR || '',
-          OTHER_COLLEGE_NAME: draftData.OTHER_COLLEGE_NAME || '',
-          OTHER_UNIVERSITY: draftData.OTHER_UNIVERSITY || '',
-          OTHER_MARKS: draftData.OTHER_MARKS || '',
-          OTHER_PASSED_YEAR: draftData.OTHER_PASSED_YEAR || '',
-          CURRENT_CTC: draftData.current_ctc || '',
-          EXP_CTC: draftData.expected_ctc || '',
-          AGE: draftData.AGE || '',
-
-        }));
-
-        // Set sameAsPermanent based on DESIG field
-        if (draftData.address_status === "YES") {
-          setSameAsPermanent(true);
-        } else if (draftData.address_status === "NO") {
-          setSameAsPermanent(false);
-        }
-
-        // Load experience data if available
-        if (draftData.experienceData && draftData.experienceData.length > 0) {
-          const mappedExperiences = draftData.experienceData.map((exp, index) => ({
-            id: Date.now() + index,
-            COMPANY_NAME: exp.COMPANY_NAME || '',
-            DESIGNATION: exp.DESIGNATION || '',
-            FROM_DATE: exp.START_DATE || '',
-            TO_DATE: exp.END_DATE || (() => {
-              const today = new Date();
-              const year = today.getFullYear();
-              const month = String(today.getMonth() + 1).padStart(2, '0');
-              const day = String(today.getDate()).padStart(2, '0');
-              return `${year}-${month}-${day}`;
-            })(),
-            DURATION: exp.EXPERIENCE_YEARS || '',
+            DOB_ASPER_ADHAR: draftData.DOB_ASPER_ADHAR || '',
+            ESI_NUM: draftData.ESI_NUM || '',
+            SRC_TYPE: draftData.SRC_TYPE || '',
+            SRC_REFER_NAME: draftData.SRC_REFER_NAME || '',
+            SRC_REFER_DEPT: draftData.SRC_REFER_DEPT || '',
+            EMER_CONTACT_NUM: draftData.EMER_CONTACT_NUM || '',
+            PASSPORT_NUMBER: draftData.PASSPORT_NUMBER || '',
+            PASSPORT_EXPIRY: draftData.PASSPORT_EXPIRY || '',
+            DRIVING_LICENSE: draftData.DRIVING_LICENSE || '',
+            DRIVING_LICENSE_EXPIRY: draftData.DRIVING_LICENSE_EXPIRY || '',
+            BLOOD_GROUP: draftData.BLOOD_GROUP || '',
+            SSC_SCHOOL_NAME: draftData.SSC_SCHOOL_NAME || '',
+            SSC_BOARD: draftData.SSC_BOARD || '',
+            SSC_MARKS: draftData.ssc_marks || '',
+            SSC_PASSED_YEAR: draftData.SSC_PASSED_YEAR || '',
+            INTER_COLLEGE_NAME: draftData.INTER_COLLEGE_NAME || '',
+            INTER_BOARD: draftData.INTER_BOARD || '',
+            INTER_MARKS: draftData.inter_marks || '',
+            INTER_PASSED_YEAR: draftData.INTER_PASSED_YEAR || '',
+            GRAD_COLLEGE_NAME: draftData.GRAD_COLLEGE_NAME || '',
+            DEGREE_UNIVERSITY: draftData.DEGREE_UNIVERSITY || '',
+            BTECH_MARKS: draftData.btech_marks || '',
+            DEGREE_PASSED_YEAR: draftData.DEGREE_PASSED_YEAR || '',
+            PG_COLLEGE_NAME: draftData.PG_COLLEGE_NAME || '',
+            PG_UNIVERSITY: draftData.PG_UNIVERSITY || '',
+            PG_MARKS: draftData.pg_marks || '',
+            PG_PASSED_YEAR: draftData.PG_PASSED_YEAR || '',
+            PHD_COLLEGE_NAME: draftData.PHD_COLLEGE_NAME || '',
+            PHD_UNIVERSITY: draftData.PHD_UNIVERSITY || '',
+            PHD_MARKS: draftData.PHD_MARKS || '',
+            PHD_PASSED_YEAR: draftData.PHD_PASSED_YEAR || '',
+            OTHER_COLLEGE_NAME: draftData.OTHER_COLLEGE_NAME || '',
+            OTHER_UNIVERSITY: draftData.OTHER_UNIVERSITY || '',
+            OTHER_MARKS: draftData.OTHER_MARKS || '',
+            OTHER_PASSED_YEAR: draftData.OTHER_PASSED_YEAR || '',
             CURRENT_CTC: draftData.current_ctc || '',
             EXP_CTC: draftData.expected_ctc || '',
-            NOTICE_PERIOD: exp.NOTICE_PERIOD || '',
-            PAYSLIPS: exp.payslips?.map(p => p.PAYSLIP_FILE) || [],
-            RELIEVING_LETTER: exp.RELIVING_LETTER_DOC || null,
-            OFFER_LETTER: exp.OFFER_LETTER_DOC || null,
-            EXP_LETTER: exp.EXPERIENCE_DOC || null,
-            BANK_STATEMENTS: exp.BANK_STATEMENT_DOC ? [exp.BANK_STATEMENT_DOC] : [],
-            isCurrent: exp.END_DATE === new Date().toISOString().split('T')[0] || !exp.END_DATE
+            AGE: draftData.AGE || '',
+
+            TOTAL_EXP: draftData.TOTAL_EXP || '',
+            payslips: draftData.documents?.payslips || '',
+            relieving_letter: draftData.documents?.relieving_letter || '',
+            offer_letter: draftData.documents?.offer_letter || '',
+            exp_letter: draftData.documents?.exp_letter || '',
+            bank_statements: draftData.documents?.bank_statements || '',
+
           }));
-          
-          setExperiences(mappedExperiences);
+          setFormStatus(draftData.status?.toLowerCase() || '');
+          // Set sameAsPermanent based on address_status
+          if (draftData.address_status === "YES") {
+            setSameAsPermanent(true);
+          } else if (draftData.address_status === "NO") {
+            setSameAsPermanent(false);
+          }
+
+          // Load experience data if available
+          if (draftData.experienceData && draftData.experienceData.length > 0) {
+            const mappedExperiences = draftData.experienceData.map((exp, index) => ({
+              id: Date.now() + index,
+              COMPANY_NAME: exp.COMPANY_NAME || '',
+              COMPANY_STAGES: exp.COMPANY_STAGES || (index === 0 ? "0" : "1"),
+              DESIGNATION: exp.DESIGNATION || '',
+              FROM_DATE: exp.START_DATE || '',
+              TO_DATE: exp.END_DATE || '',
+              DURATION: exp.EXPERIENCE_YEARS || '',
+              NOTICE_PERIOD: exp.noticePeriod || '',
+              isCurrent: exp.COMPANY_STAGES === "0" || index === 0, // Use COMPANY_STAGES to determine
+            }));
+
+            setExperiences(mappedExperiences);
+          }
+        } else {
+          console.log("No draft records found for candidate:", userToken?.Manpower?.CHILD_CASEID);
         }
       }
+    } catch (err) {
+      console.error("Error fetching verify data", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load draft data',
+      });
     }
-  } catch (err) {
-    console.error("Error fetching verify data", err);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Failed to load draft data',
-    });
-  }
-};
-
-useEffect(() => {
-  EmpVerify();
-}, [userToken?.token]);
+  };
 
   useEffect(() => {
     EmpVerify();
   }, [userToken?.token]);
 
+  useEffect(() => {
+    EmpVerify();
+  }, [userToken?.token]);
 
+const openFile = async (file) => {
+  if (!file) return;
+
+  try {
+    let blob;
+    let url;
+
+    if (file instanceof File) {
+      // Newly uploaded file (File object)
+      url = URL.createObjectURL(file);
+    } else if (typeof file === 'string') {
+      // Existing file path from server
+      const response = await fetch(`${API_BASE_URL}${file}`, {
+        headers: { Authorization: `Bearer ${userToken.token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch file');
+      blob = await response.blob();
+      url = URL.createObjectURL(blob);
+    } else {
+      return;
+    }
+
+    // Open in new tab
+    const newWindow = window.open(url, '_blank');
+    if (!newWindow) {
+      // Fallback: create an anchor and click
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.click();
+    }
+
+    // Revoke blob URL after a delay to free memory
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (error) {
+    Swal.fire('Error', 'Could not open file', 'error');
+  }
+};
 
   useEffect(() => {
     if (userToken?.Emp_Id) {
@@ -327,6 +363,9 @@ useEffect(() => {
       }));
     }
   }, [userToken?.Emp_Id]);
+
+
+  console.log("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", userToken);
 
   // Calculate age from DOBAADHAR
   const calculateAge = (dob) => {
@@ -348,8 +387,9 @@ useEffect(() => {
 
 
 
-  
+
   const handleInputChange = (e) => {
+    if (isPending) return;
     const { name, value } = e.target;
 
     if (name === "DOB_ASPER_ADHAR") {
@@ -373,82 +413,88 @@ useEffect(() => {
 
 
   const handleFileChange = (e) => {
-  const { name, files } = e.target;
-  const file = files[0];
-  console.log(file,"fileeeeeeeeeeeeee4444444444");
-  if (!file) return;
+    if (isPending) return;
+    const { name, files } = e.target;
+    const file = files[0];
 
-  // clear error on change
-  if (showErrors && errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: "" }));
-  }
+    console.log("fileeeeeeeeeeee", file);
 
-  // ---------- CONFIG ----------
-  const photoFields = ["PHOTO"]; // add more if needed
-  const isPhoto = photoFields.includes(name);
+    if (!file) return;
 
-  const maxPhotoSize = 50 * 1024; // 50 KB
-  const maxPdfSize =  200 * 1024 ; // 1 MB
-  const maxLargePdfSize = 500 * 1024; // 2
-
-  // ---------- PHOTO VALIDATION ----------
-  if (isPhoto) {
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
-
-    if (!allowedImageTypes.includes(file.type)) {
-      Swal.fire({
-        title: "Invalid File Type",
-        text: "Only JPG, JPEG, or PNG images are allowed",
-        icon: "error",
-      });
-      e.target.value = "";
-      return;
+    // clear error on change
+    if (showErrors && errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
     }
 
-    if (file.size > maxPhotoSize) {
-      Swal.fire({
-        title: "File Too Large",
-        text: "Photo size must be less than 50 KB",
-        icon: "error",
-      });
-      e.target.value = "";
-      return;
+    // ---------- CONFIG ----------
+    const photoFields = ["PHOTO"];
+    const isPhoto = photoFields.includes(name);
+
+    const maxPhotoSize = 50 * 1024; // 50 KB
+    const maxPdfSize = 200 * 1024; // 1 MB
+    const maxLargePdfSize = 500 * 1024; // 2
+
+    // ---------- PHOTO VALIDATION ----------
+    if (isPhoto) {
+      const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+      if (!allowedImageTypes.includes(file.type)) {
+        Swal.fire({
+          title: "Invalid File Type",
+          text: "Only JPG, JPEG, or PNG images are allowed",
+          icon: "error",
+        });
+        e.target.value = "";
+        return;
+      }
+
+      if (file.size > maxPhotoSize) {
+        Swal.fire({
+          title: "File Too Large",
+          text: "Photo size must be less than 50 KB",
+          icon: "error",
+        });
+        e.target.value = "";
+        return;
+      }
     }
-  }
 
-  // ---------- PDF VALIDATION ----------
-  if (!isPhoto) {
-    if (file.type !== "application/pdf") {
-      Swal.fire({
-        title: "Invalid File Type",
-        text: "Only PDF files are allowed",
-        icon: "error",
-      });
-      e.target.value = "";
-      return;
+    // ---------- PDF VALIDATION ----------
+    if (!isPhoto) {
+      if (file.type !== "application/pdf") {
+        Swal.fire({
+          title: "Invalid File Type",
+          text: "Only PDF files are allowed",
+          icon: "error",
+        });
+        e.target.value = "";
+        return;
+      }
+
+      const maxSize =
+        name === "PAYSLIPS" || name === "BANK_STATEMENTS"
+          ? maxLargePdfSize
+          : maxPdfSize;
+
+      if (file.size > maxSize) {
+        Swal.fire({
+          title: "File Too Large",
+          text: `File size must be less than ${maxSize === maxLargePdfSize ? "500kb" : "200kb"
+            }`,
+          icon: "error",
+        });
+        e.target.value = "";
+        return;
+      }
     }
 
-    const maxSize =
-      name === "PAYSLIPS" || name === "BANK_STATEMENTS"
-        ? maxLargePdfSize
-        : maxPdfSize;
+    // ---------- SAVE FILE ----------
+    setFormData(prev => ({ ...prev, [name]: file }));
+  };
 
-    if (file.size > maxSize) {
-      Swal.fire({
-        title: "File Too Large",
-        text: `File size must be less than ${
-          maxSize === maxLargePdfSize ? "500kb" : "200kb"
-        }`,
-        icon: "error",
-      });
-      e.target.value = "";
-      return;
-    }
-  }
 
-  // ---------- SAVE FILE ----------
-  setFormData(prev => ({ ...prev, [name]: file }));
-};
+
+  console.log(formData, "555555555555555")
 
 
 
@@ -551,7 +597,7 @@ useEffect(() => {
       if (invalidFiles.length > 0) {
         Swal.fire({
           title: "Invalid Files",
-            text: "File size must be less than 500KB",
+          text: "File size must be less than 500KB",
           icon: "error",
         });
         e.target.value = '';
@@ -602,79 +648,90 @@ useEffect(() => {
   };
 
 
-  const handleDraft  = async () => {
 
+  const handleDraft = async () => {
+    const draftResult = await Swal.fire({
+      title: "Save as Draft?",
+      text: "Do you want to save this form as a draft?",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Save Draft!",
+      cancelButtonText: "No, Continue Editing"
+    });
 
+    if (!draftResult.isConfirmed) return;
 
-
-
-      
     const data = new FormData();
 
-    // Add form data fields - only include File objects and regular strings (not file paths)
+    // Add regular fields
     Object.entries(formData).forEach(([key, value]) => {
       if (!value) return;
 
-      // If it's a File object (new upload), append it
+
+
       if (value instanceof File) {
         data.append(key, value);
+        console.log(value, "hittttttttttttttttt", key);
+      } else if (typeof value == "string") {
+        console.log('hellooooooooo', key, "key", value);
+        data.append(key, value);
       }
-      // If it's a string that does NOT look like a file path, append it as a regular field
-      else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
-        data.append(key, String(value));
-      }
-      // If it's a string that is a file path (existing file), skip it - we don't send it
-      // The backend should keep the existing file
     });
 
+    data.append("status", "draft");
+    data.append("address_status", sameAsPermanent ? "YES" : "NO");
+    if (formData.AGE) data.append("AGE", String(formData.AGE));
 
-  data.append('status', "draft");
+    // Handle Experiences
+    experiences.forEach((exp, index) => {
+      data.append(`experiences[${index}][companyname]`, exp.COMPANY_NAME || "");
+      data.append(`experiences[${index}][designation]`, exp.DESIGNATION || "");
+      data.append(`experiences[${index}][fromdate]`, exp.FROM_DATE || "");
+      data.append(`experiences[${index}][todate]`, exp.TO_DATE || "");
+      data.append(`experiences[${index}][duration]`, exp.DURATION || "");
+      data.append(`experiences[${index}][stage]`, index);
+      data.append(`experiences[${index}][isCurrent]`, exp.isCurrent ? "true" : "false");
+      if (exp.isCurrent) {
+        data.append(`experiences[${index}][noticePeriod]`, exp.NOTICE_PERIOD || "");
+      }
 
 
-//   data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
-// data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
-// data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
-// data.append('EMAIL', formData.EMAIL || '');
 
-   const experiencesArray = experiences.map((exp, index) => {
-        const experienceObj = {
-          companyname: exp.COMPANY_NAME || '',
-          designation: exp.DESIGNATION || '',
-          fromdate: exp.FROM_DATE || '',
-          todate: exp.TO_DATE || '',
-          duration: exp.DURATION || '',
-          currentCTC: exp.CURRENT_CTC || '',
-          expectedCTC: exp.EXP_CTC || '',
-          stage: index,
-          isCurrent: exp.isCurrent || false
-        };
 
-        if (exp.isCurrent) {
-          experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-          experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
-          experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
-          experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
-          experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
-          experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
-        }
 
-        return experienceObj;
+
+      // Payslips
+
+    });
+
+    // Send request
+    const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
+      headers: {
+        Authorization: `Bearer ${userToken.token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (response.data.success) {
+      Swal.fire({
+        title: "Draft Saved!",
+        text: "Your form has been saved as draft successfully.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
       });
+    } else {
+      Swal.fire("Failed", response.data.message, "error");
+    }
+  };
 
-      data.append('experiences', JSON.stringify(experiencesArray));
 
 
-          const response = await axios.post(
-       `${API_BASE_URL}/recruitStore`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-  }
+
+
+
 
   const handleExperienceRemoveFile = (id, field, index = null) => {
     setExperiences(prev => prev.map(exp => {
@@ -699,11 +756,12 @@ useEffect(() => {
       EXP_CTC: '',
       NOTICE_PERIOD: '',
       PAYSLIPS: [],
-      RELIEVING_LETTER: null,
-      OFFER_LETTER: null,
+      relieving_letter: null,
+      offer_letter: null,
       EXP_LETTER: null,
       BANK_STATEMENTS: [],
-      isCurrent: false
+      isCurrent: false,
+      COMPANY_STAGES: "",
     }]);
   };
 
@@ -730,14 +788,14 @@ useEffect(() => {
     if (!formData.LANG_KNOWN?.trim()) newErrors.LANG_KNOWN = "Languages Known is required";
     if (!formData.MOTHER_TONGUE?.trim()) newErrors.MOTHER_TONGUE = "Mother Tongue is required";
 
-        if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
+    if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
     if (!formData.EMAIL?.trim()) {
       newErrors.EMAIL = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.EMAIL)) {
       newErrors.EMAIL = "Invalid email format";
     }
 
-    
+
     if (!formData.PHONE_NUMBER?.trim()) {
       newErrors.PHONE_NUMBER = "Phone Number is required";
     } else if (formData.PHONE_NUMBER.length !== 10) {
@@ -783,7 +841,7 @@ useEffect(() => {
       newErrors.SRC_REFER_NAME = "Reference Name is required";
     }
 
-       if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_DEPT?.trim()) {
+    if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_DEPT?.trim()) {
       newErrors.SRC_REFER_DEPT = "Reference dept is required";
     }
 
@@ -812,7 +870,7 @@ useEffect(() => {
     // File uploads
     if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
     if (!formData.PAN_PATH) newErrors.PAN_PATH = "PAN Card is required";
-    if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
+    // if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
     if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
 
     // CTC
@@ -820,345 +878,340 @@ useEffect(() => {
     if (!formData.EXP_CTC?.toString().trim()) newErrors.EXP_CTC = "Expected CTC is required";
 
     // Experience
-    experiences.forEach((exp) => {
-      if (!exp.COMPANY_NAME?.trim()) newErrors[`exp_${exp.id}_COMPANY_NAME`] = "Company Name is required";
-      if (!exp.DESIGNATION?.trim()) newErrors[`exp_${exp.id}_DESIGNATION`] = "Designation is required";
-      if (!exp.FROM_DATE) newErrors[`exp_${exp.id}_FROM_DATE`] = "From Date is required";
-      if (!exp.TO_DATE) newErrors[`exp_${exp.id}_TO_DATE`] = "To Date is required";
 
-      if (exp.isCurrent) {
-        if (!exp.NOTICE_PERIOD?.toString().trim()) newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice Period is required";
-        if (!exp.PAYSLIPS?.length) newErrors[`exp_${exp.id}_PAYSLIPS`] = "Pay Slips (6 months) is required";
-        if (!exp.BANK_STATEMENTS?.length) newErrors[`exp_${exp.id}_BANK_STATEMENTS`] = "Bank Statements (3 months) is required";
-      }
-    });
 
     return newErrors;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const validationErrors = validateForm();
+    const validationErrors = validateForm();
 
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    setShowErrors(true);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setShowErrors(true);
 
-    const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
-    if (firstErrorField) {
-      firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      Swal.fire({
+        title: "Validation Error",
+        text: "Please fill all required fields correctly",
+        icon: "error",
+      });
+      return;
     }
 
-    Swal.fire({
-      title: "Validation Error",
-      text: "Please fill all required fields correctly",
-      icon: "error",
-    });
-    return;
-  }
-
-  const result = await Swal.fire({
-    title: "Confirm Submission",
-    text: "Are you sure you want to submit this form?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, Submit!",
-    cancelButtonText: "No, Cancel"
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    Swal.fire({
-      title: "Processing...",
-      showConfirmButton: false,
-      allowOutsideClick: false,
-      willOpen: () => {
-        Swal.showLoading();
-      }
+    const result = await Swal.fire({
+      title: "Confirm Submission",
+      text: "Are you sure you want to submit this form?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Submit!",
+      cancelButtonText: "No, Cancel"
     });
 
-    const data = new FormData();
+    if (!result.isConfirmed) return;
 
-    // Add form data fields - only include File objects and regular strings (not file paths)
-    Object.entries(formData).forEach(([key, value]) => {
-      if (!value) return;
-
-      // If it's a File object (new upload), append it
-      if (value instanceof File) {
-        data.append(key, value);
-      }
-      // If it's a string that does NOT look like a file path, append it as a regular field
-      else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
-        data.append(key, String(value));
-      }
-      // If it's a string that is a file path (existing file), skip it - we don't send it
-      // The backend should keep the existing file
-    });
-
-    // Add status and other fields that might be missing
-    data.append('status', "submit");
-
-
-    // Process experiences (similar logic)
-    const experiencesArray = experiences.map((exp, index) => {
-      const experienceObj = {
-        companyname: exp.COMPANY_NAME || '',
-        designation: exp.DESIGNATION || '',
-        fromdate: exp.FROM_DATE || '',
-        todate: exp.TO_DATE || '',
-        duration: exp.DURATION || '',
-        currentCTC: exp.CURRENT_CTC || '',
-        expectedCTC: exp.EXP_CTC || '',
-        stage: index,
-        isCurrent: exp.isCurrent || false
-      };
-
-      if (exp.isCurrent) {
-        experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-        
-        // Pay slips: if they are File objects, append; if they are strings (existing), skip
-        experienceObj.payslips = [];
-        if (exp.PAYSLIPS && exp.PAYSLIPS.length > 0) {
-          exp.PAYSLIPS.forEach((file, i) => {
-            if (file instanceof File) {
-              const fileName = `PAYSLIP_${index}_${i}_${file.name}`;
-              data.append(`PAYSLIPS_${index}_${i}`, file);
-              experienceObj.payslips.push({ filename: fileName });
-            } else if (typeof file === 'string') {
-              // Existing file - we don't upload again, just record its name
-              experienceObj.payslips.push({ filename: file.split('/').pop() });
-            }
-          });
-        }
-
-        // Bank statements
-        experienceObj.bank_statements = [];
-        if (exp.BANK_STATEMENTS && exp.BANK_STATEMENTS.length > 0) {
-          exp.BANK_STATEMENTS.forEach((file, i) => {
-            if (file instanceof File) {
-              const fileName = `BANK_STMT_${index}_${i}_${file.name}`;
-              data.append(`BANK_STATEMENTS_${index}_${i}`, file);
-              experienceObj.bank_statements.push({ filename: fileName });
-            } else if (typeof file === 'string') {
-              experienceObj.bank_statements.push({ filename: file.split('/').pop() });
-            }
-          });
-        }
-
-        // Single files
-        if (exp.RELIEVING_LETTER instanceof File) {
-          const fileName = `RELIEVING_${index}_${exp.RELIEVING_LETTER.name}`;
-          data.append(`RELIEVING_LETTER_${index}`, exp.RELIEVING_LETTER);
-          experienceObj.relieving_letter = fileName;
-        } else if (typeof exp.RELIEVING_LETTER === 'string') {
-          experienceObj.relieving_letter = exp.RELIEVING_LETTER.split('/').pop();
-        }
-
-        if (exp.OFFER_LETTER instanceof File) {
-          const fileName = `OFFER_${index}_${exp.OFFER_LETTER.name}`;
-          data.append(`OFFER_LETTER_${index}`, exp.OFFER_LETTER);
-          experienceObj.offer_letter = fileName;
-        } else if (typeof exp.OFFER_LETTER === 'string') {
-          experienceObj.offer_letter = exp.OFFER_LETTER.split('/').pop();
-        }
-
-        if (exp.EXP_LETTER instanceof File) {
-          const fileName = `EXP_${index}_${exp.EXP_LETTER.name}`;
-          data.append(`EXP_LETTER_${index}`, exp.EXP_LETTER);
-          experienceObj.exp_letter = fileName;
-        } else if (typeof exp.EXP_LETTER === 'string') {
-          experienceObj.exp_letter = exp.EXP_LETTER.split('/').pop();
-        }
-      }
-
-      return experienceObj;
-    });
-
-    data.append('experiences', JSON.stringify(experiencesArray));
-
-    // Log what we're sending for debugging
-    console.log('Submitting FormData with entries:');
-    for (let [key, value] of data.entries()) {
-      if (value instanceof File) {
-        console.log(key, 'File:', value.name);
-      } else {
-        console.log(key, value);
-      }
-    }
-
-    const response = await axios.post(
-      `${API_BASE_URL}/recruitStore`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    Swal.close();
-
-    if (response.data.success) {
-      await Swal.fire({
-        title: "Success",
-        text: "Recruitment data updated successfully",
-        icon: "success",
-        timer: 1500,
+    try {
+      Swal.fire({
+        title: "Processing...",
         showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
       });
 
-      // Optionally reset or redirect
-    } else {
-      await Swal.fire("Failed", response.data.message, "error");
+      const data = new FormData();
+
+      // Add form data fields - only include File objects and regular strings (not file paths)
+      Object.entries(formData).forEach(([key, value]) => {
+
+
+        if (!value) return;
+
+        // If it's a File object (new upload), append it
+        if (value instanceof File) {
+          data.append(key, value);
+        }
+        // If it's a string that does NOT look like a file path, append it as a regular field
+        else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
+          data.append(key, String(value));
+        }
+        // If it's a string that is a file path (existing file), skip it - we don't send it
+        // The backend should keep the existing file
+      });
+
+      // Add status and other fields that might be missing
+      data.append('status', "submit");
+
+      if (formData.AGE) {
+        data.append('AGE', String(formData.AGE));
+      }
+      data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
+
+      // Process experiences (similar logic)
+      const experiencesArray = experiences.map((exp, index) => {
+        const experienceObj = {
+          companyname: exp.COMPANY_NAME || '',
+          designation: exp.DESIGNATION || '',
+          fromdate: exp.FROM_DATE || '',
+          todate: exp.TO_DATE || '',
+          duration: exp.DURATION || '',
+          currentCTC: exp.CURRENT_CTC || '',
+          expectedCTC: exp.EXP_CTC || '',
+          stage: index,
+          isCurrent: exp.isCurrent || false
+        };
+
+        if (exp.isCurrent) {
+          experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+
+          // Pay slips: if they are File objects, append; if they are strings (existing), skip
+          experienceObj.payslips = [];
+          if (exp.PAYSLIPS && exp.PAYSLIPS.length > 0) {
+            exp.PAYSLIPS.forEach((file, i) => {
+              if (file instanceof File) {
+                const fileName = `PAYSLIP_${index}_${i}_${file.name}`;
+                data.append(`PAYSLIPS_${index}_${i}`, file);
+                experienceObj.payslips.push({ filename: fileName });
+              } else if (typeof file === 'string') {
+                // Existing file - we don't upload again, just record its name
+                experienceObj.payslips.push({ filename: file.split('/').pop() });
+              }
+            });
+          }
+
+          // Bank statements
+          experienceObj.bank_statements = [];
+          if (exp.BANK_STATEMENTS && exp.BANK_STATEMENTS.length > 0) {
+            exp.BANK_STATEMENTS.forEach((file, i) => {
+              if (file instanceof File) {
+                const fileName = `BANK_STMT_${index}_${i}_${file.name}`;
+                data.append(`BANK_STATEMENTS_${index}_${i}`, file);
+                experienceObj.bank_statements.push({ filename: fileName });
+              } else if (typeof file === 'string') {
+                experienceObj.bank_statements.push({ filename: file.split('/').pop() });
+              }
+            });
+          }
+
+          // Single files
+          if (exp.RELIEVING_LETTER instanceof File) {
+            const fileName = `RELIEVING_${index}_${exp.RELIEVING_LETTER.name}`;
+            data.append(`RELIEVING_LETTER_${index}`, exp.RELIEVING_LETTER);
+            experienceObj.relieving_letter = fileName;
+          } else if (typeof exp.RELIEVING_LETTER === 'string') {
+            experienceObj.relieving_letter = exp.RELIEVING_LETTER.split('/').pop();
+          }
+
+          if (exp.OFFER_LETTER instanceof File) {
+            const fileName = `OFFER_${index}_${exp.OFFER_LETTER.name}`;
+            data.append(`OFFER_LETTER_${index}`, exp.OFFER_LETTER);
+            experienceObj.offer_letter = fileName;
+          } else if (typeof exp.OFFER_LETTER === 'string') {
+            experienceObj.offer_letter = exp.OFFER_LETTER.split('/').pop();
+          }
+
+          if (exp.EXP_LETTER instanceof File) {
+            const fileName = `EXP_${index}_${exp.EXP_LETTER.name}`;
+            data.append(`EXP_LETTER_${index}`, exp.EXP_LETTER);
+            experienceObj.exp_letter = fileName;
+          } else if (typeof exp.EXP_LETTER === 'string') {
+            experienceObj.exp_letter = exp.EXP_LETTER.split('/').pop();
+          }
+        }
+
+        return experienceObj;
+      });
+
+      data.append('experiences', JSON.stringify(experiencesArray));
+
+      // Log what we're sending for debugging
+      console.log('Submitting FormData with entries:');
+      for (let [key, value] of data.entries()) {
+        if (value instanceof File) {
+          console.log(key, 'File:', value.name);
+        } else {
+          console.log(key, value);
+        }
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/recruitStore`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken.token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      Swal.close();
+
+      if (response.data.success) {
+        await Swal.fire({
+          title: "Success",
+          text: "Recruitment data updated successfully",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        // Optionally reset or redirect
+      } else {
+        await Swal.fire("Failed", response.data.message, "error");
+      }
+    } catch (error) {
+      Swal.close();
+      console.error(error);
+      await Swal.fire(
+        "Error",
+        error.response?.data?.message || "Something went wrong",
+        "error"
+      );
     }
-  } catch (error) {
-    Swal.close();
-    console.error(error);
-    await Swal.fire(
-      "Error",
-      error.response?.data?.message || "Something went wrong",
-      "error"
-    );
-  }
-};
+  };
 
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
+  //   const handleSubmit = async (e) => {
+  //     e.preventDefault();
 
-//     const validationErrors = validateForm();
+  //     const validationErrors = validateForm();
 
-//     if (Object.keys(validationErrors).length > 0) {
-//       setErrors(validationErrors);
-//       setShowErrors(true);
+  //     if (Object.keys(validationErrors).length > 0) {
+  //       setErrors(validationErrors);
+  //       setShowErrors(true);
 
-//       const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
-//       if (firstErrorField) {
-//         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-//       }
+  //       const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+  //       if (firstErrorField) {
+  //         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  //       }
 
-//       Swal.fire({
-//         title: "Validation Error",
-//         text: "Please fill all required fields correctly",
-//         icon: "error",
-//       });
-//       return;
-//     }
+  //       Swal.fire({
+  //         title: "Validation Error",
+  //         text: "Please fill all required fields correctly",
+  //         icon: "error",
+  //       });
+  //       return;
+  //     }
 
-//     const result = await Swal.fire({
-//       title: "Confirm Submission",
-//       text: "Are you sure you want to submit this form?",
-//       icon: "question",
-//       showCancelButton: true,
-//       confirmButtonColor: "#3085d6",
-//       cancelButtonColor: "#d33",
-//       confirmButtonText: "Yes, Submit!",
-//       cancelButtonText: "No, Cancel"
-//     });
+  //     const result = await Swal.fire({
+  //       title: "Confirm Submission",
+  //       text: "Are you sure you want to submit this form?",
+  //       icon: "question",
+  //       showCancelButton: true,
+  //       confirmButtonColor: "#3085d6",
+  //       cancelButtonColor: "#d33",
+  //       confirmButtonText: "Yes, Submit!",
+  //       cancelButtonText: "No, Cancel"
+  //     });
 
-//     if (!result.isConfirmed) return;
+  //     if (!result.isConfirmed) return;
 
-//     try {
-//       Swal.fire({
-//         title: "Processing...",
-//         showConfirmButton: false,
-//         allowOutsideClick: false,
-//         willOpen: () => {
-//           Swal.showLoading();
-//         }
-//       });
+  //     try {
+  //       Swal.fire({
+  //         title: "Processing...",
+  //         showConfirmButton: false,
+  //         allowOutsideClick: false,
+  //         willOpen: () => {
+  //           Swal.showLoading();
+  //         }
+  //       });
 
-//       const data = new FormData();
+  //       const data = new FormData();
 
-//       Object.entries(formData).forEach(([key, value]) => {
-//         if (!value) return;
-//         if (value instanceof File) {
-//           data.append(key, value);
-//         } else {
-//           data.append(key, String(value));
-//         }
-//       });
+  //       Object.entries(formData).forEach(([key, value]) => {
+  //         if (!value) return;
+  //         if (value instanceof File) {
+  //           data.append(key, value);
+  //         } else {
+  //           data.append(key, String(value));
+  //         }
+  //       });
 
-//       const experiencesArray = experiences.map((exp, index) => {
-//         const experienceObj = {
-//           companyname: exp.COMPANY_NAME || '',
-//           designation: exp.DESIGNATION || '',
-//           fromdate: exp.FROM_DATE || '',
-//           todate: exp.TO_DATE || '',
-//           duration: exp.DURATION || '',
-//           currentCTC: exp.CURRENT_CTC || '',
-//           expectedCTC: exp.EXP_CTC || '',
-//           stage: index,
-//           isCurrent: exp.isCurrent || false
-//         };
+  //       const experiencesArray = experiences.map((exp, index) => {
+  //         const experienceObj = {
+  //           companyname: exp.COMPANY_NAME || '',
+  //           designation: exp.DESIGNATION || '',
+  //           fromdate: exp.FROM_DATE || '',
+  //           todate: exp.TO_DATE || '',
+  //           duration: exp.DURATION || '',
+  //           currentCTC: exp.CURRENT_CTC || '',
+  //           expectedCTC: exp.EXP_CTC || '',
+  //           stage: index,
+  //           isCurrent: exp.isCurrent || false
+  //         };
 
-//         if (exp.isCurrent) {
-//           experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-//           experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
-//           experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
-//           experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
-//           experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
-//           experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
-//         }
+  //         if (exp.isCurrent) {
+  //           experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+  //           experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
+  //           experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
+  //           experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
+  //           experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
+  //           experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
+  //         }
 
-//         return experienceObj;
-//       });
+  //         return experienceObj;
+  //       });
 
-//       data.append('experiences', JSON.stringify(experiencesArray));
+  //       data.append('experiences', JSON.stringify(experiencesArray));
 
-// // data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
-// // data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
-// // data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
-// // data.append('EMAIL', formData.EMAIL || '');
+  // // data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
+  // // data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
+  // // data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
+  // // data.append('EMAIL', formData.EMAIL || '');
 
 
-//       data.append('status', "submit")
+  //       data.append('status', "submit")
 
-//    data.append('address_status', sameAsPermanent ? "YES" : "NO");
+  //    data.append('address_status', sameAsPermanent ? "YES" : "NO");
 
 
 
-//       const response = await axios.post(
-//        `${API_BASE_URL}/recruitStore`,
-//         data,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${userToken.token}`,
-//             "Content-Type": "multipart/form-data",
-//           },
-//         }
-//       );
+  //       const response = await axios.post(
+  //        `${API_BASE_URL}/recruitStore`,
+  //         data,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${userToken.token}`,
+  //             "Content-Type": "multipart/form-data",
+  //           },
+  //         }
+  //       );
 
-//       Swal.close();
+  //       Swal.close();
 
-//       if (response.data.success) {
-//         await Swal.fire({
-//           title: "Success",
-//           text: "Recruitment data updated successfully",
-//           icon: "success",
-//           timer: 1500,
-//           showConfirmButton: false,
-//         });
+  //       if (response.data.success) {
+  //         await Swal.fire({
+  //           title: "Success",
+  //           text: "Recruitment data updated successfully",
+  //           icon: "success",
+  //           timer: 1500,
+  //           showConfirmButton: false,
+  //         });
 
-//         // resetForm();
-//       } else {
-//         await Swal.fire("Failed", response.data.message, "error");
-//       }
-//     } catch (error) {
-//       Swal.close();
-//       console.error(error);
-//       await Swal.fire(
-//         "Error",
-//         error.response?.data?.message || "Something went wrong",
-//         "error"
-//       );
-//     }
-//   };
+  //         // resetForm();
+  //       } else {
+  //         await Swal.fire("Failed", response.data.message, "error");
+  //       }
+  //     } catch (error) {
+  //       Swal.close();
+  //       console.error(error);
+  //       await Swal.fire(
+  //         "Error",
+  //         error.response?.data?.message || "Something went wrong",
+  //         "error"
+  //       );
+  //     }
+  //   };
 
   const resetForm = () => {
     setFormData({
@@ -1167,7 +1220,7 @@ const handleSubmit = async (e) => {
       FIRST_NAME: '',
       LAST_NAME: '',
       EMAIL: '',
-          ADDRSS_STATUS: "",
+      ADDRSS_STATUS: "",
       PHONE_NUMBER: '',
       ORIGINAL_DOB: '',
       GENDER: '',
@@ -1222,7 +1275,7 @@ const handleSubmit = async (e) => {
       PG_MARKS: '',
       PG_PASSED_YEAR: '',
       PG_FILENAME: null,
-            PHD_COLLEGE_NAME: '',
+      PHD_COLLEGE_NAME: '',
       PHD_UNIVERSITY: '',
       PHD_MARKS: '',
       PHD_PASSED_YEAR: '',
@@ -1293,9 +1346,7 @@ const handleSubmit = async (e) => {
     background: '#ffffff',
     boxSizing: 'border-box'
   };
-
-  // Table file upload component for education rows
- const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error }) => {
+const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPending, onOpenFile }) => {
   const inputRef = React.useRef();
 
   const getFileNameFromPath = (path) => {
@@ -1304,7 +1355,7 @@ const handleSubmit = async (e) => {
       const parts = path.split('/');
       return parts[parts.length - 1];
     }
-    return path?.name; // File object
+    return path?.name;
   };
 
   const handleChange = (e) => onChange(e);
@@ -1317,62 +1368,284 @@ const handleSubmit = async (e) => {
 
   return (
     <div>
-      <label style={{ cursor: 'pointer' }}>
-        <input
-          ref={inputRef}
-          type="file"
-          name={name}
-          accept="application/pdf"
-          onChange={handleChange}
-          style={{ display: 'none' }}
-        />
-        <span
-          style={{
-            padding: '4px 8px',
-            background: selectedFile ? '#10b981' : '#3b82f6',
-            color: 'white',
-            borderRadius: '4px',
-            fontSize: '10px',
-            fontWeight: '600',
-            display: 'inline-block',
-            cursor: 'pointer'
-          }}
-        >
-          {selectedFile ? '📎 File' : '📁 Upload'}
-        </span>
+      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        {label}
       </label>
+      {!isPending ? (
+        // Normal mode: upload button
+        <>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <input
+              ref={inputRef}
+              type="file"
+              name={name}
+              accept="application/pdf,image/jpeg,image/png"
+              onChange={handleChange}
+              style={{ display: 'none' }}
+            />
+            <span
+              style={{
+                padding: '5px 10px',
+                background: 'linear-gradient(to right, #dbeafe, #bfdbfe)',
+                color: '#1e40af',
+                borderRadius: '6px',
+                fontWeight: '600',
+                fontSize: '11px',
+                border: error ? '2px solid #ef4444' : '2px solid #bfdbfe',
+              }}
+            >
+              Choose File
+            </span>
+          </label>
+          {selectedFile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+              <span
+                style={{
+                  color: '#1e40af',
+                  fontSize: '10px',
+                  fontWeight: '500',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '140px',
+                }}
+              >
+                {fileName || 'Selected file'}
+              </span>
+              <button
+                type="button"
+                onClick={handleRemove}
+                style={{
+                  background: '#c84141',
+                  color: '#f6efef',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '14px',
+                  height: '14px',
+                  fontSize: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        // Pending mode: show clickable file name if file exists
+        selectedFile && (
+          <div style={{ marginTop: '3px' }}>
+            <span
+              onClick={() => onOpenFile(selectedFile)}
+              style={{
+                color: '#1e40af',
+                fontSize: '10px',
+                fontWeight: '600',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                pointerEvents: 'auto', // override parent pointer-events: none
+                wordBreak: 'break-all',
+              }}
+            >
+              {fileName || 'Open file'}
+            </span>
+          </div>
+        )
+      )}
+      {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px' }}>{error}</p>}
+    </div>
+  );
+};
+const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPending, onOpenFile }) => {
+  const inputRef = React.useRef();
 
-      {selectedFile && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-          <span style={{ fontSize: '9px', color: '#1e40af', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {fileName}
-          </span>
-          <button
-            type="button"
-            onClick={handleRemove}
-            style={{
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: '16px',
-              height: '16px',
-              fontSize: '9px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0
-            }}
-          >
-            ✕
-          </button>
-        </div>
+  const getFileNameFromPath = (path) => {
+    if (!path) return null;
+    if (typeof path === 'string') {
+      const parts = path.split('/');
+      return parts[parts.length - 1];
+    }
+    return path?.name;
+  };
+
+  const handleChange = (e) => onChange(e);
+  const handleRemove = () => {
+    if (inputRef.current) inputRef.current.value = '';
+    onRemove(name);
+  };
+
+  const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
+
+  return (
+    <div>
+      {!isPending ? (
+        <>
+          <label style={{ cursor: 'pointer' }}>
+            <input
+              ref={inputRef}
+              type="file"
+              name={name}
+              accept="application/pdf"
+              onChange={handleChange}
+              style={{ display: 'none' }}
+            />
+            <span
+              style={{
+                padding: '4px 8px',
+                background: selectedFile ? '#10b981' : '#3b82f6',
+                color: 'white',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: '600',
+                display: 'inline-block',
+                cursor: 'pointer',
+              }}
+            >
+              {selectedFile ? '📎 File' : '📁 Upload'}
+            </span>
+          </label>
+          {selectedFile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  color: '#1e40af',
+                  maxWidth: '80px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {fileName}
+              </span>
+              <button
+                type="button"
+                onClick={handleRemove}
+                style={{
+                  background: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '16px',
+                  height: '16px',
+                  fontSize: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        selectedFile && (
+          <div>
+            <span
+              onClick={() => onOpenFile(selectedFile)}
+              style={{
+                fontSize: '9px',
+                color: '#1e40af',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                wordBreak: 'break-all',
+              }}
+            >
+              {fileName || 'Open file'}
+            </span>
+          </div>
+        )
       )}
       {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
     </div>
   );
 };
+  // Table file upload component for education rows
+  // const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error }) => {
+  //   const inputRef = React.useRef();
+
+  //   const getFileNameFromPath = (path) => {
+  //     if (!path) return null;
+  //     if (typeof path === 'string') {
+  //       const parts = path.split('/');
+  //       return parts[parts.length - 1];
+  //     }
+  //     return path?.name; // File object
+  //   };
+
+  //   const handleChange = (e) => onChange(e);
+  //   const handleRemove = () => {
+  //     if (inputRef.current) inputRef.current.value = '';
+  //     onRemove(name);
+  //   };
+
+  //   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
+
+  //   return (
+  //     <div>
+  //       <label style={{ cursor: 'pointer' }}>
+  //         <input
+  //           ref={inputRef}
+  //           type="file"
+  //           name={name}
+  //           accept="application/pdf"
+  //           onChange={handleChange}
+  //           style={{ display: 'none' }}
+  //         />
+  //         <span
+  //           style={{
+  //             padding: '4px 8px',
+  //             background: selectedFile ? '#10b981' : '#3b82f6',
+  //             color: 'white',
+  //             borderRadius: '4px',
+  //             fontSize: '10px',
+  //             fontWeight: '600',
+  //             display: 'inline-block',
+  //             cursor: 'pointer'
+  //           }}
+  //         >
+  //           {selectedFile ? '📎 File' : '📁 Upload'}
+  //         </span>
+  //       </label>
+
+  //       {selectedFile && (
+  //         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+  //           <span style={{ fontSize: '9px', color: '#1e40af', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+  //             {fileName}
+  //           </span>
+  //           <button
+  //             type="button"
+  //             onClick={handleRemove}
+  //             style={{
+  //               background: '#ef4444',
+  //               color: 'white',
+  //               border: 'none',
+  //               borderRadius: '50%',
+  //               width: '16px',
+  //               height: '16px',
+  //               fontSize: '9px',
+  //               cursor: 'pointer',
+  //               display: 'flex',
+  //               alignItems: 'center',
+  //               justifyContent: 'center',
+  //               padding: 0
+  //             }}
+  //           >
+  //             ✕
+  //           </button>
+  //         </div>
+  //       )}
+  //       {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
+  //     </div>
+  //   );
+  // };
 
   return (
     <div style={{
@@ -1386,7 +1659,9 @@ const handleSubmit = async (e) => {
       background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe, #eff6ff)'
     }}>
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <form
+          id="recruitmentForm"
+          onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
           {/* ================= BASIC INFORMATION ================= */}
           <div style={{
@@ -1448,352 +1723,353 @@ const handleSubmit = async (e) => {
                 {openSections.basicInfo ? '▲' : '▼'}
               </button>
             </div>
+            <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
+              {openSections.basicInfo && (
+                <>
 
-            {openSections.basicInfo && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px' }}>
-                  <InputField label="Child Case ID" name="CHILD_CASEID" value={formData.CHILD_CASEID} onChange={handleInputChange} disabled />
-                  <InputField label="Plant" name="PLANT" value={formData.PLANT} onChange={handleInputChange} disabled />
-                  <InputField label="Department" name="DEPT" value={formData.DEPT} onChange={handleInputChange} disabled />
-                  <InputField label={<>Name <span style={{ color: '#ef4444' }}>*</span></>} name="FIRST_NAME" value={formData.FIRST_NAME} onChange={handleInputChange} error={showErrors ? errors.FIRST_NAME : ''} placeholder="As per Aadhar"/>
-                  {/* <InputField label={<>Last Name <span style={{ color: '#ef4444' }}>*</span></>} name="LAST_NAME" value={formData.LAST_NAME} onChange={handleInputChange} error={showErrors ? errors.LAST_NAME : ''} /> */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px' }}>
+                    <InputField label="Child Case ID" name="CHILD_CASEID" value={formData.CHILD_CASEID} onChange={handleInputChange} disabled />
+                    <InputField label="Plant" name="PLANT" value={formData.PLANT} onChange={handleInputChange} disabled />
+                    <InputField label="Department" name="DEPT" value={formData.DEPT} onChange={handleInputChange} disabled />
+                    <InputField label={<>Name <span style={{ color: '#ef4444' }}>*</span></>} name="FIRST_NAME" value={formData.FIRST_NAME} onChange={handleInputChange} error={showErrors ? errors.FIRST_NAME : ''} placeholder="As per Aadhar" />
+                    {/* <InputField label={<>Last Name <span style={{ color: '#ef4444' }}>*</span></>} name="LAST_NAME" value={formData.LAST_NAME} onChange={handleInputChange} error={showErrors ? errors.LAST_NAME : ''} /> */}
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                      Gender <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <select name="GENDER" value={formData.GENDER} onChange={handleInputChange} style={{
-                      width: '100%', padding: '2px 8px', height: '28px',
-                      border: `1.5px solid ${showErrors && errors.GENDER ? '#ef4444' : '#1572dd'}`,
-                      borderRadius: '6px', fontSize: '12px', outline: 'none',
-                      background: '#ffffff',
-                      color: '#1e3a8a', fontWeight: '500',
-                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                    }}>
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                    {showErrors && errors.GENDER && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GENDER}</p>}
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                      Marital Status <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <select name="MARITAL_STATUS" value={formData.MARITAL_STATUS} onChange={handleInputChange} style={{
-                      width: '100%', padding: '2px 8px', height: '28px',
-                      border: `1.5px solid ${showErrors && errors.MARITAL_STATUS ? '#ef4444' : '#1472dd'}`,
-                      borderRadius: '6px', fontSize: '12px', outline: 'none',
-                      background: '#ffffff',
-                      color: '#1e3a8a', fontWeight: '500',
-                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                    }}>
-                      <option value="">Select Status</option>
-                      <option value="Married">Married</option>
-                      <option value="Unmarried">Unmarried</option>
-                    </select>
-                    {showErrors && errors.MARITAL_STATUS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.MARITAL_STATUS}</p>}
-                  </div>
-
-                  <InputField label={<>Languages Known <span style={{ color: '#ef4444' }}>*</span></>} name="LANG_KNOWN" value={formData.LANG_KNOWN} onChange={handleInputChange} placeholder="e.g. English, Telugu" error={showErrors ? errors.LANG_KNOWN : ''} />
-                  <InputField label={<>Mother Tongue <span style={{ color: '#ef4444' }}>*</span></>} name="MOTHER_TONGUE" value={formData.MOTHER_TONGUE} onChange={handleInputChange} error={showErrors ? errors.MOTHER_TONGUE : ''} />
-
-                  <InputField label={<>Email <span style={{ color: '#ef4444' }}>*</span></>} name="EMAIL" type="email" value={formData.EMAIL} onChange={handleInputChange} error={showErrors ? errors.EMAIL : ''} />
-                  <InputField label={<>Phone Number <span style={{ color: '#ef4444' }}>*</span></>} name="PHONE_NUMBER" value={formData.PHONE_NUMBER} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "PHONE_NUMBER", value: val } }); } }} error={showErrors ? errors.PHONE_NUMBER : ''} />
-                  <InputField label={<>Emergency Contact <span style={{ color: '#ef4444' }}>*</span></>} name="EMER_CONTACT_NUM" value={formData.EMER_CONTACT_NUM} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "EMER_CONTACT_NUM", value: val } }); } }} error={showErrors ? errors.EMER_CONTACT_NUM : ''} />
-
-                  <InputField label={<>DOB (as per original) <span style={{ color: '#ef4444' }}>*</span></>} name="ORIGINAL_DOB" type="date" value={formData.ORIGINAL_DOB} onChange={handleInputChange} error={showErrors ? errors.ORIGINAL_DOB : ''} />
-                  <InputField label={<>DOB (as per Aadhar) <span style={{ color: '#ef4444' }}>*</span></>} name="DOB_ASPER_ADHAR" type="date" value={formData.DOB_ASPER_ADHAR} onChange={handleInputChange} error={showErrors ? errors.DOB_ASPER_ADHAR : ''} />
-                  <InputField label="Age" name="AGE" value={formData.AGE} disabled />
-
-               <InputField label={<>Highest Qualification <span style={{ color: '#ef4444' }}>*</span></>} name="HIGHEST_QUA" value={formData.HIGHEST_QUA} onChange={handleInputChange} error={showErrors ? errors.HIGHEST_QUA : ''} />
-
-                  <InputField label={<>Aadhaar Number <span style={{ color: "#ef4444" }}>*</span></>} name="AADHAR_NUM" value={formData.AADHAR_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "AADHAR_NUM", value: val } }); }} error={showErrors ? errors.AADHAR_NUM : ""} />
-                  <InputField label={<>PAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="PAN_NUM" value={formData.PAN_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PAN_NUM", value: val } }); }} error={showErrors ? errors.PAN_NUM : ""} />
-                  <InputField label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="UAN_NUM" value={formData.UAN_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "UAN_NUM", value: val } }); }} error={showErrors ? errors.UAN_NUM : ""} />
-
-                  {
-                  (formData.UAN_NUM || '').length == 12 && (
-                    
-                    <FileUpload 
-                    label={<>UAN Document 
-                    <span style={{ color: '#ef4444' }}>*</span></>} 
-                    name="UAN_FILE" onChange={handleFileChange}
-                     onRemove={handleRemoveFile} 
-                     selectedFile={formData.UAN_FILE} 
-                     error={showErrors ? errors.UAN_FILE : ''} />
-         
-                  
-                  )}
-
-                  <InputField label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} name="ESI_NUM" value={formData.ESI_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "ESI_NUM", value: val } }); }} error={showErrors ? errors.ESI_NUM : ""} />
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                      Source <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <select name="SRC_TYPE" value={formData.SRC_TYPE} onChange={handleInputChange} style={{
-                      width: '100%', padding: '2px 8px', height: '28px',
-                      border: `1.5px solid ${showErrors && errors.SRC_TYPE ? "#ef4444" : "#217be3"}`,
-                      borderRadius: '6px', fontSize: '12px', outline: 'none',
-                      background: '#ffffff',
-                      color: '#1e3a8a', fontWeight: '500', cursor: 'pointer',
-                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                    }}>
-                      <option value="">Select Source</option>
-                      <option value="Social Media">Social Media</option>
-                      <option value="Naukri">Naukri</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="Indeed">Indeed</option>
-                      <option value="reference">Reference</option>
-                      <option value="Others">Others</option>
-                    </select>
-                    {showErrors && errors.SRC_TYPE && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_TYPE}</p>}
-                  </div>
-
-                  {formData.SRC_TYPE === "reference" && (
-                    <>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Reference Name <span style={{ color: '#ef4444' }}>*</span>
+                        Gender <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <input type="text" name="SRC_REFER_NAME" value={formData.SRC_REFER_NAME || ''} onChange={handleInputChange} placeholder="Enter reference name"
-                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_NAME ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
-                      />
-                      {showErrors && errors.SRC_REFER_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_NAME}</p>}
-
-                      
+                      <select name="GENDER" value={formData.GENDER} onChange={handleInputChange} style={{
+                        width: '100%', padding: '2px 8px', height: '28px',
+                        border: `1.5px solid ${showErrors && errors.GENDER ? '#ef4444' : '#1572dd'}`,
+                        borderRadius: '6px', fontSize: '12px', outline: 'none',
+                        background: '#ffffff',
+                        color: '#1e3a8a', fontWeight: '500',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+                      }}>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                      {showErrors && errors.GENDER && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GENDER}</p>}
                     </div>
 
-                          <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                      DEPT(Referal Person) <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input type="text" name="SRC_REFER_DEPT" value={formData.SRC_REFER_DEPT || ''} onChange={handleInputChange} placeholder="Enter reference dept"
-                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_DEPT ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
-                      />
-                      {showErrors && errors.SRC_REFER_DEPT && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_DEPT}</p>}
-
-                      
-                    </div>
-
-</>
-
-                  )}
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                      Blood Group
-                    </label>
-                    <select name="BLOOD_GROUP" value={formData.BLOOD_GROUP} onChange={handleInputChange} style={{
-                      width: '100%', padding: '2px 8px', height: '28px',
-                      border: `1.5px solid ${showErrors && errors.BLOOD_GROUP ? '#ef4444' : '#1d74d7'}`,
-                      borderRadius: '6px', fontSize: '12px', outline: 'none',
-                      background: '#ffffff',
-                      color: '#1e3a8a', fontWeight: '600',
-                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                    }}>
-                      <option value="">Select Blood Group</option>
-                      <option value="A+">A+</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B-">B-</option>
-                      <option value="AB+">AB+</option>
-                      <option value="AB-">AB-</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
-                    </select>
-                    {showErrors && errors.BLOOD_GROUP && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BLOOD_GROUP}</p>}
-                  </div>
-
-                  <InputField label="Passport Number" name="PASSPORT_NUMBER" value={formData.PASSPORT_NUMBER} maxLength={9} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PASSPORT_NUMBER", value: val } }); }} error={showErrors ? errors.PASSPORT_NUMBER : ""} />
-
-                  {(formData.PASSPORT_NUMBER || '').length > 0 && (
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Passport Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+                        Marital Status <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <input type="date" name="PASSPORT_EXPIRY" value={formData.PASSPORT_EXPIRY || ''} onChange={handleInputChange}
-                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.PASSPORT_EXPIRY ? '#ef4444' : '#207ce6'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
-                      />
-                      {showErrors && errors.PASSPORT_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.PASSPORT_EXPIRY}</p>}
+                      <select name="MARITAL_STATUS" value={formData.MARITAL_STATUS} onChange={handleInputChange} style={{
+                        width: '100%', padding: '2px 8px', height: '28px',
+                        border: `1.5px solid ${showErrors && errors.MARITAL_STATUS ? '#ef4444' : '#1472dd'}`,
+                        borderRadius: '6px', fontSize: '12px', outline: 'none',
+                        background: '#ffffff',
+                        color: '#1e3a8a', fontWeight: '500',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+                      }}>
+                        <option value="">Select Status</option>
+                        <option value="Married">Married</option>
+                        <option value="Unmarried">Unmarried</option>
+                      </select>
+                      {showErrors && errors.MARITAL_STATUS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.MARITAL_STATUS}</p>}
                     </div>
-                  )}
 
-                  <InputField label="Driving Licence Number" name="DRIVING_LICENSE" value={formData.DRIVING_LICENSE} maxLength={16} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENSE", value: val } }); }} error={showErrors ? errors.DRIVING_LICENSE : ''} />
+                    <InputField label={<>Languages Known <span style={{ color: '#ef4444' }}>*</span></>} name="LANG_KNOWN" value={formData.LANG_KNOWN} onChange={handleInputChange} placeholder="e.g. English, Telugu" error={showErrors ? errors.LANG_KNOWN : ''} />
+                    <InputField label={<>Mother Tongue <span style={{ color: '#ef4444' }}>*</span></>} name="MOTHER_TONGUE" value={formData.MOTHER_TONGUE} onChange={handleInputChange} error={showErrors ? errors.MOTHER_TONGUE : ''} />
 
-                  {(formData.DRIVING_LICENSE || '').length > 0 && (
+                    <InputField label={<>Email <span style={{ color: '#ef4444' }}>*</span></>} name="EMAIL" type="email" value={formData.EMAIL} onChange={handleInputChange} error={showErrors ? errors.EMAIL : ''} />
+                    <InputField label={<>Phone Number <span style={{ color: '#ef4444' }}>*</span></>} name="PHONE_NUMBER" value={formData.PHONE_NUMBER} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "PHONE_NUMBER", value: val } }); } }} error={showErrors ? errors.PHONE_NUMBER : ''} />
+                    <InputField label={<>Emergency Contact <span style={{ color: '#ef4444' }}>*</span></>} name="EMER_CONTACT_NUM" value={formData.EMER_CONTACT_NUM} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "EMER_CONTACT_NUM", value: val } }); } }} error={showErrors ? errors.EMER_CONTACT_NUM : ''} />
+
+                    <InputField label={<>DOB (as per original) <span style={{ color: '#ef4444' }}>*</span></>} name="ORIGINAL_DOB" type="date" value={formData.ORIGINAL_DOB} onChange={handleInputChange} error={showErrors ? errors.ORIGINAL_DOB : ''} />
+                    <InputField label={<>DOB (as per Aadhar) <span style={{ color: '#ef4444' }}>*</span></>} name="DOB_ASPER_ADHAR" type="date" value={formData.DOB_ASPER_ADHAR} onChange={handleInputChange} error={showErrors ? errors.DOB_ASPER_ADHAR : ''} />
+                    <InputField label="Age" name="AGE" value={formData.AGE} disabled />
+
+                    <InputField label={<>Highest Qualification <span style={{ color: '#ef4444' }}>*</span></>} name="HIGHEST_QUA" value={formData.HIGHEST_QUA} onChange={handleInputChange} error={showErrors ? errors.HIGHEST_QUA : ''} />
+
+                    <InputField label={<>Aadhaar Number <span style={{ color: "#ef4444" }}>*</span></>} name="AADHAR_NUM" value={formData.AADHAR_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "AADHAR_NUM", value: val } }); }} error={showErrors ? errors.AADHAR_NUM : ""} />
+                    <InputField label={<>PAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="PAN_NUM" value={formData.PAN_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PAN_NUM", value: val } }); }} error={showErrors ? errors.PAN_NUM : ""} />
+                    <InputField label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="UAN_NUM" value={formData.UAN_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "UAN_NUM", value: val } }); }} error={showErrors ? errors.UAN_NUM : ""} />
+
+                    {
+                      (formData.UAN_NUM || '').length == 12 && (
+
+                        <FileUpload
+                          label={<>UAN Document
+                            <span style={{ color: '#ef4444' }}>*</span></>}
+                          name="UAN_FILE" onChange={handleFileChange}
+                          onRemove={handleRemoveFile}
+                          selectedFile={formData.UAN_FILE}
+                          error={showErrors ? errors.UAN_FILE : ''} />
+
+
+                      )}
+
+                    <InputField label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} name="ESI_NUM" value={formData.ESI_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "ESI_NUM", value: val } }); }} error={showErrors ? errors.ESI_NUM : ""} />
+
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Driving Licence Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+                        Source <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <input type="date" name="DRIVING_LICENSE_EXPIRY" value={formData.DRIVING_LICENSE_EXPIRY || ''} onChange={handleInputChange}
-                        style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENSE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
-                      />
-                      {showErrors && errors.DRIVING_LICENSE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENSE_EXPIRY}</p>}
+                      <select name="SRC_TYPE" value={formData.SRC_TYPE} onChange={handleInputChange} style={{
+                        width: '100%', padding: '2px 8px', height: '28px',
+                        border: `1.5px solid ${showErrors && errors.SRC_TYPE ? "#ef4444" : "#217be3"}`,
+                        borderRadius: '6px', fontSize: '12px', outline: 'none',
+                        background: '#ffffff',
+                        color: '#1e3a8a', fontWeight: '500', cursor: 'pointer',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+                      }}>
+                        <option value="">Select Source</option>
+                        <option value="Social Media">Social Media</option>
+                        <option value="Naukri">Naukri</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Indeed">Indeed</option>
+                        <option value="reference">Reference</option>
+                        <option value="Others">Others</option>
+                      </select>
+                      {showErrors && errors.SRC_TYPE && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_TYPE}</p>}
                     </div>
-                  )}
-                </div>
 
-                {/* ADDRESS SECTION */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '6px', marginBottom: '4px', padding: '6px 0 4px', borderTop: '1px solid rgba(147,197,253,0.45)', width: '100%' }}>
-                  {/* Permanent Address */}
-                  <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
-                      <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                        Permanent Address <span style={{ color: '#ef4444' }}>*</span>
-                      </h3>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                      {[
-                        { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
-                        { name: 'CITY', label: 'Village / City', err: errors.CITY },
-                        { name: 'MANDAL', label: 'Mandal', err: errors.MANDAL },
-                        { name: 'DISTRICT', label: 'District', err: errors.DISTRICT },
-                        { name: 'STATE', label: 'State', err: errors.STATE },
-                        { name: 'PINCODE', label: 'Pincode', err: errors.PINCODE },
-                      ].map(f => (
-                        <div key={f.name} style={{ flex: 1 }}>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
-                          <input
-                            name={f.name}
-                            value={formData[f.name]}
-                            onChange={handleInputChange}
-                            placeholder={f.label}
-                            maxLength={f.name === 'PINCODE' ? 6 : undefined}
-                            style={{
-                              width: '100%', padding: '2px 6px', height: '28px',
-                              border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1771d8'}`,
-                              borderRadius: '5px', fontSize: '11px', outline: 'none',
-                              background: '#ffffff', color: '#1e3a8a'
-                            }}
+                    {formData.SRC_TYPE === "reference" && (
+                      <>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                            Reference Name <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input type="text" name="SRC_REFER_NAME" value={formData.SRC_REFER_NAME || ''} onChange={handleInputChange} placeholder="Enter reference name"
+                            style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_NAME ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
                           />
-                          {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+                          {showErrors && errors.SRC_REFER_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_NAME}</p>}
+
+
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Radio buttons */}
-                  <div style={{ marginTop: '16px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Same as Permanent Address?</label>
-                    <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input
-                        type="radio"
-                        name="address_status"
-                        checked={sameAsPermanent === true}
-                        onChange={() => {
-                          setSameAsPermanent(true);
-                          setFormData(prev => ({
-                            ...prev,
-                            PRESENT_HNO: prev.HNO || '',
-                            PRESENT_CITY: prev.CITY || '',
-                            PRESENT_MANDAL: prev.MANDAL || '',
-                            PRESENT_DISTRICT: prev.DISTRICT || '',
-                            PRESENT_STATE: prev.STATE || '',
-                            PRESENT_PINCODE: prev.PINCODE || '',
-                          }));
-                        }}
-                      /> Yes
-                    </label>
-                    <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input
-                        type="radio"
-                        name="address_status"
-                        checked={sameAsPermanent === false}
-                        onChange={() => {
-                          setSameAsPermanent(false);
-                          setFormData(prev => ({
-                            ...prev,
-                            PRESENT_HNO: '',
-                            PRESENT_CITY: '',
-                            PRESENT_MANDAL: '',
-                            PRESENT_DISTRICT: '',
-                            PRESENT_STATE: '',
-                            PRESENT_PINCODE: '',
-                          }));
-                        }}
-                      /> No
-                    </label>
-                  </div>
-
-                  {/* Present Address */}
-                  <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
-                      <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                        Present Address <span style={{ color: '#ef4444' }}>*</span>
-                      </h3>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                      {[
-                        { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
-                        { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
-                        { name: 'PRESENT_MANDAL', label: 'Mandal', err: errors.PRESENT_MANDAL },
-                        { name: 'PRESENT_DISTRICT', label: 'District', err: errors.PRESENT_DISTRICT },
-                        { name: 'PRESENT_STATE', label: 'State', err: errors.PRESENT_STATE },
-                        { name: 'PRESENT_PINCODE', label: 'Pincode', err: errors.PRESENT_PINCODE },
-                      ].map(f => (
-                        <div key={f.name} style={{ flex: 1 }}>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
-                          <input
-                            name={f.name}
-                            value={formData[f.name]}
-                            onChange={handleInputChange}
-                            disabled={sameAsPermanent === true}
-                            style={{
-                              width: '100%', padding: '2px 6px', height: '28px',
-                              border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1f79e0'}`,
-                              borderRadius: '5px', fontSize: '11px', outline: 'none',
-                              background: sameAsPermanent === true ? '#e9ecef' : '#ffffff',
-                              color: sameAsPermanent === true ? '#495057' : '#1e3a8a',
-                              cursor: sameAsPermanent === true ? 'not-allowed' : 'text'
-                            }}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                            DEPT(Referal Person) <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input type="text" name="SRC_REFER_DEPT" value={formData.SRC_REFER_DEPT || ''} onChange={handleInputChange} placeholder="Enter reference dept"
+                            style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_DEPT ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
                           />
-                          {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+                          {showErrors && errors.SRC_REFER_DEPT && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_DEPT}</p>}
+
+
                         </div>
-                      ))}
+
+                      </>
+
+                    )}
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                        Blood Group
+                      </label>
+                      <select name="BLOOD_GROUP" value={formData.BLOOD_GROUP} onChange={handleInputChange} style={{
+                        width: '100%', padding: '2px 8px', height: '28px',
+                        border: `1.5px solid ${showErrors && errors.BLOOD_GROUP ? '#ef4444' : '#1d74d7'}`,
+                        borderRadius: '6px', fontSize: '12px', outline: 'none',
+                        background: '#ffffff',
+                        color: '#1e3a8a', fontWeight: '600',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+                      }}>
+                        <option value="">Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                      </select>
+                      {showErrors && errors.BLOOD_GROUP && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BLOOD_GROUP}</p>}
+                    </div>
+
+                    <InputField label="Passport Number" name="PASSPORT_NUMBER" value={formData.PASSPORT_NUMBER} maxLength={9} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PASSPORT_NUMBER", value: val } }); }} error={showErrors ? errors.PASSPORT_NUMBER : ""} />
+
+                    {(formData.PASSPORT_NUMBER || '').length > 0 && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                          Passport Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input type="date" name="PASSPORT_EXPIRY" value={formData.PASSPORT_EXPIRY || ''} onChange={handleInputChange}
+                          style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.PASSPORT_EXPIRY ? '#ef4444' : '#207ce6'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
+                        />
+                        {showErrors && errors.PASSPORT_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.PASSPORT_EXPIRY}</p>}
+                      </div>
+                    )}
+
+                    <InputField label="Driving Licence Number" name="DRIVING_LICENSE" value={formData.DRIVING_LICENSE} maxLength={16} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENSE", value: val } }); }} error={showErrors ? errors.DRIVING_LICENSE : ''} />
+
+                    {(formData.DRIVING_LICENSE || '').length > 0 && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                          Driving Licence Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input type="date" name="DRIVING_LICENSE_EXPIRY" value={formData.DRIVING_LICENSE_EXPIRY || ''} onChange={handleInputChange}
+                          style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENSE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
+                        />
+                        {showErrors && errors.DRIVING_LICENSE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENSE_EXPIRY}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ADDRESS SECTION */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '6px', marginBottom: '4px', padding: '6px 0 4px', borderTop: '1px solid rgba(147,197,253,0.45)', width: '100%' }}>
+                    {/* Permanent Address */}
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
+                        <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                          Permanent Address <span style={{ color: '#ef4444' }}>*</span>
+                        </h3>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                        {[
+                          { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
+                          { name: 'CITY', label: 'Village / City', err: errors.CITY },
+                          { name: 'MANDAL', label: 'Mandal', err: errors.MANDAL },
+                          { name: 'DISTRICT', label: 'District', err: errors.DISTRICT },
+                          { name: 'STATE', label: 'State', err: errors.STATE },
+                          { name: 'PINCODE', label: 'Pincode', err: errors.PINCODE },
+                        ].map(f => (
+                          <div key={f.name} style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
+                            <input
+                              name={f.name}
+                              value={formData[f.name]}
+                              onChange={handleInputChange}
+                              placeholder={f.label}
+                              maxLength={f.name === 'PINCODE' ? 6 : undefined}
+                              style={{
+                                width: '100%', padding: '2px 6px', height: '28px',
+                                border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1771d8'}`,
+                                borderRadius: '5px', fontSize: '11px', outline: 'none',
+                                background: '#ffffff', color: '#1e3a8a'
+                              }}
+                            />
+                            {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Radio buttons */}
+                    <div style={{ marginTop: '16px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Same as Permanent Address?</label>
+                      <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input
+                          type="radio"
+                          name="address_status"
+                          checked={sameAsPermanent === true}
+                          onChange={() => {
+                            setSameAsPermanent(true);
+                            setFormData(prev => ({
+                              ...prev,
+                              PRESENT_HNO: prev.HNO || '',
+                              PRESENT_CITY: prev.CITY || '',
+                              PRESENT_MANDAL: prev.MANDAL || '',
+                              PRESENT_DISTRICT: prev.DISTRICT || '',
+                              PRESENT_STATE: prev.STATE || '',
+                              PRESENT_PINCODE: prev.PINCODE || '',
+                            }));
+                          }}
+                        /> Yes
+                      </label>
+                      <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input
+                          type="radio"
+                          name="address_status"
+                          checked={sameAsPermanent === false}
+                          onChange={() => {
+                            setSameAsPermanent(false);
+                            setFormData(prev => ({
+                              ...prev,
+                              PRESENT_HNO: '',
+                              PRESENT_CITY: '',
+                              PRESENT_MANDAL: '',
+                              PRESENT_DISTRICT: '',
+                              PRESENT_STATE: '',
+                              PRESENT_PINCODE: '',
+                            }));
+                          }}
+                        /> No
+                      </label>
+                    </div>
+
+                    {/* Present Address */}
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
+                        <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                          Present Address <span style={{ color: '#ef4444' }}>*</span>
+                        </h3>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                        {[
+                          { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
+                          { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
+                          { name: 'PRESENT_MANDAL', label: 'Mandal', err: errors.PRESENT_MANDAL },
+                          { name: 'PRESENT_DISTRICT', label: 'District', err: errors.PRESENT_DISTRICT },
+                          { name: 'PRESENT_STATE', label: 'State', err: errors.PRESENT_STATE },
+                          { name: 'PRESENT_PINCODE', label: 'Pincode', err: errors.PRESENT_PINCODE },
+                        ].map(f => (
+                          <div key={f.name} style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
+                            <input
+                              name={f.name}
+                              value={formData[f.name]}
+                              onChange={handleInputChange}
+                              disabled={sameAsPermanent === true}
+                              style={{
+                                width: '100%', padding: '2px 6px', height: '28px',
+                                border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1f79e0'}`,
+                                borderRadius: '5px', fontSize: '11px', outline: 'none',
+                                background: sameAsPermanent === true ? '#e9ecef' : '#ffffff',
+                                color: sameAsPermanent === true ? '#495057' : '#1e3a8a',
+                                cursor: sameAsPermanent === true ? 'not-allowed' : 'text'
+                              }}
+                            />
+                            {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* FILE UPLOADS */}
-                <div style={{
-                  marginTop: '6px',
-                  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px',
-                  padding: '6px 8px',
-                  background: 'linear-gradient(135deg, rgb(255, 255, 255) 0%, rgba(2rgb(243, 249, 247)rgb(246, 245, 250) 100%)',
-                  borderRadius: '8px',
-                  border: '1.5px dashed #71acef',
-                  boxShadow: 'inset 0 1px 4px rgba(147,197,253,0.12)',
-                }}>
+                  {/* FILE UPLOADS */}
                   <div style={{
-                    gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b',
-                    letterSpacing: '0.8px', textTransform: 'uppercase',
-                    marginBottom: '1px', paddingBottom: '3px',
-                    borderBottom: '1px solid rgb(19, 17, 100), 0.4)',
-                    display: 'flex', alignItems: 'center', gap: '6px',
+                    marginTop: '6px',
+                    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px',
+                    padding: '6px 8px',
+                    background: 'linear-gradient(135deg, rgb(255, 255, 255) 0%, rgba(2rgb(243, 249, 247)rgb(246, 245, 250) 100%)',
+                    borderRadius: '8px',
+                    border: '1.5px dashed #71acef',
+                    boxShadow: 'inset 0 1px 4px rgba(147,197,253,0.12)',
                   }}>
-                    <FileUp size={13} color="#0f3f8b" />
-                    Document Uploads
-                  </div>
-                  <FileUpload label={<>Aadhaar Card <span style={{ color: '#ef4444' }}>*</span></>} name="AADHAR_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.AADHAR_PATH} error={showErrors ? errors.AADHAR_PATH : ''} />
-                  <FileUpload label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} name="RESUME_UPLOAD" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.RESUME_UPLOAD} error={showErrors ? errors.RESUME_UPLOAD : ''} />
-                  <FileUpload label={<>PAN Card <span style={{ color: '#ef4444' }}>*</span></>} name="PAN_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PAN_PATH} error={showErrors ? errors.PAN_PATH : ''} />
+                    <div style={{
+                      gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b',
+                      letterSpacing: '0.8px', textTransform: 'uppercase',
+                      marginBottom: '1px', paddingBottom: '3px',
+                      borderBottom: '1px solid rgb(19, 17, 100), 0.4)',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                    }}>
+                      <FileUp size={13} color="#0f3f8b" />
+                      Document Uploads
+                    </div>
+                    <FileUpload label={<>Aadhaar Card <span style={{ color: '#ef4444' }}>*</span></>} name="AADHAR_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.AADHAR_PATH} error={showErrors ? errors.AADHAR_PATH : ''}  />
+                    <FileUpload label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} name="RESUME_UPLOAD" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.RESUME_UPLOAD} error={showErrors ? errors.RESUME_UPLOAD : ''} />
+                    <FileUpload label={<>PAN Card <span style={{ color: '#ef4444' }}>*</span></>} name="PAN_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PAN_PATH} error={showErrors ? errors.PAN_PATH : ''} />
 
-                  <FileUpload
-  label={<>Photo <span style={{ color: "#ef4444" }}>*</span></>}
-  name="PHOTO"
-  accept=".jpg,.jpeg,.png"
-  onChange={handleFileChange}
-  selectedFile={formData.PHOTO}
-  error={showErrors ? errors.PHOTO : ""}
-/>
-                 
-                </div>
-              </>
-            )}
-          </div>
+                    <FileUpload
+                      label={<>Photo <span style={{ color: "#ef4444" }}>*</span></>}
+                      name="PHOTO"
+                      accept=".jpg,.jpeg,.png"
+                      onChange={handleFileChange}
+                      selectedFile={formData.PHOTO}
+                      error={showErrors ? errors.PHOTO : ""}
+                    />
+
+                  </div>
+                </>
+              )}
+            </div></div>
 
           {/* ================= EDUCATION DETAILS ================= */}
           <div style={{
@@ -1804,6 +2080,7 @@ const handleSubmit = async (e) => {
             border: '1px solid #dbeafe',
             position: 'relative',
           }}>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <h2 style={{
                 margin: 0,
@@ -1839,165 +2116,166 @@ const handleSubmit = async (e) => {
             </div>
 
             {openSections.education && (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
-                  <thead>
-                    <tr style={{ background: 'rgb(115, 164, 244)', color: '#ffffff' }}>
-                      <th style={{ width: '160px', padding: '8px' }}>Qualification</th>
-                      <th style={{ width: '240px', padding: '8px' }}>School/College</th>
-                      <th style={{ width: '220px', padding: '8px' }}>University/Board</th>
-                      <th style={{ width: '90px', padding: '8px', textAlign: 'center' }}>Per (%)</th>
-                      <th style={{ width: '160px', padding: '8px' }}>Passed Year</th>
-                      <th style={{ width: '120px', padding: '8px' }}>Certificate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* SSC */}
-                    <tr style={{ background: '#ffffff' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          SSC (10th) <span style={{ color: '#ef4444' }}>*</span>
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="SSC_SCHOOL_NAME" value={formData.SSC_SCHOOL_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_SCHOOL_NAME ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="SSC_BOARD" value={formData.SSC_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_BOARD ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="SSC_MARKS" value={formData.SSC_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.SSC_MARKS ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="SSC_PASSED_YEAR" value={formData.SSC_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.SSC_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="10TH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']} error={showErrors ? errors['10TH_FILENAME'] : ''} />
-                      </td>
-                    </tr>
+              <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
+                    <thead>
+                      <tr style={{ background: 'rgb(115, 164, 244)', color: '#ffffff' }}>
+                        <th style={{ width: '160px', padding: '8px' }}>Qualification</th>
+                        <th style={{ width: '240px', padding: '8px' }}>School/College</th>
+                        <th style={{ width: '220px', padding: '8px' }}>University/Board</th>
+                        <th style={{ width: '90px', padding: '8px', textAlign: 'center' }}>Per (%)</th>
+                        <th style={{ width: '160px', padding: '8px' }}>Passed Year</th>
+                        <th style={{ width: '120px', padding: '8px' }}>Certificate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* SSC */}
+                      <tr style={{ background: '#ffffff' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            SSC (10th) <span style={{ color: '#ef4444' }}>*</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="SSC_SCHOOL_NAME" value={formData.SSC_SCHOOL_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_SCHOOL_NAME ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="SSC_BOARD" value={formData.SSC_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_BOARD ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="SSC_MARKS" value={formData.SSC_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.SSC_MARKS ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="SSC_PASSED_YEAR" value={formData.SSC_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.SSC_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="10TH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']} error={showErrors ? errors['10TH_FILENAME'] : ''} />
+                        </td>
+                      </tr>
 
-                    {/* Intermediate */}
-                    <tr style={{ background: '#f9f9f9' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          Intermediate/Diploma <span style={{ color: '#ef4444' }}>*</span>
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="INTER_COLLEGE_NAME" value={formData.INTER_COLLEGE_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="INTER_BOARD" value={formData.INTER_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_BOARD ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="INTER_MARKS" value={formData.INTER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.INTER_MARKS ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="INTER_PASSED_YEAR" value={formData.INTER_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.INTER_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
-                      </td>
-                    </tr>
+                      {/* Intermediate */}
+                      <tr style={{ background: '#f9f9f9' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            Intermediate/Diploma <span style={{ color: '#ef4444' }}>*</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="INTER_COLLEGE_NAME" value={formData.INTER_COLLEGE_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="INTER_BOARD" value={formData.INTER_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_BOARD ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="INTER_MARKS" value={formData.INTER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.INTER_MARKS ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="INTER_PASSED_YEAR" value={formData.INTER_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.INTER_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
+                        </td>
+                      </tr>
 
-                    {/* Graduation */}
-                    <tr style={{ background: '#ffffff' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          Degree/B.Tech (UG) <span style={{ color: '#ef4444' }}>*</span>
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="GRAD_COLLEGE_NAME" value={formData.GRAD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={{ ...inputStyle, borderColor: showErrors && errors.GRAD_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="DEGREE_UNIVERSITY" value={formData.DEGREE_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_UNIVERSITY ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="BTECH_MARKS" value={formData.BTECH_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.BTECH_MARKS ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="DEGREE_PASSED_YEAR" value={formData.DEGREE_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="BTECH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.BTECH_FILENAME} error={showErrors ? errors.BTECH_FILENAME : ''} />
-                      </td>
-                    </tr>
+                      {/* Graduation */}
+                      <tr style={{ background: '#ffffff' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            Degree/B.Tech (UG) <span style={{ color: '#ef4444' }}>*</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="GRAD_COLLEGE_NAME" value={formData.GRAD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={{ ...inputStyle, borderColor: showErrors && errors.GRAD_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="DEGREE_UNIVERSITY" value={formData.DEGREE_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_UNIVERSITY ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="BTECH_MARKS" value={formData.BTECH_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.BTECH_MARKS ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="DEGREE_PASSED_YEAR" value={formData.DEGREE_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="BTECH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.BTECH_FILENAME} error={showErrors ? errors.BTECH_FILENAME : ''} />
+                        </td>
+                      </tr>
 
-                    {/* PG (Optional) */}
-                    <tr style={{ background: '#f9f9f9' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          PG (Optional)
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="PG_COLLEGE_NAME" value={formData.PG_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="PG_UNIVERSITY" value={formData.PG_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="PG_MARKS" value={formData.PG_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="PG_PASSED_YEAR" value={formData.PG_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="PG_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PG_FILENAME} />
-                      </td>
-                    </tr>
+                      {/* PG (Optional) */}
+                      <tr style={{ background: '#f9f9f9' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            PG (Optional)
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="PG_COLLEGE_NAME" value={formData.PG_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="PG_UNIVERSITY" value={formData.PG_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="PG_MARKS" value={formData.PG_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="PG_PASSED_YEAR" value={formData.PG_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="PG_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PG_FILENAME} />
+                        </td>
+                      </tr>
 
 
-                          <tr style={{ background: '#f9f9f9' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          PHD
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="PHD_COLLEGE_NAME" value={formData.PHD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="PHD_UNIVERSITY" value={formData.PHD_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="PHD_MARKS" value={formData.PHD_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="PHD_PASSED_YEAR" value={formData.PHD_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="PHD_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PHD_FILENAME} />
-                      </td>
-                    </tr>
+                      <tr style={{ background: '#f9f9f9' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            PHD
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="PHD_COLLEGE_NAME" value={formData.PHD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="PHD_UNIVERSITY" value={formData.PHD_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="PHD_MARKS" value={formData.PHD_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="PHD_PASSED_YEAR" value={formData.PHD_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="PHD_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PHD_FILENAME} />
+                        </td>
+                      </tr>
 
-                    {/* Others */}
-                    <tr style={{ background: '#ffffff' }}>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                          Others
-                        </span>
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="OTHER_COLLEGE_NAME" value={formData.OTHER_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="text" name="OTHER_UNIVERSITY" value={formData.OTHER_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <input type="number" name="OTHER_MARKS" value={formData.OTHER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
-                      </td>
-                      <td style={{ padding: '6px' }}>
-                        <input type="date" name="OTHER_PASSED_YEAR" value={formData.OTHER_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
-                      </td>
-                      <td style={{ padding: '6px', textAlign: 'center' }}>
-                        <TableFileUpload name="OTHER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.OTHER_FILENAME} />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                      {/* Others */}
+                      <tr style={{ background: '#ffffff' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            Others
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="OTHER_COLLEGE_NAME" value={formData.OTHER_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="OTHER_UNIVERSITY" value={formData.OTHER_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="OTHER_MARKS" value={formData.OTHER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center' }} />
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="OTHER_PASSED_YEAR" value={formData.OTHER_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="OTHER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.OTHER_FILENAME} />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div> </div>
             )}
           </div>
 
@@ -2022,86 +2300,204 @@ const handleSubmit = async (e) => {
                 Experience Details
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <button type="button" onClick={addExperience} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: '#fff', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)', transition: 'all 0.2s', letterSpacing: '0.3px' }}>
-                  <Plus size={14} /> Add
-                </button>
+                {!isPending && (
+                  <button type="button" onClick={addExperience} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: '#fff', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)', transition: 'all 0.2s', letterSpacing: '0.3px' }}>
+                    <Plus size={14} /> Add
+                  </button>)}
                 <button type="button" onClick={() => toggleSection('experience')} style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', border: 'none', cursor: 'pointer', color: '#fff', borderRadius: '6px', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)' }}>
                   {openSections.experience ? '▲' : '▼'}
                 </button>
               </div>
             </div>
+            <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
+              {openSections.experience && experiences.map((exp, index) => (
+                <div key={exp.id} style={{ marginBottom: '10px', padding: '10px', border: '1.5px solid rgba(147,197,253,0.5)', borderRadius: '10px', background: exp.isCurrent ? 'linear-gradient(135deg, #fdfdfd 0%, #ffffff 60%, #ffffff 100%)' : 'linear-gradient(135deg, #ffffff 0%, #ffffff 100%)', boxShadow: exp.isCurrent ? '0 2px 8px rgba(37,99,235,0.10), inset 0 1px 0 rgba(255,255,255,0.8)' : '0 1px 4px rgba(147,197,253,0.15)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '3px', background: exp.isCurrent ? 'linear-gradient(to bottom, #1e40af, #3b82f6)' : 'linear-gradient(to bottom, #93c5fd, #bfdbfe)', borderRadius: '10px 0 0 10px' }} />
 
-            {openSections.experience && experiences.map((exp, index) => (
-              <div key={exp.id} style={{ marginBottom: '10px', padding: '10px', border: '1.5px solid rgba(147,197,253,0.5)', borderRadius: '10px', background: exp.isCurrent ? 'linear-gradient(135deg, #fdfdfd 0%, #ffffff 60%, #ffffff 100%)' : 'linear-gradient(135deg, #ffffff 0%, #ffffff 100%)', boxShadow: exp.isCurrent ? '0 2px 8px rgba(37,99,235,0.10), inset 0 1px 0 rgba(255,255,255,0.8)' : '0 1px 4px rgba(147,197,253,0.15)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '3px', background: exp.isCurrent ? 'linear-gradient(to bottom, #1e40af, #3b82f6)' : 'linear-gradient(to bottom, #93c5fd, #bfdbfe)', borderRadius: '10px 0 0 10px' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingLeft: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ display: 'inline-block', padding: '2px 10px', background: exp.isCurrent ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)', border: `1.5px solid ${exp.isCurrent ? 'rgba(59,130,246,0.35)' : 'rgba(147,197,253,0.5)'}`, borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: exp.isCurrent ? '#1d4ed8' : '#3b82f6', letterSpacing: '0.3px' }}>
-                      {exp.isCurrent ? 'Current Company' : `Previous Company ${index}`}
-                    </span>
-                  </div>
-                  {experiences.length > 1 && (
-                    <button type="button" onClick={() => removeExperience(exp.id)} style={{ color: '#ef4444', background: 'rgba(254,226,226,0.6)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', cursor: 'pointer', padding: '3px 6px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}>
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
-                  <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME} onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''} />
-                  <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
-                  <InputField label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_FROM_DATE`} type="date" value={exp.FROM_DATE} onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''} />
-                  <InputField label={<>To Date {exp.isCurrent ? '(Current)' : ''} <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_TO_DATE`} type="date" value={exp.TO_DATE} onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}/>
-                  <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
-                  {exp.isCurrent && (
-                    <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
-                  )}
-                  {exp.isCurrent && (
-                    <>
-                      <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange} error={showErrors ? errors.CURRENT_CTC : ''} />
-                      <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange} error={showErrors ? errors.EXP_CTC : ''} />
-                      <InputField label={<>Total Experience <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange} error={showErrors ? errors.TOTAL_EXP : ''} />
-                    </>
-                  )}
-                </div>
-
-                {exp.isCurrent && (
-                  <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', padding: '8px 10px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', borderRadius: '8px', border: '1.5px dashed #93c5fd', boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' }}>
-                    <div style={{ gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '1px', paddingBottom: '3px', borderBottom: '1px solid rgba(147,197,253,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileUp size={13} color="#0f3f8b" />
-                      Document Uploads
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingLeft: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 10px', background: exp.isCurrent ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)', border: `1.5px solid ${exp.isCurrent ? 'rgba(59,130,246,0.35)' : 'rgba(147,197,253,0.5)'}`, borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: exp.isCurrent ? '#1d4ed8' : '#3b82f6', letterSpacing: '0.3px' }}>
+                        {exp.isCurrent ? 'Current Company' : `Previous Company`}
+                      </span>
                     </div>
-                    <ExperienceFileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} />
-                    <ExperienceFileUpload label="Offer Letter" name={`exp_${exp.id}_OFFER_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'OFFER_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'OFFER_LETTER')} selectedFiles={exp.OFFER_LETTER ? [exp.OFFER_LETTER] : []} />
-                    <ExperienceFileUpload label="Relieving Letter" name={`exp_${exp.id}_RELIEVING_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'RELIEVING_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'RELIEVING_LETTER')} selectedFiles={exp.RELIEVING_LETTER ? [exp.RELIEVING_LETTER] : []} />
-                    <ExperienceFileUpload label="Experience Letter" name={`exp_${exp.id}_EXP_LETTER`} onChange={(e) => handleExperienceFileChange(exp.id, 'EXP_LETTER', e)} onRemove={() => handleExperienceRemoveFile(exp.id, 'EXP_LETTER')} selectedFiles={exp.EXP_LETTER ? [exp.EXP_LETTER] : []} />
-                    <ExperienceFileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_BANK_STATEMENTS`} onChange={(e) => handleExperienceFileChange(exp.id, 'BANK_STATEMENTS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'BANK_STATEMENTS', index)}  maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_BANK_STATEMENTS`] : ''} selectedFiles={exp.BANK_STATEMENTS || []} />
+                    {experiences.length > 1 && (
+                      <button type="button" onClick={() => removeExperience(exp.id)} style={{ color: '#ef4444', background: 'rgba(254,226,226,0.6)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', cursor: 'pointer', padding: '3px 6px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
 
-          {/* ================= ACTION BUTTONS ================= */}
-      <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
-              <Send size={13} /> Submit Form
-            </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
+                    <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME} onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''} />
+                    <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
+                    <InputField label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_FROM_DATE`} type="date" value={exp.FROM_DATE} onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''} />
+                    <InputField label={<>To Date {exp.isCurrent ? '(Current)' : ''} <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_TO_DATE`} type="date" value={exp.TO_DATE} onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''} />
+                    <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
+                    {exp.isCurrent && (
+                      <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
+                    )}
+                    {exp.isCurrent && (
+                      <>
+                        <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange} error={showErrors ? errors.CURRENT_CTC : ''} />
+                        <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange} error={showErrors ? errors.EXP_CTC : ''} />
+                        <InputField label={<>Total Experience <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange} error={showErrors ? errors.TOTAL_EXP : ''} />
+                      </>
+                    )}
+                  </div>
 
-                 <button type="button" onClick={resetForm} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', color: '#475569', borderRadius: '8px', border: '1.5px solid #cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 1px 4px rgba(100,116,139,0.12)', transition: 'all 0.2s' }}>
-              <RotateCcw size={13} /> Reset
-            </button>
+                  {exp.isCurrent && (
+                    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', padding: '8px 10px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', borderRadius: '8px', border: '1.5px dashed #93c5fd', boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' }}>
+                      <div style={{ gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '1px', paddingBottom: '3px', borderBottom: '1px solid rgba(147,197,253,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <FileUp size={13} color="#0f3f8b" />
+                        Document Uploads
+                      </div>
+                      {/* <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} /> */}
+
+                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.payslips} />
+
+                      <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
+                      <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
+
+                      <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
+                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div></div>
+
+
         </form>
+{!isPending && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '15px',
+          marginTop: '25px',
+          marginBottom: '10px',
+          flexWrap: 'wrap',
+          padding: '15px 0'
+        }}>
+          {/* Submit Button - triggers form submission via form ID */}
+          <button
+            type="button"
+            onClick={() => {
+              // Create a fake event and call handleSubmit directly
+              const fakeEvent = { preventDefault: () => { } };
+              handleSubmit(fakeEvent);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 35px',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+              color: '#fff',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              boxShadow: '0 4px 8px rgba(5,150,105,0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 12px rgba(5,150,105,0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 8px rgba(5,150,105,0.3)';
+            }}
+          >
+            <Send size={16} /> Submit Form
+          </button>
 
-    
+          {/* Save Draft Button */}
+          <button
+            type="button"
+            onClick={handleDraft}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 30px',
+              background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
+              color: '#fff',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              boxShadow: '0 4px 8px rgba(37,99,235,0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 12px rgba(37,99,235,0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 8px rgba(37,99,235,0.3)';
+            }}
+          >
+            <FileUp size={16} /> Save Draft
+          </button>
 
-                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-             <button type="submit" onClick={handleDraft} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 20px', background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(37,99,235,0.35), 0 1px 2px rgba(30,64,175,0.2)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
-              <Send size={13} /> Save Draft
-            </button>
-           
-         
-          </div>
+          {/* Preview Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const previewData = {
+                formData,
+                experiences,
+                sameAsPermanent
+              };
+
+              localStorage.setItem("previewData", JSON.stringify(previewData));
+
+              const base = window.location.origin + "/react/hrmprocess/PreviewPage";
+              window.open(base, "_blank");
+            }}
+
+
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 30px',
+              background: 'linear-gradient(135deg, #6b7280 0%, #8b5cf6 100%)',
+              color: '#fff',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              boxShadow: '0 4px 8px rgba(139,92,246,0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 12px rgba(139,92,246,0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 8px rgba(139,92,246,0.3)';
+            }}
+          >
+            <Info size={16} /> Preview
+          </button>
+
+          {/* Reset Button */}
+
+        </div>)}
       </div>
+
+
+
+
+
+
     </div>
   );
 };
@@ -2176,7 +2572,7 @@ const FileUpload = ({ label, name, onChange, onRemove, multiple = false, error, 
           <button type="button" onClick={handleRemove} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, padding: 0 }}>✕</button>
         </div>
       )}
-              
+
       {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>{error}</p>}
     </div>
   );
@@ -2224,6 +2620,7 @@ const ExperienceFileUpload = ({ label, name, onChange, onRemove, multiple = fals
 };
 
 export default RecruitmentForm;
+
 
 
 

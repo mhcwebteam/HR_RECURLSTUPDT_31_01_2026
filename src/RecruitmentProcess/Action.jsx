@@ -13,7 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
 import DataFlow from "../Components/DataFlow.jsx"
-import { ArrowLeftIcon, BadgeIcon, BriefcaseIcon, CircleAlert, DeleteIcon, InfoIcon, PersonStandingIcon, PhoneIcon, RefreshCw } from 'lucide-react';
+import { ArrowLeftIcon, BadgeIcon, BriefcaseIcon, CircleAlert, DeleteIcon, InfoIcon, PersonStandingIcon, PhoneIcon, RefreshCw, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config.jsx';
 import ManPowerView from '../Components/ManPowerView.jsx';
 import SearchIcon from "@mui/icons-material/Search";
@@ -56,8 +56,11 @@ const [transferDate, setTransferDate] = useState('');
 
 const [historyOpen, setHistoryOpen] = useState(false);
 const [historyData, setHistoryData] = useState([]);
+const [documentUploads, setDocumentUploads] = useState({});
+const [uploadingDoc, setUploadingDoc] = useState({});
 
-console.log(filteredData,"resssssss55555555555555");
+
+
 
 
     const [transferData, setTransferData] = useState({
@@ -174,6 +177,8 @@ console.log(filteredData,"resssssss55555555555555");
             remarks: remarks || ""
         };
 
+
+
         try {
             const response = await axios.post(
                 `${API_BASE_URL}/empTrsferStr`,
@@ -228,6 +233,10 @@ console.log(filteredData,"resssssss55555555555555");
             });
         }
     };
+
+
+
+    
 
     useEffect(() => {
         if (!userToken?.token) return;
@@ -311,6 +320,113 @@ console.log(filteredData,"resssssss55555555555555");
         }));
     };
 
+
+
+    const handleFileSelect = (caseId, file) => {
+    if (!file) return;
+    
+    // Validate file size (e.g., max 5MB)
+    if (file.size > 1 * 1024 * 1024) {
+        Swal.fire({
+            icon: 'error',
+            title: 'File Too Large',
+            text: 'File size must be less than 1MB',
+        });
+        return;
+    }
+
+    setDocumentUploads(prev => ({
+        ...prev,
+        [caseId]: file
+    }));
+};
+
+const handleDocumentUpload = async (caseId) => {
+
+
+    const file = documentUploads[caseId];
+    if (!file) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No File Selected',
+            text: 'Please select a file first',
+        });
+        return;
+    }
+
+    // Confirm upload
+    const result = await Swal.fire({
+        title: 'Confirm Upload',
+        text: `Do you want to upload "${file.name}" for Case ID: ${caseId}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Upload!',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setUploadingDoc(prev => ({ ...prev, [caseId]: true }));
+
+    try {
+        // Create FormData
+        const formData = new FormData();
+        formData.append('caseId', caseId);
+        formData.append('hrEvaldocument', file);
+
+  
+
+
+                for (let pair of formData.entries()) {
+            if (pair[1] instanceof File) {
+  
+                console.log('   - Name:', pair[1].name);
+                console.log('   - Type:', pair[1].type);
+                console.log('   - Size:', pair[1].size, 'bytes');
+                console.log('   - Last Modified:', new Date(pair[1].lastModified).toLocaleString());
+            } else {
+                console.log(pair[0] + ':', pair[1]);
+            }
+        }
+
+        // Dummy API call - Replace with your actual API endpoint
+        const response = await axios.post(
+            `${API_BASE_URL}/hr-Evalu-File-Updt`, // Replace with your actual endpoint
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${userToken.token}`,
+                },
+            }
+        );
+
+        // Handle success
+        if (response.data.success || response.status === 200) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Upload Successful!',
+                text: 'Document uploaded successfully',
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            // Clear the uploaded file
+      
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: error.response?.data?.message || 'Something went wrong. Please try again.',
+        });
+    } finally {
+        setUploadingDoc(prev => ({ ...prev, [caseId]: false }));
+    }
+};
+
     const handleActionTypeChange = (caseId, value, rowData) => {
         setActionTypeSelections(prev => ({
             ...prev,
@@ -318,6 +434,21 @@ console.log(filteredData,"resssssss55555555555555");
         }));
 
         if (value === 'New') {
+           // ✅ CHECK FILE UPLOAD FIRST
+        if (!documentUploads[caseId]) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'File Required',
+                text: 'Please upload the document before proceeding.',
+                confirmButtonColor: '#1e40af',
+            });
+            // Reset selection
+            setActionTypeSelections(prev => ({
+                ...prev,
+                [caseId]: ''
+            }));
+            return;
+        }
             const payload = {
                 CHILD_CASEID: caseId
             }
@@ -368,9 +499,10 @@ console.log(filteredData,"resssssss55555555555555");
                 }
             });
         } else if (value === 'Transfer') {
-            setTransferRowData(rowData);
-            setTransferOpen(true);
-        }
+        // ✅ TRANSFER - NO file check needed, just open modal
+        setTransferRowData(rowData);
+        setTransferOpen(true);
+    }
     };
 
     useEffect(() => {
@@ -588,6 +720,21 @@ console.log(filteredData,"resssssss55555555555555");
                 </Box>
             ),
         },
+
+        {
+            field: 'CUR_REV_ID',
+            headerName: 'REVID',
+            flex: 1,
+            minWidth: 110,
+            renderCell: (params) => (
+                <Box sx={{ color: '#374151' }}>
+                    {params.value || "00"} 
+                </Box>
+            ),
+        },
+
+
+
         {
             field: 'RAISER',
             headerName: 'Raiser',
@@ -650,29 +797,149 @@ console.log(filteredData,"resssssss55555555555555");
             ),
         },
 
-{
-  field: 'HISTORY',
-  headerName: 'History',
-  flex: 1.2,
-  minWidth: 130,
-  renderCell: (params) => {
 
-    // If status is null or undefined → don't show button
-    if (params.row.status == null) {
-      return null;
-    }
+    {
+  field: 'DOCUMENT_UPLOAD',
+  headerName: 'Document',
+  flex: 1,
+  minWidth: 200,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => {
+    const caseId = params.row.CHILD_CASEID;
+    const selectedFile = documentUploads[caseId];
+    const isUploading = uploadingDoc[caseId];
 
     return (
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => handleHistoryClick(params.row.CHILD_CASEID)}
-      >
-        View
-      </Button>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, width: '100%' }}>
+        
+        {/* Hidden File Input */}
+        <input
+          type="file"
+          id={`file-${caseId}`}
+          style={{ display: 'none' }}
+          onChange={(e) => handleFileSelect(caseId, e.target.files[0])}
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        />
+
+        {/* Choose File Button */}
+        <label htmlFor={`file-${caseId}`} style={{ flex: 1 }}>
+          <Button
+            component="span"
+            variant="outlined"
+            size="small"
+            startIcon={
+              <span style={{ fontSize: '13px' }}>
+                {selectedFile ? '📎' : '📁'}
+              </span>
+            }
+            sx={{
+              width: '100%',
+              fontSize: '11px',
+              padding: '4px 8px',
+              textTransform: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              backgroundColor: selectedFile ? '#f0fdf4' : '#f8faff',
+              borderColor: selectedFile ? '#22c55e' : '#93c5fd',
+              color: selectedFile ? '#15803d' : '#1e2022d8',
+              boxShadow: selectedFile
+                ? '0 1px 4px rgba(34,197,94,0.15)'
+                : '0 1px 4px rgba(59,130,246,0.10)',
+              '&:hover': {
+                backgroundColor: selectedFile ? '#dcfce7' : '#eff6ff',
+                borderColor: selectedFile ? '#16a34a' : '#60a5fa',
+              },
+            }}
+          >
+            {selectedFile
+              ? selectedFile.name.length > 12
+                ? selectedFile.name.substring(0, 12) + '...'
+                : selectedFile.name
+              : 'Choose File'}
+          </Button>
+        </label>
+
+        {/* Save Button */}
+        {selectedFile && (
+          <Button
+            size="small"
+            variant="contained"
+            disabled={isUploading}
+            onClick={() => handleDocumentUpload(caseId)}
+            sx={{
+              minWidth: '58px',
+              fontSize: '11px',
+              padding: '4px 10px',
+              textTransform: 'none',
+              borderRadius: '6px',
+              fontWeight: 600,
+              background: isUploading
+                ? '#bdbdbd'
+                : 'linear-gradient(135deg, #1e40af, #2563eb)',
+              boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)',
+                boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
+              },
+              '&:disabled': {
+                backgroundColor: '#e5e7eb',
+                color: '#9ca3af',
+              },
+            }}
+          >
+            {isUploading ? (
+              <CircularProgress size={13} sx={{ color: 'white' }} />
+            ) : (
+              '💾 Save'
+            )}
+          </Button>
+        )}
+
+      </Box>
     );
   },
 },
+
+{
+      field: 'HISTORY',
+      headerName: 'History',
+      flex: 0.8,
+      minWidth: 150,
+      renderCell: (params) => {
+
+        // If status is null or undefined → don't show button
+        if (params.row.status == null) {
+          return null;
+        }
+
+        return (
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{
+              background: '#1848d8',
+              color: 'white',
+              fontSize: '11px',
+              padding: '3px 30px',
+              borderRadius: '4px',
+              textTransform: 'capitalize',
+              fontWeight: 600,
+              minWidth: 'auto',
+              boxShadow: 'none',
+              '&:hover': {
+                background: '#052c96',
+                boxShadow: 'none',
+              },
+            }}
+            onClick={() => handleHistoryClick(params.row.CHILD_CASEID)}
+          >
+            History
+          </Button>
+        );
+      },
+    },
+
 
         {
             field: 'ACTION_STATUS',
@@ -739,7 +1006,7 @@ console.log(filteredData,"resssssss55555555555555");
                                         '#9ca3af',
                                 },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: selectedValue ?
+                                   borderColor: selectedValue ?
                                         (selectedValue === 'New' ? '#10b981' : '#f97316') :
                                         '#667eea',
                                 },
@@ -843,8 +1110,13 @@ console.log(filteredData,"resssssss55555555555555");
 
 columnVisibilityModel={{
   HISTORY: filteredData?.some(
-    (row) => row.status?.trim().toLowerCase() === "reject"
-  ) || false
+    (row) => row.status?.trim().toLowerCase() == "reject"
+  ) || false,
+
+   REVID: filteredData?.some(
+      (row) => row.status?.trim().toLowerCase() == "reject"
+    ) || false
+
 }}
 
   slots={{
@@ -1035,7 +1307,7 @@ columnVisibilityModel={{
       <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#475569', mb: 0.5 }}>Plant</Typography>
       <TextField fullWidth size="small" value={transferRowData?.PLANT || 'N/A'} InputProps={{ readOnly: true }}
         sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#f8fafc', borderRadius: '8px', fontSize: '12px', height: '30px',width: '320px', '& fieldset': { borderColor: '#e2e8f0' } } }} />
-    </Grid>
+   </Grid>
     <Grid item xs={2}>
       <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#475569', mb: 0.5 }}>Designation</Typography>
       <TextField fullWidth size="small" value={transferRowData?.JOB_TIT || 'N/A'} InputProps={{ readOnly: true }}
@@ -1413,244 +1685,219 @@ columnVisibilityModel={{
         </Box>
 
 
-<Dialog 
-  open={historyOpen} 
-  onClose={() => setHistoryOpen(false)}
-  maxWidth="md"
-  fullWidth
-  PaperProps={{
-    sx: {
-      borderRadius: 2,
-      boxShadow: 24
-    }
-  }}
->
-  <DialogTitle sx={{ 
-    m: 0, 
-    p: 2, 
-    display: 'flex', 
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    bgcolor: '#f5f5f5'
-  }}>
-    <Box display="flex" alignItems="center" gap={1}>
-      <DeleteIcon color="error" />
-      <Typography variant="h6" component="span">
-        Deleted Records History
-      </Typography>
-    </Box>
-    <IconButton
-      onClick={() => setHistoryOpen(false)}
-      sx={{ color: 'grey.500' }}
-    >
-      <CloseIcon />
-    </IconButton>
-  </DialogTitle>
-  
-  <DialogContent dividers sx={{ p: 0 }}>
-    {historyData.length === 0 ? (
-      <Box 
-        sx={{ 
-          p: 4, 
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 2
+  <Dialog
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '14px',
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+          }
         }}
       >
-        <InfoIcon sx={{ fontSize: 48, color: 'grey.400' }} />
-        <Typography color="textSecondary">
-          No history records found
-        </Typography>
-      </Box>
-    ) : (
-      <Box sx={{ p: 2 }}>
-        {historyData.map((item, index) => (
-          <Paper
-            key={index}
-            elevation={1}
-            sx={{
-              mb: 2,
-              borderRadius: 2,
-              overflow: 'hidden',
-              border: '1px solid',
-              borderColor: 'grey.200',
-              '&:last-child': { mb: 0 }
-            }}
-          >
-            {/* Header with delete badge */}
-            <Box sx={{ 
-              p: 1.5, 
-              bgcolor: '#fff5f5',
-              borderBottom: '1px solid',
-              borderColor: 'grey.200',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Chip 
-                  label={`Record ${index + 1}`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Chip
-                  icon={<DeleteIcon />}
-                  label="Deleted"
-                  size="small"
-                  color="error"
-                />
+        {/* HEADER */}
+        <DialogTitle sx={{ m: 0, p: 0 }}>
+          <Box sx={{
+            background: 'linear-gradient(135deg, #273a66 0%, #1e3a8a 60%, #2563eb 100%)',
+            px: 2.5, py: 1.6,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.4 }}>
+              <Box
+                sx={{
+                  width: 46,
+                  height: 36,
+                  borderRadius: "10px",
+                  background: "rgba(255,255,255,0.13)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={18} color="white" />
               </Box>
-              <Typography variant="caption" color="textSecondary">
-                ID: {item.verifyDelete_Id}
+              <Box>
+                <Typography sx={{ fontWeight: 800, fontSize: '14.5px', color: '#fff', lineHeight: 1.2 }}>
+                  Deleted Records History
+                </Typography>
+                <Typography sx={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', mt: 0.2 }}>
+                  {historyData.length} record{historyData.length !== 1 ? 's' : ''} found
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setHistoryOpen(false)} size="small" sx={{
+              color: '#fff', bgcolor: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              width: 28, height: 28,
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' },
+            }}>
+              <CloseIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        {/* BODY */}
+        <DialogContent sx={{
+          p: 0, bgcolor: '#f1f5f9',
+          '&::-webkit-scrollbar': { width: '5px' },
+          '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: '6px' },
+        }}>
+          {historyData.length === 0 ? (
+            <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{
+                width: 58, height: 58, borderRadius: '14px',
+                background: '#e2e8f0', border: '2px dashed #cbd5e1',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+              }}>📭</Box>
+              <Typography sx={{ fontWeight: 700, fontSize: '13.5px', color: '#475569' }}>No Records Found</Typography>
+              <Typography sx={{ fontSize: '11.5px', color: '#94a3b8', textAlign: 'center', maxWidth: 220 }}>
+                No deleted history records to display.
               </Typography>
             </Box>
+          ) : (
+            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+              {historyData.map((item, index) => (
+                <Box key={index} sx={{
+                  borderRadius: '10px', overflow: 'hidden',
+                  background: '#fff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+                  animation: `fadeUp 0.22s ease ${index * 0.05}s both`,
+                  '@keyframes fadeUp': {
+                    from: { opacity: 0, transform: 'translateY(7px)' },
+                    to: { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}>
 
-            {/* Content Grid */}
-            <Box sx={{ p: 2 }}>
-              <Grid container spacing={2}>
-                {/* Personal Information */}
-                <Grid item xs={12} md={6}>
-                  <Box display="flex" flexDirection="column" gap={1.5}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PersonStandingIcon color="primary" sx={{ fontSize: 20 }} />
-                      <Typography variant="body1" fontWeight="500">
-                        {item.name}
+                  {/* Card top strip */}
+                  <Box sx={{
+                    px: 1.8, py: 0.8,
+                    background: '#f8fafc',
+                    borderBottom: '1px solid #e9eef5',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#334155' }}>
+                        Record #{index + 1}
                       </Typography>
+                      <Box sx={{ width: '1px', height: 12, bgcolor: '#cbd5e1' }} />
+                      <Typography sx={{ fontSize: '11px', color: '#64748b' }}>ID: {item.verifyDelete_Id}</Typography>
                     </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <ExclamationCircleIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" color="textSecondary">
-                        {item.email}
-                      </Typography>
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" color="textSecondary">
-                       Phone: {item?.Phone}
-                      </Typography>
-                    </Box>
-
-        
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" color="textSecondary">
-                        Date: {item?.deleted_at}
-                      </Typography>
-                    </Box>
-
-
-                           <Box display="flex" alignItems="center" gap={1}>
-                      <PhoneIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2" color="textSecondary">
-                        Rejected By: {item?.rejected_by}
-                      </Typography>
-                    </Box>
-
-
-                  </Box>
-                </Grid>
-
-                {/* Document Information */}
-                <Grid item xs={12} md={6}>
-                  <Box display="flex" flexDirection="column" gap={1.5}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <BadgeIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2">
-                        <strong>Aadhar:</strong> {item.Aadhar}
-                      </Typography>
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <BadgeIcon color="action" sx={{ fontSize: 18 }} />
-                      <Typography variant="body2">
-                        <strong>PAN:</strong> {item.Pan}
-                      </Typography>
+                    <Box sx={{ display: 'flex', gap: 0.6 }}>
+                      {[
+                        { label: `Case: ${item.caseId}`, bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8' },
+                        { label: `Rev: ${item.revisionId}`, bg: '#f5f3ff', border: '#ddd6fe', color: '#6d28d9' },
+                      ].map(({ label, bg, border, color }) => (
+                        <Chip key={label} label={label} size="small" sx={{
+                          height: '19px', fontSize: '10px', fontWeight: 600,
+                          bgcolor: bg, border: `1px solid ${border}`, color,
+                          borderRadius: '4px', '& .MuiChip-label': { px: 0.8 },
+                        }} />
+                      ))}
                     </Box>
                   </Box>
-                </Grid>
 
-                {/* Case Information */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 1 }} />
-                  <Box display="flex" flexWrap="wrap" gap={2}>
-                    <Chip
-                      label={`Case ID: ${item.caseId}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Chip
-                      label={`Revision: ${item.revisionId}`}
-                      size="small"
-                      variant="outlined"
-                    />
+                  {/* 5-col field grid */}
+                  <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(5, 1fr)',
+                    gap: 0,
+                    px: 0,
+                  }}>
+                    {[
+                      { emoji: '🏷️', label: 'Case ID', value: item.caseId },
+                      { emoji: '👤', label: 'Name', value: item.name },
+                      { emoji: '✉️', label: 'Email', value: item.email },
+                      { emoji: '📞', label: 'Phone', value: item.Phone },
+                      { emoji: '🔏', label: 'Aadhar', value: item.Aadhar },
+                      { emoji: '💳', label: 'PAN', value: item.Pan },
+                     { 
+  emoji: '📅', 
+  label: 'Deleted At', 
+  value: item.deleted_at 
+    ? new Date(item.deleted_at).toLocaleDateString('en-GB') 
+    : '' 
+},
+                      { emoji: '🚫', label: 'Rejected By', value: item.rejected_by },
+                       { emoji: '📊', label: 'Revision Status', value: item.RevisionTrackStatus },
+
+                      // { emoji: '🔁', label: 'Revision',    value: item.revisionId },
+                      { emoji: '💬', label: 'Remarks', value: item.remarks },
+                    ].map(({ emoji, label, value }, i) => (
+                      <Box key={label} sx={{
+                        px: 1.4, py: 1.1,
+                        borderRight: i % 5 !== 4 ? '1px solid #f1f5f9' : 'none',
+                        borderBottom: i < 5 ? '1px solid #f1f5f9' : 'none',
+                        transition: 'background 0.15s',
+                       '&:hover': { bgcolor: '#f8fafc' },
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, mb: 0.4 }}>
+                          <Typography sx={{ fontSize: '12px', lineHeight: 1 }}>{emoji}</Typography>
+                          <Typography sx={{
+                            fontSize: '9.5px', fontWeight: 700, color: '#94a3b8',
+                            textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1,
+
+                            
+                          }}>{label}</Typography>
+                        </Box>
+                        <Typography sx={{
+                          fontSize: '12px', fontWeight: 500, color: '#1e293b',
+                          lineHeight: 1.35, wordBreak: 'break-word',
+                          pl: '19px',
+                        }}>
+                          {value
+                            ? value
+                            : <span style={{ color: '#cbd5e1', fontStyle: 'italic', fontSize: '11px' }}>—</span>
+                          }
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
-                </Grid>
 
-
-                
-
-                {/* Remarks */}
-                {item.remarks && (
-                  <Grid item xs={12}>
-                    <Paper 
-                      variant="outlined" 
-                      sx={{ 
-                        p: 1.5, 
-                        bgcolor: '#fafafa',
-                        borderRadius: 1
-                      }}
-                    >
-                      <Typography variant="caption" color="textSecondary">
-                        Remarks:
-                      </Typography>
-                      <Typography variant="body2">
-                        {item.remarks}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                )}
-
-                {/* Timestamps */}
-                {/* <Grid item xs={12}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <EventIcon sx={{ fontSize: 16, color: 'grey.500' }} />
-                      <Typography variant="caption" color="textSecondary">
-                        Created: {item.created_at}
-                      </Typography>
-                    </Box>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <DeleteIcon sx={{ fontSize: 16, color: 'error.light' }} />
-                      <Typography variant="caption" color="error" fontWeight="500">
-                        Deleted: {item.deleted_at}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid> */}
-              </Grid>
+                </Box>
+              ))}
             </Box>
-          </Paper>
-        ))}
-      </Box>
-    )}
-  </DialogContent>
-  
-  <DialogActions sx={{ p: 2, bgcolor: '#fafafa' }}>
-    <Button 
-      onClick={() => setHistoryOpen(false)}
-      variant="contained"
-      color="primary"
-      sx={{ minWidth: 100 }}
-    >
-      Close
-    </Button>
-  </DialogActions>
-</Dialog>
+          )}
+        </DialogContent>
+
+        {/* FOOTER */}
+        <DialogActions sx={{
+          px: 2, py: 1.2,
+          bgcolor: '#fff',
+          borderTop: '1px solid #e2e8f0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+       }}>
+          <Typography sx={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+            {historyData.length > 0 ? `Showing ${historyData.length} record(s)` : 'Nothing to display'}
+          </Typography>
+          <Button
+            onClick={() => setHistoryOpen(false)}
+            startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+            variant="contained"
+            sx={{
+              minWidth: 95, borderRadius: '8px', fontSize: '12px',
+              fontWeight: 700, textTransform: 'none',
+              background: 'linear-gradient(135deg, #0f172a, #1e3a8a)',
+              boxShadow: '0 3px 10px rgba(15,23,42,0.22)',
+              px: 2, py: 0.75,
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1e293b, #2563eb)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 5px 14px rgba(15,23,42,0.3)',
+              },
+              transition: 'all 0.18s',
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 </>
         
     );

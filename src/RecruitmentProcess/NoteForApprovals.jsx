@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import Swal from "sweetalert2";
 import axios from "axios";
@@ -35,7 +33,6 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import { API_BASE_URL } from "../Config/Config";
 
-
 /* ===================================================== */
 
 const NoteForApprovals = () => {
@@ -52,8 +49,9 @@ const NoteForApprovals = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [approveRow, setApproveRow] = useState(null);
   const [approveOpen, setApproveOpen] = useState(false);
+ const [ personalData,setPersonalData] = useState([]);
 
-
+  console.log("personaaaaaaaaaaaaaaa",personalData);
 
   const [token] = useState(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -61,9 +59,45 @@ const NoteForApprovals = () => {
   });
 
 
-  console.log("tokennnnnnnnnnnnnnnnnnnn0",token?.Emp_Category);
- 
 
+   const EmpVerify = async () => {
+  if (!token?.token) return;
+
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/emp-verify-data`,
+      {
+        headers: { Authorization: `Bearer ${token.token}` },
+      }
+    );
+
+
+
+  setPersonalData(response.data?.data);
+
+    console.log("Filtered submit data:", response.data?.data);
+
+  } catch (err) {
+    console.error("Error fetching verify data", err);
+  
+  }
+};
+
+useEffect(() => {
+  EmpVerify();
+}, [token?.token]);
+
+
+  // const presentCompanyExperience = personalData[0]?.experienceData?.find(
+  //   exp => exp.COMPANY_STAGES == "0"
+  // );
+
+  // console.log(presentCompanyExperience,"perrrrrrrrrr6666666666666");
+  // // Find the previous company (optional, for reference)
+  // const previousCompanyExperience = personalData[0]?.experienceData?.find(
+  //   exp => exp.COMPANY_STAGES == "1"
+  // );
+ 
 
   
 const noteFrAprvlData = async () => {
@@ -86,7 +120,6 @@ const noteFrAprvlData = async () => {
     //   verifyData?.HOD == "Approved" &&
     //   verifyData?.EVC == "Approved";
  setNoteAprvlData(verifyData);
-    
 
     // if (approvals) {
      
@@ -101,15 +134,12 @@ const noteFrAprvlData = async () => {
   }
 };
 
-
-
   useEffect(() => {
     if (token?.token) {
       noteFrAprvlData();
     }
   }, [token]);
   
-
 
   
  
@@ -139,7 +169,6 @@ const noteFrAprvlData = async () => {
       };
     
 
-
             const response = await axios.post(
         `${API_BASE_URL}/assign-approver`,
         payload,
@@ -151,7 +180,6 @@ const noteFrAprvlData = async () => {
           },
         }
       );
-
 
       await Swal.fire({
       icon: 'success',
@@ -226,6 +254,9 @@ if(noteFrAprvlData) {
     HOD: item.HOD,
     EVC: item.EVC,
     STATUS: item.status,
+    REVID: item.CUR_REV_ID,
+     DESIG: item.DESIG,
+     DEPT: item.DEPT,
     SUBMITTED_DATE: item.created_at,
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
@@ -317,32 +348,39 @@ if(noteFrAprvlData) {
       ),
     },
 
-
-
      {
       field: "View",
-      headerName: "View",
+      headerName: "Action",
       width: 80,
       sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="View Details">
-          <IconButton
-            size="small"
-            onClick={() => {
-              setSelectedUser(params.row);
-              setModalOpen(true);
-            }}
-            sx={{
-              color: '#3b82f6',
-              '&:hover': {
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              },
-            }}
-          >
-            <Visibility fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
+   renderCell: (params) => (
+  <Button
+    variant="contained"
+    size="small"
+    onClick={() => {
+      setSelectedUser(params.row);
+      setModalOpen(true);
+    }}
+    sx={{
+      background: 'linear-gradient(135deg, #16a211 0%, #239a11 100%)',
+      color: 'white',
+      fontSize: '8px',
+      fontWeight: 700,
+      padding: '6px 8px',
+      borderRadius: '5px',
+      textTransform: 'uppercase',
+      boxShadow: '0 2px 6px rgba(60, 157, 89, 0.3)',
+      minWidth: '70px',
+      '&:hover': {
+        background: 'linear-gradient(135deg, #066332 0%, #1b780a 100%)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)',
+      },
+    }}
+  >
+    Approve
+  </Button>
+)
     },
 
     
@@ -357,6 +395,19 @@ if(noteFrAprvlData) {
         </Box>
       ),
     },
+
+        { 
+      field: "REVID", 
+      headerName: "REVID", 
+      flex: 1,
+      minWidth: 130,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+        {params.value || "00"} 
+        </Box>
+      ),
+    },
+
     { 
       field: "PLANT", 
       headerName: "Plant", 
@@ -400,6 +451,50 @@ if(noteFrAprvlData) {
           {params.value}
         </Box>
       ),
+    },
+
+      {
+
+      field: 'DEPT',
+
+      headerName: 'Department',
+
+      flex: 1,
+
+      minWidth: 120,
+
+      renderCell: (params) => (
+
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
+    },
+
+       {
+
+      field: 'DESIG',
+
+      headerName: 'Designation',
+
+      flex: 1,
+
+      minWidth: 130,
+
+      renderCell: (params) => (
+
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+
     },
     { 
       field: "HR", 
@@ -727,9 +822,11 @@ token?.Emp_Category == "HR" && {
         onClose={() => setModalOpen(false)}
         data={selectedUser}
          note = {noteFrAprvlData}
+         personalData = {personalData}
       />
     </Box>
   );
 };
 
 export default NoteForApprovals;
+

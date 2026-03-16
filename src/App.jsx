@@ -26,6 +26,10 @@ import SidebarRoutes from "./Components/SidebarRoutes.jsx";
 
 import History from "./RecruitmentProcess/History";
 import HODHistory from "./HODHistory.jsx";
+import VerifyPreviewPage from "./RecruitmentProcess/VerifyPreviewPage.jsx";
+import PreviewPage from "./RecruitmentProcess/previewPage.jsx";
+import Reports from "./Components/Reports.jsx";
+
 
 
 
@@ -77,7 +81,8 @@ export default function App() {
             element: <RoleRoute allowedRoles={["HR"]} />,
             children: [
               { path: "/HrInbox", element: <Layout><HrInbox /></Layout> },
-              // { path: "/RecruitmentProcess", element: <Layout><Recruitments /></Layout> },
+               { path: "/Reports", element: <Layout><Reports /></Layout> },
+
               { path: "/OnBoarding", element: <Layout><Onboarding /></Layout> }
               
             ]
@@ -127,7 +132,35 @@ export default function App() {
   )
 },
 
+      {
+  path: "/PreviewPage",
+  element: (
+    <section className='main'>
+     
+      <div className='contentMain flex'>
+        
+        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+          <PreviewPage />
+        </div>
+      </div>
+    </section>
+  )
+},
 
+ {
+  path: "/VerifyPreviewPage",
+  element: (
+    <section className='main'>
+     
+      <div className='contentMain flex'>
+        
+        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+          <VerifyPreviewPage />
+        </div>
+      </div>
+    </section>
+  )
+},
 
 // Accessible to any logged-in user
 {
