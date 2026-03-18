@@ -246,6 +246,15 @@ if(noteFrAprvlData) {
     CURRENT_CTC: item.CURRENT_CTC,
     EXP_CTC: item.EXP_CTC,
     OFFER_CTC: item.OFFER_CTC,
+
+    
+TYPE_PLANT: item?.TYPE_PLANT,
+GROUP_CODE: item?.GROUP_CODE,
+SUB_CODE: item?.SUB_CODE,
+SUB_POST: item?.SUB_POST,
+
+RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
+
     HR: item.HR,
     DIRECTOR: item.DIRECTOR,
     HOD: item.HOD,
@@ -331,6 +340,10 @@ if(noteFrAprvlData) {
     );
   };
 
+   const hasTypePlant = noteAprvlData?.some(row => row.TYPE_PLANT);
+
+  const recCycle = noteAprvlData?.some(row => row.RECRUIT_CYCLE);
+
   /* ------------------------- COLUMNS -------------------- */
   const columns = [
     { 
@@ -396,6 +409,34 @@ if(noteFrAprvlData) {
     },
 
 
+                ...(hasTypePlant
+            ? [{
+                field: 'TYPE_PLANT',
+                headerName: 'Type Plant',
+                flex: 1.2,
+                renderCell: (params) => (
+                  <Box sx={{ color: '#374151' }}>
+                    {params.value}
+                  </Box>
+                ),
+              }]
+            : []),
+        
+          // ✅ MUST be array
+          ...(recCycle
+            ? [{
+                field: 'RECRUIT_CYCLE',
+                headerName: 'Emp Level',
+                flex: 1.2,
+                renderCell: (params) => (
+                  <Box sx={{ color: '#374151' }}>
+                    {params.value}
+                  </Box>
+                ),
+              }]
+            : []),
+
+
         { 
       field: "REVID", 
       headerName: "REVID", 
@@ -455,50 +496,47 @@ if(noteFrAprvlData) {
     },
 
 
-      {
-
-      field: 'DEPT',
-
-      headerName: 'Department',
-
-      flex: 1,
-
-      minWidth: 120,
-
-      renderCell: (params) => (
-
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-
-          {params.value}
-
-        </Box>
-
-      ),
-
-    },
-
-
+     {
+       field: 'DEPT',
+       headerName: 'Department',
+       flex: 1,
+       minWidth: 120,
+       renderCell: (params) => {
+         const groupCode = params.row.GROUP_CODE;
+         const dept = params.value;
+     
+         return (
+           <Box sx={{ color: '#374151', fontWeight: 500 }}>
+             {groupCode ? `${groupCode} - ${dept}` : dept}
+           </Box>
+         );
+       },
+     },
+     
        {
-
-      field: 'DESIG',
-
-      headerName: 'Designation',
-
-      flex: 1,
-
-      minWidth: 130,
-
-      renderCell: (params) => (
-
-        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
-
-          {params.value}
-
-        </Box>
-
-      ),
-
-    },
+       field: 'DESIG',
+       headerName: 'Designation',
+       flex: 1.2,
+       minWidth: 130,
+       renderCell: (params) => {
+         const subCode = params.row.SUB_CODE;
+         const value = params.value || 'N/A';
+     
+         return (
+           <Box
+             sx={{
+               color: '#374151',
+               padding: '2px 8px',
+               borderRadius: '6px',
+               fontSize: '12px',
+               fontWeight: 600,
+             }}
+           >
+             {subCode ? `${subCode} - ${value}` : value}
+           </Box>
+         );
+       },
+     },
     { 
       field: "HR", 
       headerName: "HR", 
@@ -824,6 +862,7 @@ token?.Emp_Category == "HR" && {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         data={selectedUser}
+         onStatusChange = ""
          note = {noteAprvlData}
          personalData = {personalData}
       />

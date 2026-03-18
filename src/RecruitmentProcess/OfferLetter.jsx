@@ -137,7 +137,7 @@ const OfferLetter = () => {
 
   
 
-    console.log("Response:", response.data);
+
   } catch (error) {
     await Swal.fire({
       icon: 'error',
@@ -270,7 +270,9 @@ const fetchOfrData = async () => {
     });
     const list = ofrdata.data.evcVerifiedData || [];
 
-    console.log("listtttttttttttttt",list);
+    console.log("lissssssssssssssss",list);
+
+  
     setOfferLetterData(list);
 
     // ✅ Pre-fill joining dates from API response
@@ -295,34 +297,7 @@ const fetchOfrData = async () => {
 
   
   
-  //---------------Fetch the Offer Letter from Api--------------//
-  // const fetchOfrData = async()=>
 
-   
-  // {
-
-  //   try
-  //   {
-  //     const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`,
-  //     {
-  //       headers:
-  //       {
-  //           "Accept"       : "application/json",
-  //           "Authorization": `Bearer ${token.token}`,
-  //       }
-  //     })
-  //     setOfferLetterData(ofrdata.data.evcVerifiedData || []);
-
-  
-
-  //   }
-  //   catch(err)
-  //   {
-  //     console.error("Error In Fetching Offer List");
-  //   }
-  // }
-  
-  //useEffect Calling here ----
 useEffect(() => {
   if (token?.token) {
     fetchOfrData();
@@ -466,6 +441,13 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     return value.toString();
   };
 
+
+     const hasTypePlant = ofrList?.some(row => row.TYPE_PLANT);
+
+    
+
+  const recCycle = ofrList?.some(row => row.RECRUIT_CYCLE);
+
   const columns = useMemo(() => [
     {
       field: 'SNO',
@@ -491,6 +473,34 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
         </Box>
       ),
     },
+
+    
+                    ...(hasTypePlant
+                ? [{
+                    field: 'TYPE_PLANT',
+                    headerName: 'Type Plant',
+                    flex: 1.2,
+                    renderCell: (params) => (
+                      <Box sx={{ color: '#374151' }}>
+                        {params.value}
+                      </Box>
+                    ),
+                  }]
+                : []),
+            
+              // ✅ MUST be array
+              ...(recCycle
+                ? [{
+                    field: 'RECRUIT_CYCLE',
+                    headerName: 'Emp Level',
+                    flex: 1.2,
+                    renderCell: (params) => (
+                      <Box sx={{ color: '#374151' }}>
+                        {params.value}
+                      </Box>
+                    ),
+                  }]
+                : []),
     {
       field: 'PLANT',
       headerName: 'Plant Name',
@@ -542,6 +552,48 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
         </Box>
       ),
     },
+
+     {
+           field: 'DEPT',
+           headerName: 'Department',
+           flex: 1,
+           minWidth: 120,
+           renderCell: (params) => {
+             const groupCode = params.row.GROUP_CODE;
+             const dept = params.value;
+         
+             return (
+               <Box sx={{ color: '#374151', fontWeight: 500 }}>
+                 {groupCode ? `${groupCode} - ${dept}` : dept}
+               </Box>
+             );
+           },
+         },
+         
+           {
+           field: 'DESIG',
+           headerName: 'Designation',
+           flex: 1.2,
+           minWidth: 130,
+           renderCell: (params) => {
+             const subCode = params.row.SUB_CODE;
+             const value = params.value || 'N/A';
+         
+             return (
+               <Box
+                 sx={{
+                   color: '#374151',
+                   padding: '2px 8px',
+                   borderRadius: '6px',
+                   fontSize: '12px',
+                   fontWeight: 600,
+                 }}
+               >
+                 {subCode ? `${subCode} - ${value}` : value}
+               </Box>
+             );
+           },
+         },
     // {
     //   field: 'DESIGNATION',
     //   headerName: 'Designation',

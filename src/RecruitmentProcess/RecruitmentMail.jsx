@@ -38,10 +38,8 @@ const RecruitmentMail = () => {
   const [emailInputs, setEmailInputs] = useState({});
   const [submitting, setSubmitting] = useState({});
 
-  //  const { HrData } = useContext(ContextData);
 
- 
-console.log("TOKEN:", userToken);
+console.log(HrData,"hjr77777777777777777777777");
 
 
 useEffect(() => {
@@ -184,7 +182,7 @@ useEffect(() => {
       Swal.fire({
         title: 'Success!',
         icon: "success",
-        text: 'Onboarding form link sent to employee email!',
+        text: 'Recruitment form link sent to employee email!',
         timer: 1500,
         showConfirmButton: false,
       });
@@ -262,6 +260,11 @@ useEffect(() => {
     return counts;
   }, [filteredData]);
 
+
+   const hasTypePlant = HrData?.TaskAssignmentData?.some(row => row.TYPE_PLANT);
+
+  const recCycle = HrData?.TaskAssignmentData?.some(row => row.RECRUIT_CYCLE);
+
   const columns = [
     {
       field: 'SNO',
@@ -276,8 +279,9 @@ useEffect(() => {
         </Box>
       ),
     },
-    {
-      field: 'CASEID',
+
+          {
+      field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
       minWidth: 120,
@@ -287,6 +291,40 @@ useEffect(() => {
         </Box>
       ),
     },
+
+
+        ...(hasTypePlant
+    ? [{
+        field: 'TYPE_PLANT',
+        headerName: 'Type Plant',
+        flex: 1.2,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+  // ✅ MUST be array
+  ...(recCycle
+    ? [{
+        field: 'RECRUIT_CYCLE',
+        headerName: 'Emp Level',
+        flex: 1.2,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+
+
+
+
+
         {
                 field: 'CUR_REV_ID',
                 headerName: 'REVID',
@@ -299,17 +337,7 @@ useEffect(() => {
                 ),
             },
 
-        {
-      field: 'CHILD_CASEID',
-      headerName: 'Child CaseID',
-      flex: 1,
-      minWidth: 120,
-      renderCell: (params) => (
-        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+  
 
     {
       field: 'PLANT',
@@ -322,34 +350,47 @@ useEffect(() => {
         </Box>
       ),
     },
-    {
-      field: 'DEPT',
-      headerName: 'Department',
-      flex: 1,
-      minWidth: 120,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'MANPOWER_DESG',
-      headerName: 'Designation',
-      flex: 1.2,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{
+{
+  field: 'DEPT',
+  headerName: 'Department',
+  flex: 1,
+  minWidth: 120,
+  renderCell: (params) => {
+    const groupCode = params.row.GROUP_CODE;
+    const dept = params.value;
+
+    return (
+      <Box sx={{ color: '#374151', fontWeight: 500 }}>
+        {groupCode ? `${groupCode} - ${dept}` : dept}
+      </Box>
+    );
+  },
+},
+
+  {
+  field: 'MANPOWER_DESG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
+
+    return (
+      <Box
+        sx={{
           color: '#374151',
           padding: '2px 8px',
           borderRadius: '6px',
           fontSize: '12px',
           fontWeight: 600,
-        }}>
-          {params.value || 'N/A'}
-        </Box>
-      ),
-    },
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
 
 
     {

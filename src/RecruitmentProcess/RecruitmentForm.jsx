@@ -35,6 +35,7 @@ const RecruitmentForm = () => {
     LANG_KNOWN: '',
     MOTHER_TONGUE: '',
     DEPT: '',
+
     // Permanent Address
     HNO: '',
     CITY: '',
@@ -111,6 +112,14 @@ const RecruitmentForm = () => {
     EXP_CTC: '',
     AGE: "",
     address_status: "",
+
+   TYPE_PLANT: "utsydfuystfs",
+  GROUP_CODE: "sdjfbskjdf",
+    SUB_CODE: "akkkkkkkk",
+  SUB_POST:"5555555555",
+GROUP_DEPT: "666666666",
+RAISER_EMP_ID: "777777777777",
+
   });
 
 
@@ -156,7 +165,31 @@ const RecruitmentForm = () => {
 
 
 
-  console.log("experiences", experiences);
+ 
+
+
+
+  const fieldValidations = {
+                                           
+    FIRST_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),                // letters + space
+       LANG_KNOWN: (val) => val.replace(/[^a-zA-Z ]/g, ''),     
+         MOTHER_TONGUE: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+            HIGHEST_QUA: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+             SSC_SCHOOL_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),     
+         SSC_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+            INTER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+             INTER_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+            GRAD_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             DEGREE_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),  
+              PG_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             PG_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),  
+                PHD_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             PHD_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),  
+              OTHER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             OTHER_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),
+               COMPANY_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             DESIGNATION: (val) => val.replace(/[^a-zA-Z ]/g, ''),    
+}; 
 
   const EmpVerify = async () => {
     if (!userToken?.token) return;
@@ -265,7 +298,7 @@ const RecruitmentForm = () => {
             CURRENT_CTC: draftData.current_ctc || '',
             EXP_CTC: draftData.expected_ctc || '',
             AGE: draftData.AGE || '',
-
+      EMP_COMP_ID: draftData.EMP_COMP_ID || '',
             TOTAL_EXP: draftData.TOTAL_EXP || '',
             payslips: draftData.documents?.payslips || '',
             relieving_letter: draftData.documents?.relieving_letter || '',
@@ -285,25 +318,33 @@ const RecruitmentForm = () => {
 
 
           // Load experience data if available
-          if (draftData.experienceData && draftData.experienceData.length > 0) {
-            const mappedExperiences = draftData.experienceData.map((exp, index) => ({
+     if (draftData.experienceData && draftData.experienceData.length > 0) {
+  const mappedExperiences = draftData.experienceData.map((exp, index) => ({
+    id: Date.now() + index,
+    COMPANY_NAME: exp.COMPANY_NAME || '',
+    COMPANY_STAGES: exp.COMPANY_STAGES || (index == 0 ? "0" : "1"),
+    DESIGNATION: exp.DESIGNATION || '',
+    FROM_DATE: exp.START_DATE || '',
+    TO_DATE: exp.END_DATE || '',
+    DURATION: exp.EXPERIENCE_YEARS || '',
+    EMP_COMP_ID: exp.EMP_COMP_ID || '', // ✅ This ensures the property exists
+    NOTICE_PERIOD: exp.noticePeriod || '',
+    isCurrent: exp.COMPANY_STAGES == "0" || index == 0,
+    
+    // ✅ Add these missing properties with default values
+    CURRENT_CTC: '',
+    EXP_CTC: '',
+    PAYSLIPS: [],
+    BANK_STATEMENTS: [],
+    OFFER_LETTER: null,
+    RELIEVING_LETTER: null,
+    EXP_LETTER: null,
+    offer_letter: null,
+    relieving_letter: null
+  }));
 
-            
-              id: Date.now() + index,
-              COMPANY_NAME: exp.COMPANY_NAME || '',
-              COMPANY_STAGES: exp.COMPANY_STAGES || (index === 0 ? "0" : "1"),
-              DESIGNATION: exp.DESIGNATION || '',
-              FROM_DATE: exp.START_DATE || '',
-              TO_DATE: exp.END_DATE || '',
-              DURATION: exp.EXPERIENCE_YEARS || '',
-              EMP_COMP_ID: exp.EMP_COMP_ID || '',
-              NOTICE_PERIOD: exp.noticePeriod || '',
-               
-              isCurrent: exp.COMPANY_STAGES == "0" || index == 0, // Use COMPANY_STAGES to determine
-            }));
-
-            setExperiences(mappedExperiences);
-          }
+  setExperiences(mappedExperiences);
+}
         } else {
           console.log("No draft records found for candidate:", userToken?.Manpower?.CHILD_CASEID);
         }
@@ -371,7 +412,17 @@ const openFile = async (file) => {
         ...prev,
         PLANT: userToken?.Manpower?.PLANT || "",
         CHILD_CASEID: userToken?.Manpower?.CHILD_CASEID,
-        DEPT: userToken?.Manpower?.DEPT
+        DEPT: userToken?.Manpower?.DEPT,
+       EMP: userToken?.Manpower?.RECRUIT_CYCLE,
+       TYPE_PLANT: userToken?.Manpower?.TYPE_PLANT,
+
+       GROUP_CODE: userToken?.Manpower?.GROUP_CODE,
+    SUB_CODE: userToken.Manpower.SUB_CODE,
+  SUB_POST: userToken.Manpower.SUB_POST,
+GROUP_DEPT: userToken.Manpower.DEPT,
+RAISER_EMP_ID: "",
+
+
       }));
     }
   }, [userToken?.Emp_Id]);
@@ -400,10 +451,12 @@ const openFile = async (file) => {
 
 
 
+
+
   const handleInputChange = (e) => {
     if (isPending) return;
     const { name, value } = e.target;
-
+const sanitized = fieldValidations[name] ? fieldValidations[name](value) : value;
     if (name === "DOB_ASPER_ADHAR") {
       const age = calculateAge(value);
       setFormData((prev) => ({
@@ -412,10 +465,11 @@ const openFile = async (file) => {
         AGE: age,
       }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: sanitized,  // ✅ sanitized value
+        }));
+    
     }
 
     if (showErrors && errors[name]) {
@@ -520,61 +574,61 @@ const openFile = async (file) => {
       [section]: !prev[section]
     }));
   };
-
+const experienceFieldValidations = {
+    COMPANY_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),
+    DESIGNATION: (val) => val.replace(/[^a-zA-Z ]/g, ''),
+};
 const handleExperienceChange = (id, field, value) => {
-  setExperiences(prev => prev.map(exp => {
-    if (exp.id == id) {
-      const updated = { ...exp, [field]: value };
+    // ✅ Apply validation if rule exists
+    const sanitized = experienceFieldValidations[field]
+        ? experienceFieldValidations[field](value)
+        : value;
 
-    
+    setExperiences(prev => prev.map(exp => {
+        if (exp.id == id) {
+            const updated = { ...exp, [field]: sanitized }; // ✅ use sanitized
 
-      if (field === 'FROM_DATE' || field === 'TO_DATE') {
-        if (updated.FROM_DATE && updated.TO_DATE) {
-          const fromDate = new Date(updated.FROM_DATE);
-          const toDate = new Date(updated.TO_DATE);
+            if (field === 'FROM_DATE' || field === 'TO_DATE') {
+                if (updated.FROM_DATE && updated.TO_DATE) {
+                    const fromDate = new Date(updated.FROM_DATE);
+                    const toDate = new Date(updated.TO_DATE);
 
-          let years = toDate.getFullYear() - fromDate.getFullYear();
-          let months = toDate.getMonth() - fromDate.getMonth();
-          let days = toDate.getDate() - fromDate.getDate();
+                    let years = toDate.getFullYear() - fromDate.getFullYear();
+                    let months = toDate.getMonth() - fromDate.getMonth();
+                    let days = toDate.getDate() - fromDate.getDate();
 
-          if (days < 0) {
-            months--;
-            const lastMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
-            days += lastMonth.getDate();
-          }
+                    if (days < 0) {
+                        months--;
+                        const lastMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
+                        days += lastMonth.getDate();
+                    }
+                    if (months < 0) {
+                        years--;
+                        months += 12;
+                    }
 
-          if (months < 0) {
-            years--;
-            months += 12;
-          }
-
-          const totalMonths = years * 12 + months;
-
-          if (totalMonths > 0 || days > 0) {
-            if (days > 0) {
-              const roundedMonths = totalMonths + 1;
-              updated.DURATION = `${roundedMonths} (${totalMonths} months ${days} days)`;
-            } else {
-              updated.DURATION = totalMonths.toString();
+                    const totalMonths = years * 12 + months;
+                    if (totalMonths > 0 || days > 0) {
+                        updated.DURATION = days > 0
+                            ? `${totalMonths + 1} (${totalMonths} months ${days} days)`
+                            : totalMonths.toString();
+                    } else {
+                        updated.DURATION = '';
+                    }
+                }
             }
-          } else {
-            updated.DURATION = '';
-          }
+            return updated;
         }
-      }
+        return exp;
+    }));
 
-      return updated;
+    if (showErrors && errors[`exp_${id}_${field}`]) {
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[`exp_${id}_${field}`];
+            return newErrors;
+        });
     }
-    return exp;
-  }));
-
-  if (showErrors && errors[`exp_${id}_${field}`]) {
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[`exp_${id}_${field}`];
-      return newErrors;
-    });
-  }
 };
 
   const handleExperienceFileChange = (id, field, e) => {
@@ -694,8 +748,10 @@ const handleExperienceChange = (id, field, value) => {
 
 
 
-  
+// Inside handleSubmit and handleDraft functions, replace the experiences loop with:
+
 experiences.forEach((exp, index) => {
+  // Basic fields - always send for all experiences
   data.append(`experiences[${index}][companyname]`, exp.COMPANY_NAME || "");
   data.append(`experiences[${index}][designation]`, exp.DESIGNATION || "");
   data.append(`experiences[${index}][fromdate]`, exp.FROM_DATE || "");
@@ -703,21 +759,28 @@ experiences.forEach((exp, index) => {
   data.append(`experiences[${index}][duration]`, exp.DURATION || "");
   data.append(`experiences[${index}][stage]`, index);
   data.append(`experiences[${index}][isCurrent]`, exp.isCurrent ? "true" : "false");
+  
+  // ✅ CRITICAL: ALWAYS send EMP_COMP_ID for ALL experiences (both current AND previous)
 
-  // ✅ SIMPLE: Just use exp.EMP_COMP_ID directly
+console.log(experiences,"t6666666666666666666666",exp.EMP_COMP_ID);
+
   data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID || '');
 
+    console.log(`Experienc333333e ${index}: isCurrent=${exp.isCurrent}, EMP_COMP_ID=${exp.EMP_COMP_ID || '""'}`);
+  
+  // Notice Period - only for current company
   if (exp.isCurrent) {
     data.append(`experiences[${index}][noticePeriod]`, exp.NOTICE_PERIOD || "");
   }
-
+  
+  // For debugging
 
 });
 
   
     
 
-    // Send request
+ 
     const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
       headers: {
         Authorization: `Bearer ${userToken.token}`,
@@ -738,7 +801,7 @@ experiences.forEach((exp, index) => {
     }
   };
 
-
+  
 
 
 
@@ -865,6 +928,7 @@ const removeExperience = async (id) => {
     if (!formData.MARITAL_STATUS) newErrors.MARITAL_STATUS = "Marital Status is required";
     if (!formData.LANG_KNOWN?.trim()) newErrors.LANG_KNOWN = "Languages Known is required";
     if (!formData.MOTHER_TONGUE?.trim()) newErrors.MOTHER_TONGUE = "Mother Tongue is required";
+    if (!formData.TOTAL_EXP?.trim()) newErrors.TOTAL_EXP = "Total Experience is required";
 
     if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
     if (!formData.EMAIL?.trim()) {
@@ -923,11 +987,6 @@ const removeExperience = async (id) => {
       newErrors.SRC_REFER_DEPT = "Reference dept is required";
     }
 
-
-
-
-
-
     if (formData.PASSPORT_NUMBER?.trim() && !formData.PASSPORT_EXPIRY) {
       newErrors.PASSPORT_EXPIRY = "Passport Expiry date is required";
     }
@@ -936,23 +995,39 @@ const removeExperience = async (id) => {
     }
 
     // Education (mandatory)
-    if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
-    if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC Marks is required";
-    if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
+// Education validation - 10th is ALWAYS mandatory for EVERYONE
+if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
+if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC Marks is required";
+if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
 
+// For non-workman ONLY, validate higher education
+if (formData.EMP !== "Work Man") {  // If NOT workman, then all education required
+    // Intermediate
     if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
     if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter Marks is required";
     if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
 
+    // Degree/B.Tech
     if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
     if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree Marks is required";
     if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
+}
 
     // File uploads
     if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
     if (!formData.PAN_PATH) newErrors.PAN_PATH = "PAN Card is required";
      if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
     if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
+const hasCurrentCompany = experiences.some(exp => exp.isCurrent);
+if (hasCurrentCompany && !formData.bank_statements) {
+    newErrors.bank_statements = "Bank Statements are required";
+}
+if (hasCurrentCompany && !formData.payslips) {
+    newErrors.payslips = "payslips are required";
+}
+    if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
+
+
 
     // CTC
     if (!formData.CURRENT_CTC?.toString().trim()) newErrors.CURRENT_CTC = "Current CTC is required";
@@ -1002,10 +1077,12 @@ const removeExperience = async (id) => {
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    const validationErrors = validateForm();
+
+    const handleSubmit = async () => {
+
+
+  const validationErrors = validateForm();
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -1037,101 +1114,69 @@ const removeExperience = async (id) => {
 
     if (!result.isConfirmed) return;
 
-    try {
-      Swal.fire({
-        title: "Processing...",
-        showConfirmButton: false,
-        allowOutsideClick: false,
-        willOpen: () => {
-          Swal.showLoading();
-        }
-      });
+    const data = new FormData();
 
-      const data = new FormData();
-
-      // Add form data fields - only include File objects and regular strings (not file paths)
-      Object.entries(formData).forEach(([key, value]) => {
+    // Add regular fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!value) return;
 
 
-        if (!value) return;
 
-        // If it's a File object (new upload), append it
-        if (value instanceof File) {
-          data.append(key, value);
-        }
-        // If it's a string that does NOT look like a file path, append it as a regular field
-        else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
-          data.append(key, String(value));
-        }
-        // If it's a string that is a file path (existing file), skip it - we don't send it
-        // The backend should keep the existing file
-      });
-
-      // Add status and other fields that might be missing
-      data.append('status', "submit");
-
-      if (formData.AGE) {
-        data.append('AGE', String(formData.AGE));
+      if (value instanceof File) {
+        data.append(key, value);
+       
+      } else if (typeof value == "string") {
+      
+        data.append(key, value);
       }
-      data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
-
-      // Process experiences (similar logic)
-      const experiencesArray = experiences.map((exp, index) => {
-        const experienceObj = {
-          companyname: exp.COMPANY_NAME || '',
-          designation: exp.DESIGNATION || '',
-          fromdate: exp.FROM_DATE || '',
-          todate: exp.TO_DATE || '',
-          duration: exp.DURATION || '',
-          currentCTC: exp.CURRENT_CTC || '',
-          expectedCTC: exp.EXP_CTC || '',
-          stage: index,
-          isCurrent: exp.isCurrent || false
-        };
-
-        if (exp.isCurrent) {
-          experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-
-    
-     data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID || '');
+    });
 
 
-        
+  
+     data.append('status', "submit");
+   data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
+    if (formData.AGE) data.append("AGE", String(formData.AGE));
 
-        }
 
+
+  
+experiences.forEach((exp, index) => {
+  data.append(`experiences[${index}][companyname]`, exp.COMPANY_NAME || "");
+  data.append(`experiences[${index}][designation]`, exp.DESIGNATION || "");
+  data.append(`experiences[${index}][fromdate]`, exp.FROM_DATE || "");
+  data.append(`experiences[${index}][todate]`, exp.TO_DATE || "");
+  data.append(`experiences[${index}][duration]`, exp.DURATION || "");
+  data.append(`experiences[${index}][stage]`, index);
+  data.append(`experiences[${index}][isCurrent]`, exp.isCurrent ? "true" : "false");
+
+
+
+  // ✅ SIMPLE: Just use exp.EMP_COMP_ID directly
+
+  console.log(`Experienc333333e ${index}: isCurrent=${exp.isCurrent}, EMP_COMP_ID=${exp.EMP_COMP_ID || '""'}`);
+
+ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
+
+  if (exp.isCurrent) {
      
+    data.append(`experiences[${index}][noticePeriod]`, exp.NOTICE_PERIOD || "");
+  }
 
 
-        return experienceObj;
-      });
+});
 
-      data.append('experiences', JSON.stringify(experiencesArray));
+  
+    
 
-      // Log what we're sending for debugging
-      console.log('Submitting FormData with entries:');
-      for (let [key, value] of data.entries()) {
-        if (value instanceof File) {
-          console.log(key, 'File:', value.name);
-        } else {
-          console.log(key, value);
-        }
-      }
+    // Send request
+    const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
+      headers: {
+        Authorization: `Bearer ${userToken.token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-      const response = await axios.post(
-        `${API_BASE_URL}/recruitStore`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken.token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      Swal.close();
-
-      if (response.data.success) {
+     if (response.data.success) {
         await Swal.fire({
           title: "Success",
           text: "Recruitment data updated successfully",
@@ -1139,154 +1184,205 @@ const removeExperience = async (id) => {
           timer: 1500,
           showConfirmButton: false,
         });
+       
+resetForm();
+  try {
+        await fetch(`${API_BASE_URL}/logout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${userToken.token}`,
+            },
+            body: JSON.stringify({}),
+        });
+    } catch (err) {
+        console.error("Logout error:", err);
+    } finally {
+        // ✅ Clear localStorage and reload regardless of logout API result
+        localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
+        window.location.href = '/'; // ✅ full page refresh + redirect to login
+    }
 
         // Optionally reset or redirect
       } else {
         await Swal.fire("Failed", response.data.message, "error");
       }
-    } catch (error) {
-      Swal.close();
-      console.error(error);
-      await Swal.fire(
-        "Error",
-        error.response?.data?.message || "Something went wrong",
-        "error"
-      );
-    }
   };
 
 
-  //   const handleSubmit = async (e) => {
-  //     e.preventDefault();
 
-  //     const validationErrors = validateForm();
 
-  //     if (Object.keys(validationErrors).length > 0) {
-  //       setErrors(validationErrors);
-  //       setShowErrors(true);
 
-  //       const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
-  //       if (firstErrorField) {
-  //         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  //       }
 
-  //       Swal.fire({
-  //         title: "Validation Error",
-  //         text: "Please fill all required fields correctly",
-  //         icon: "error",
-  //       });
-  //       return;
+
+
+
+
+
+
+
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   const validationErrors = validateForm();
+
+  //   if (Object.keys(validationErrors).length > 0) {
+  //     setErrors(validationErrors);
+  //     setShowErrors(true);
+
+  //     const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+  //     if (firstErrorField) {
+  //       firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
   //     }
 
-  //     const result = await Swal.fire({
-  //       title: "Confirm Submission",
-  //       text: "Are you sure you want to submit this form?",
-  //       icon: "question",
-  //       showCancelButton: true,
-  //       confirmButtonColor: "#3085d6",
-  //       cancelButtonColor: "#d33",
-  //       confirmButtonText: "Yes, Submit!",
-  //       cancelButtonText: "No, Cancel"
+  //     Swal.fire({
+  //       title: "Validation Error",
+  //       text: "Please fill all required fields correctly",
+  //       icon: "error",
+  //     });
+  //     return;
+  //   }
+
+  //   const result = await Swal.fire({
+  //     title: "Confirm Submission",
+  //     text: "Are you sure you want to submit this form?",
+  //     icon: "question",
+  //     showCancelButton: true,
+  //     confirmButtonColor: "#3085d6",
+  //     cancelButtonColor: "#d33",
+  //     confirmButtonText: "Yes, Submit!",
+  //     cancelButtonText: "No, Cancel"
+  //   });
+
+  //   if (!result.isConfirmed) return;
+
+  //   try {
+  //     Swal.fire({
+  //       title: "Processing...",
+  //       showConfirmButton: false,
+  //       allowOutsideClick: false,
+  //       willOpen: () => {
+  //         Swal.showLoading();
+  //       }
   //     });
 
-  //     if (!result.isConfirmed) return;
+  //     const data = new FormData();
 
-  //     try {
-  //       Swal.fire({
-  //         title: "Processing...",
-  //         showConfirmButton: false,
-  //         allowOutsideClick: false,
-  //         willOpen: () => {
-  //           Swal.showLoading();
-  //         }
-  //       });
-
-  //       const data = new FormData();
-
-  //       Object.entries(formData).forEach(([key, value]) => {
-  //         if (!value) return;
-  //         if (value instanceof File) {
-  //           data.append(key, value);
-  //         } else {
-  //           data.append(key, String(value));
-  //         }
-  //       });
-
-  //       const experiencesArray = experiences.map((exp, index) => {
-  //         const experienceObj = {
-  //           companyname: exp.COMPANY_NAME || '',
-  //           designation: exp.DESIGNATION || '',
-  //           fromdate: exp.FROM_DATE || '',
-  //           todate: exp.TO_DATE || '',
-  //           duration: exp.DURATION || '',
-  //           currentCTC: exp.CURRENT_CTC || '',
-  //           expectedCTC: exp.EXP_CTC || '',
-  //           stage: index,
-  //           isCurrent: exp.isCurrent || false
-  //         };
-
-  //         if (exp.isCurrent) {
-  //           experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-  //           experienceObj.payslips = exp.PAYSLIPS?.map(f => ({ filename: f.name })) || [];
-  //           experienceObj.bank_statements = exp.BANK_STATEMENTS?.[0]?.name || "";
-  //           experienceObj.relieving_letter = exp.RELIEVING_LETTER?.name || "";
-  //           experienceObj.offer_letter = exp.OFFER_LETTER?.name || "";
-  //           experienceObj.exp_letter = exp.EXP_LETTER?.name || "";
-  //         }
-
-  //         return experienceObj;
-  //       });
-
-  //       data.append('experiences', JSON.stringify(experiencesArray));
-
-  // // data.append('CHILD_CASEID', formData.CHILD_CASEID || userToken?.Manpower?.CHILD_CASEID || '');
-  // // data.append('PLANT', formData.PLANT || userToken?.Manpower?.PLANT || '');
-  // // data.append('DEPT', formData.DEPT || userToken?.Manpower?.DEPT || '');
-  // // data.append('EMAIL', formData.EMAIL || '');
+  //     // Add form data fields - only include File objects and regular strings (not file paths)
+  //     Object.entries(formData).forEach(([key, value]) => {
 
 
-  //       data.append('status', "submit")
+  //       if (!value) return;
 
-  //    data.append('address_status', sameAsPermanent ? "YES" : "NO");
-
-
-
-  //       const response = await axios.post(
-  //        `${API_BASE_URL}/recruitStore`,
-  //         data,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${userToken.token}`,
-  //             "Content-Type": "multipart/form-data",
-  //           },
-  //         }
-  //       );
-
-  //       Swal.close();
-
-  //       if (response.data.success) {
-  //         await Swal.fire({
-  //           title: "Success",
-  //           text: "Recruitment data updated successfully",
-  //           icon: "success",
-  //           timer: 1500,
-  //           showConfirmButton: false,
-  //         });
-
-  //         // resetForm();
-  //       } else {
-  //         await Swal.fire("Failed", response.data.message, "error");
+  //       // If it's a File object (new upload), append it
+  //       if (value instanceof File) {
+  //         data.append(key, value);
   //       }
-  //     } catch (error) {
-  //       Swal.close();
-  //       console.error(error);
-  //       await Swal.fire(
-  //         "Error",
-  //         error.response?.data?.message || "Something went wrong",
-  //         "error"
-  //       );
+  //       // If it's a string that does NOT look like a file path, append it as a regular field
+  //       else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
+  //         data.append(key, String(value));
+  //       }
+  //       // If it's a string that is a file path (existing file), skip it - we don't send it
+  //       // The backend should keep the existing file
+  //     });
+
+  //     // Add status and other fields that might be missing
+  //     data.append('status', "submit");
+
+  //     if (formData.AGE) {
+  //       data.append('AGE', String(formData.AGE));
   //     }
-  //   };
+  //     data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
+
+  //     // Process experiences (similar logic)
+  //     const experiencesArray = experiences.map((exp, index) => {
+  //       const experienceObj = {
+  //         companyname: exp.COMPANY_NAME || '',
+  //         designation: exp.DESIGNATION || '',
+  //         fromdate: exp.FROM_DATE || '',
+  //         todate: exp.TO_DATE || '',
+  //         duration: exp.DURATION || '',
+  //         currentCTC: exp.CURRENT_CTC || '',
+  //         expectedCTC: exp.EXP_CTC || '',
+  //         stage: index,
+  //         isCurrent: exp.isCurrent || false
+  //       };
+
+
+
+  //       if (exp.isCurrent) {
+  //         experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
+
+
+         
+    
+  //    data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID || '');
+
+
+        
+
+  //       }
+
+     
+
+
+  //       return experienceObj;
+  //     });
+
+  //     data.append('experiences', JSON.stringify(experiencesArray));
+
+  //     // Log what we're sending for debugging
+  //     console.log('Submitting FormData with entries:');
+  //     for (let [key, value] of data.entries()) {
+  //       if (value instanceof File) {
+  //         console.log(key, 'File:', value.name);
+  //       } else {
+  //         console.log(key, value);
+  //       }
+  //     }
+
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/recruitStore`,
+  //       data,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${userToken.token}`,
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       }
+  //     );
+
+  //     Swal.close();
+
+  //     if (response.data.success) {
+  //       await Swal.fire({
+  //         title: "Success",
+  //         text: "Recruitment data updated successfully",
+  //         icon: "success",
+  //         timer: 1500,
+  //         showConfirmButton: false,
+  //       });
+  //       resetForm();
+
+  //       // Optionally reset or redirect
+  //     } else {
+  //       await Swal.fire("Failed", response.data.message, "error");
+  //     }
+  //   } catch (error) {
+  //     Swal.close();
+  //     console.error(error);
+  //     await Swal.fire(
+  //       "Error",
+  //       error.response?.data?.message || "Something went wrong",
+  //       "error"
+  //     );
+  //   }
+  // };
+
+
+  
 
   const resetForm = () => {
     setFormData({
@@ -1303,6 +1399,7 @@ const removeExperience = async (id) => {
       LANG_KNOWN: '',
       MOTHER_TONGUE: '',
       DEPT: '',
+      EMP: '',
       HNO: '',
       CITY: '',
       MANDAL: '',
@@ -1800,7 +1897,8 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                     <InputField label="Child Case ID" name="CHILD_CASEID" value={formData.CHILD_CASEID} onChange={handleInputChange} disabled />
                     <InputField label="Plant" name="PLANT" value={formData.PLANT} onChange={handleInputChange} disabled />
                     <InputField label="Department" name="DEPT" value={formData.DEPT} onChange={handleInputChange} disabled />
-                    <InputField label={<>Name <span style={{ color: '#ef4444' }}>*</span></>} name="FIRST_NAME" value={formData.FIRST_NAME} onChange={handleInputChange} error={showErrors ? errors.FIRST_NAME : ''} placeholder="As per Aadhar" />
+                    <InputField label="Employee level" name="EMP" value={formData.EMP} onChange={handleInputChange} disabled />
+                    <InputField label={<>Name <span style={{ color: '#070606' }}>*</span></>} name="FIRST_NAME" value={formData.FIRST_NAME} onChange={handleInputChange} error={showErrors ? errors.FIRST_NAME : ''} placeholder="As per Aadhar" />
                     {/* <InputField label={<>Last Name <span style={{ color: '#ef4444' }}>*</span></>} name="LAST_NAME" value={formData.LAST_NAME} onChange={handleInputChange} error={showErrors ? errors.LAST_NAME : ''} /> */}
 
                     <div>
@@ -2399,9 +2497,26 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
              <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME} onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}/>
                     <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
-                 <InputField label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_FROM_DATE`} type="date" value={exp.FROM_DATE} onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''} />
-                  <InputField label={<>To Date  <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_TO_DATE`} type="date" value={exp.TO_DATE} onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}/>
-                    <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
+                   <InputField
+    label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>}
+    name={`exp_${exp.id}_FROM_DATE`}
+    type="date"
+    value={exp.FROM_DATE}
+    max={new Date().toISOString().split('T')[0]}  // ✅ cannot select future date
+    onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)}
+    error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''}
+/>
+
+<InputField
+    label={<>To Date <span style={{ color: '#ef4444' }}>*</span></>}
+    name={`exp_${exp.id}_TO_DATE`}
+    type="date"
+    value={exp.TO_DATE}
+    min={exp.FROM_DATE || ''}                      // ✅ cannot select before From Date
+    max={new Date().toISOString().split('T')[0]}   // ✅ cannot select future date
+    onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)}
+    error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}
+/>  <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
                     {exp.isCurrent && (
                       <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
                     )}
@@ -2422,13 +2537,13 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                       </div>
                       {/* <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} /> */}
 
-                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.payslips} />
+                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.payslips}  error={showErrors ? errors.payslips : ''}  />
 
                       <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
                       <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
 
                       <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
-                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb" />
+                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
                     </div>
                   )}
                 </div>
@@ -2572,7 +2687,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
 };
 
 // ================= HELPER COMPONENTS =================
-const InputField = ({ label, name, type = "text", value, onChange, error, disabled = false, maxLength, placeholder }) => (
+const InputField = ({ label, name, type = "text", value, onChange, error, disabled = false, maxLength, placeholder,min,max }) => (
   <div>
     <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>{label}</label>
     <input
@@ -2583,6 +2698,8 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
       disabled={disabled}
       maxLength={maxLength}
       placeholder={placeholder}
+        min={min}   // ✅ add this
+      max={max}   // ✅ add this
       style={{
         width: '100%',
         padding: '2px 8px',

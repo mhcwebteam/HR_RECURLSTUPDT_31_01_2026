@@ -47,6 +47,9 @@ const OfferApproved = () => {
   const [ofrList,setOfferLetterData]=useState([]);
 
 
+  console.log(ofrList,"666666666666666666645555555555555555555");
+
+
 
   const [token] = useState(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -245,6 +248,12 @@ useEffect(() => {
     return value.toString();
   };
 
+
+
+   const hasTypePlant = ofrList?.some(row => row.TYPE_PLANT);
+
+  const recCycle = ofrList?.some(row => row.RECRUIT_CYCLE);
+
   const columns = useMemo(() => [
     {
       field: 'SNO',
@@ -270,6 +279,33 @@ useEffect(() => {
         </Box>
       ),
     },
+
+            ...(hasTypePlant
+                    ? [{
+                        field: 'TYPE_PLANT',
+                        headerName: 'Type Plant',
+                        flex: 1.2,
+                        renderCell: (params) => (
+                          <Box sx={{ color: '#374151' }}>
+                            {params.value}
+                          </Box>
+                        ),
+                      }]
+                    : []),
+                
+                  // ✅ MUST be array
+                  ...(recCycle
+                    ? [{
+                        field: 'RECRUIT_CYCLE',
+                        headerName: 'Emp Level',
+                        flex: 1.2,
+                        renderCell: (params) => (
+                          <Box sx={{ color: '#374151' }}>
+                            {params.value}
+                          </Box>
+                        ),
+                      }]
+                    : []),
     {
       field: 'PLANT',
       headerName: 'Plant Name',
@@ -338,6 +374,48 @@ useEffect(() => {
     //     </Box>
     //   ),
     // },
+
+        {
+               field: 'DEPT',
+               headerName: 'Department',
+               flex: 1,
+               minWidth: 120,
+               renderCell: (params) => {
+                 const groupCode = params.row.GROUP_CODE;
+                 const dept = params.value;
+             
+                 return (
+                   <Box sx={{ color: '#374151', fontWeight: 500 }}>
+                     {groupCode ? `${groupCode} - ${dept}` : dept}
+                   </Box>
+                 );
+               },
+             },
+             
+               {
+               field: 'DESIG',
+               headerName: 'Designation',
+               flex: 1.2,
+               minWidth: 130,
+               renderCell: (params) => {
+                 const subCode = params.row.SUB_CODE;
+                 const value = params.value || 'N/A';
+             
+                 return (
+                   <Box
+                     sx={{
+                       color: '#374151',
+                       padding: '2px 8px',
+                       borderRadius: '6px',
+                       fontSize: '12px',
+                       fontWeight: 600,
+                     }}
+                   >
+                     {subCode ? `${subCode} - ${value}` : value}
+                   </Box>
+                 );
+               },
+             },
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
@@ -470,7 +548,7 @@ useEffect(() => {
   renderCell: (params) => {
     if (!params.value) return "-";
 
-    const fileUrl = `${API_BASE_URLss}/storage/candid_apprvl/${params.value}`;
+    const fileUrl = `${API_BASE_URLss}/candid_apprvl/${params.value}`;
     const fileName = params.value.split("_").pop();
 
     return (
@@ -535,95 +613,7 @@ useEffect(() => {
         border: '1px solid #e2e8f0',
       }}>
         
-        {/* Compact Search bar matching RecruitmentMail */}
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ flex: 1, maxWidth: '400px' }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search name, email, case ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: '#667eea', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  height: '38px',
-                  fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
-                }
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
-                },
-              }}
-            />
-          </Box>
-          
-          <TextField
-            select
-            size="small"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{
-              minWidth: 150,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '10px',
-                backgroundColor: '#f8fafc',
-                height: '38px',
-                fontSize: '13px',
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-              },
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#cedef2ff",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#d1d6ebff",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#667eea",
-                },
-              },
-            }}
-          >
-            <MenuItem value="all">All Status</MenuItem>
-            <MenuItem value="verified">Verified</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="rejected">Rejected</MenuItem>
-          </TextField>
-          
-          <Typography variant="body2" sx={{
-            color: '#64748b',
-            minWidth: 'fit-content',
-            fontWeight: 500,
-            fontSize: '13px'
-          }}>
-            {filteredData.length} offer letters
-          </Typography>
-        </Box> */}
+      
 
         <Box sx={{
           width: "100%",

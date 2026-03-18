@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import logo from "../asset/imagesmy.png"
 
-const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow, token, personalData }) => (
+const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow, note, personalData }) => (
   <div className="p-3 space-y-3">
 
     {/* Employee Info Box */}
@@ -83,7 +83,7 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
 
 const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,  personalData }) => {
 
-
+console.log("gtrrrrrrrrrrrr",personalData);
 
 
 // const personal = personalData?.find(
@@ -291,7 +291,7 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,
     }
   };
 
-  const handleSubmit = async () => {
+ const handleSubmit = async () => {
     const result = await Swal.fire({
       title: 'Confirm Approval',
       text: 'Are you sure you want to approve this candidate?',
@@ -319,20 +319,24 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,
         },
       });
 
-      if (response) {
-        await Swal.fire({
-          icon: "success",
-          title: "Approved Successfully",
-          text: "Note for approval updated successfully",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+     if (response) {
+  await Swal.fire({
+    icon: "success",
+    title: "Approved Successfully",
+    text: "Note for approval updated successfully",
+    timer: 1500,
+    showConfirmButton: false,
+  });
 
-        if (note) await note();
-        onClose();
-        setRemarks("");
-        if (onStatusChange) onStatusChange();
-      }
+  setRemarks("");
+  if (onStatusChange) onStatusChange();
+  
+  // ✅ Only call note() if it's actually a function
+  if (typeof note === 'function') await note();
+  
+  onClose();
+  window.location.reload(); // ✅ Always last
+}
     } catch (err) {
       console.error('Error saving:', err);
       await Swal.fire({
@@ -344,7 +348,14 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,
     }
   };
 
+
   const PersonalDetails = () => {
+const matchedPersonal = Array.isArray(personalData)
+    ? personalData.find((ele) => ele.child_caseid === data?.CHILD_CASEID)
+    : null;
+
+  // ✅ Take ONLY index 0 from experienceData (present company)
+  const presentExperience = matchedPersonal?.experienceData?.[0] || null;
 
   const handleFileOpen = (filePath) => {
     if (!filePath) {
@@ -388,7 +399,7 @@ const getFileName = (path) => {
       <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 shadow-sm">
         <DetailRow label="Name"                 value={data?.FIRST_NAME || data?.NAME || 'N/A'} />
         <DetailRow label="Current CTC"          value={`₹ ${currentCTC.toLocaleString('en-IN')}`} valueColor="text-emerald-700 font-bold" />
-        <DetailRow label="Present Company"      value={'N/A'} />
+        <DetailRow label="Present Company"       value={presentExperience?.COMPANY_NAME || 'N/A'} />
         <DetailRow label="Total Experience"     value={`${personalData[0]?.TOTAL_EXP || 'N/A'} years`} />
         <DetailRow label="Designation"          value={data?.DESIGNATION || data?.DEPT || 'N/A'} />
         <DetailRow label="Highest Qualification" value={personalData[0]?.HIGHEST_QUA || 'N/A'} />
@@ -409,7 +420,7 @@ const getFileName = (path) => {
           value={`${hikePercentage}%`} 
           valueColor={parseFloat(hikePercentage) > 0 ? 'text-emerald-700 font-bold' : 'text-red-600 font-bold'} 
         />
-        <DetailRow label="Joining Duration"    value={data?.NOTICE_PERIOD || 'N/A'} />
+       <DetailRow label="Joining Duration" value={matchedPersonal?.experienceData?.[0]?.noticePeriod || 'N/A'} />
         <DetailRow label="Offered Designation" value={data?.DESIG || 'N/A'} />
 
         {/* HR Evaluation File */}

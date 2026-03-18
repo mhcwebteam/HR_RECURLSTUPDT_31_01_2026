@@ -53,11 +53,12 @@ const [personalData, setPersonalData] = useState([]);
       }
     );
 
+    
+console.log(response,"submitOnly");
   
     const submitOnly = (response.data?.data || []).filter(
       (item) => item.status?.toLowerCase() == "submit"
     );
-
 
  
 
@@ -81,6 +82,7 @@ useEffect(() => {
   {
     if (!personalData || personalData.length === 0) return [];
     let result = [...personalData];
+    console.log("resrrrrrrrrrrrrrrrrrrrrrr",result);
 
 
 
@@ -101,7 +103,7 @@ useEffect(() => {
     }
 
 
-    console.log("yyyyyyyyyyyyyyyyyyyyyy",result);
+   
   
    
    return result.map((item, index) => ({
@@ -124,6 +126,14 @@ SRC_REFER_DEPT: item.SRC_REFER_DEPT || 'N/A',
   EMER_CONTACT_NUM: item.EMER_CONTACT_NUM || 'N/A',
 DRIVING_LICENSE_EXPIRY: item.DDRIVING_LICENSE_EXPIRY || 'N/A',
 
+TYPE_PLANT: item?.TYPE_PLANT,
+GROUP_CODE: item?.GROUP_CODE,
+SUB_CODE: item?.SUB_CODE,
+SUB_POST: item?.SUB_POST,
+
+RECRUIT_CYCLE: item?.RECRUIT_CYCLE,  // ✅ ADD THIS
+
+
 DRIVING_LICENSE: item.DRIVING_LICENSE || 'N/A',
   REVID: item.CUR_REV_ID || '00',
 
@@ -141,6 +151,12 @@ HIGHEST_QUA: item.HIGHEST_QUA,
   PAN_NUM: item.pan_number || 'N/A',
   UAN_NUM: item.UAN_NUM || item.UAN_NUMBER || 'N/A',
   ESI_NUM: item.ESI_NUM || item.ESINO || 'N/A',
+  TYPE_PLANT: item?.TYPE_PLANT,
+GROUP_CODE: item?.GROUP_CODE,
+SUB_CODE: item?.SUB_CODE,
+SUB_POST: item?.SUB_POST,
+
+RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
   // Passport & Driving
   PASSPORT_NUMBER: item.PASSPORT_NUMBER || item.PASSPORT_NUM || 'N/A',
@@ -315,6 +331,16 @@ HIGHEST_QUA: item.HIGHEST_QUA,
     if (!value || value === 'N/A') return 'N/A';
     return value.toString();
   };
+
+    const hasTypePlant = personalData?.some(row => row.TYPE_PLANT);
+
+    console.log("ttttt44444444440",hasTypePlant);
+
+  
+
+  const recCycle = personalData?.some(row => row.RECRUIT_CYCLE);
+
+    console.log("6666666666666", recCycle);
   const columns = useMemo(() => [
     {
       field: 'SNO',
@@ -339,6 +365,33 @@ minWidth: 70,
         </Box>
       ),
     },
+
+            ...(hasTypePlant
+        ? [{
+            field: 'TYPE_PLANT',
+            headerName: 'Type Plant',
+            flex: 1.2,
+            renderCell: (params) => (
+              <Box sx={{ color: '#374151' }}>
+                {params.value}
+              </Box>
+            ),
+          }]
+        : []),
+    
+      // ✅ MUST be array
+      ...(recCycle
+        ? [{
+            field: 'RECRUIT_CYCLE',
+            headerName: 'Emp Level',
+            flex: 1.2,
+            renderCell: (params) => (
+              <Box sx={{ color: '#374151' }}>
+                {params.value}
+              </Box>
+            ),
+          }]
+        : []),
 
 {
   field: 'REVID',  // Change from 'CUR_REV_ID' to 'REVID'
@@ -374,31 +427,47 @@ minWidth: 70,
       ),
     },
 
+{
+  field: 'DEPT',
+  headerName: 'Department',
+  flex: 1,
+  minWidth: 120,
+  renderCell: (params) => {
+    const groupCode = params.row.GROUP_CODE;
+    const dept = params.value;
 
-      {
-      field: 'DEPT',
-      headerName: 'Department',
-      flex: 1.5,
-      minWidth: 200,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+    return (
+      <Box sx={{ color: '#374151', fontWeight: 500 }}>
+        {groupCode ? `${groupCode} - ${dept}` : dept}
+      </Box>
+    );
+  },
+},
 
-          {
-      field: 'MANPOWER_DESG',
-      headerName: 'Designation',
-      flex: 1.5,
-      minWidth: 200,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+  {
+  field: 'MANPOWER_DESG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
 
+    return (
+      <Box
+        sx={{
+          color: '#374151',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
 
     {
       field: 'PHONE_NUMBER',

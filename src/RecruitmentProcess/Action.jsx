@@ -40,6 +40,8 @@ const Actions = () => {
 
     const [remarks, setRemarks] = useState("");
     const [HrData, setHrData] = useState([]);
+
+    console.log("HrDataHrDataHrDataHrData",HrData);
     const [emailInputs, setEmailInputs] = useState({});
     const [submitting, setSubmitting] = useState({});
     const [actionTypeSelections, setActionTypeSelections] = useState({});
@@ -59,7 +61,7 @@ const [historyData, setHistoryData] = useState([]);
 const [documentUploads, setDocumentUploads] = useState({});
 const [uploadingDoc, setUploadingDoc] = useState({});
 
-
+const [uploadedDocs, setUploadedDocs] = useState({}); 
 
 
 
@@ -89,6 +91,8 @@ const [uploadingDoc, setUploadingDoc] = useState({});
                     },
                 }
             );
+
+            
 
        
 
@@ -253,6 +257,8 @@ const [uploadingDoc, setUploadingDoc] = useState({});
                         },
                     }
                 );
+
+                console.log("tttttttttaaaaaaaaaaaaa",response);
                 setHrData(response.data);
                 console.log("NOTE FOR APPROVAL API DATA:", response.data);
             } catch (err) {
@@ -357,12 +363,12 @@ const handleDocumentUpload = async (caseId) => {
     // Confirm upload
     const result = await Swal.fire({
         title: 'Confirm Upload',
-        text: `Do you want to upload "${file.name}" for Case ID: ${caseId}?`,
+        text: `Do you want to Save "${file.name}" for Case ID: ${caseId}?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, Upload!',
+        confirmButtonText: 'Yes, Save!',
     });
 
     if (!result.isConfirmed) return;
@@ -412,6 +418,9 @@ const handleDocumentUpload = async (caseId) => {
                 showConfirmButton: false,
             });
 
+
+setUploadedDocs(prev => ({ ...prev, [caseId]: true }))
+  
             // Clear the uploaded file
       
         }
@@ -432,75 +441,147 @@ const handleDocumentUpload = async (caseId) => {
             ...prev,
             [caseId]: value
         }));
+ if (!uploadedDocs[caseId]) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'File Required',
+            text: 'Please upload and save the document before proceeding.',
+            confirmButtonColor: '#1e40af',
+        });
+        setActionTypeSelections(prev => ({
+            ...prev,
+            [caseId]: ''
+        }));
+        return;
+    }
+        // if (value == 'New') {
+        //    if (!documentUploads[caseId]) {
+        //     Swal.fire({
+        //         icon: 'warning',
+        //         title: 'File Required',
+        //         text: 'Please upload the document before proceeding.',
+        //         confirmButtonColor: '#1e40af',
+        //     });
+        //     // Reset selection
+        //     setActionTypeSelections(prev => ({
+        //         ...prev,
+        //         [caseId]: ''
+        //     }));
+        //     return;
+        // }
+        //     const payload = {
+        //         CHILD_CASEID: caseId
+        //     }
 
-        if (value == 'New') {
-           if (!documentUploads[caseId]) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'File Required',
-                text: 'Please upload the document before proceeding.',
-                confirmButtonColor: '#1e40af',
-            });
-            // Reset selection
-            setActionTypeSelections(prev => ({
-                ...prev,
-                [caseId]: ''
-            }));
-            return;
-        }
-            const payload = {
-                CHILD_CASEID: caseId
-            }
+        //     Swal.fire({
+        //         title: 'Are you sure?',
+        //         html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
+        //         icon: 'question',
+        //         showCancelButton: true,
+        //         confirmButtonColor: '#3085d6',
+        //         cancelButtonColor: '#d33',
+        //         confirmButtonText: 'Yes, move it!',
+        //         cancelButtonText: 'Cancel'
+        //     }).then(async (result) => {
+        //         if (result.isConfirmed) {
+        //             try {
+        //                 const response = await axios.post(`${API_BASE_URL}/actns-Frm-Recruits`, payload, {
+        //                     headers: {
+        //                         Authorization: `Bearer ${userToken.token}`,
+        //                         'Content-Type': 'application/json',
+        //                     },
+        //                 });
 
-            Swal.fire({
-                title: 'Are you sure?',
-                html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, move it!',
-                cancelButtonText: 'Cancel'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const response = await axios.post(`${API_BASE_URL}/actns-Frm-Recruits`, payload, {
+        //                 await Swal.fire({
+        //                     icon: "success",
+        //                     title: 'Success!',
+        //                     text: response.data.message || 'Case moved to Recruitment Mail successfully!',
+        //                     timer: 1500,
+        //                     showConfirmButton: false,
+        //                 });
+
+        //                 setData(prevData => prevData.filter(item => item.case_id !== caseId));
+        //                 setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
+
+        //             } catch (err) {
+        //                 await Swal.fire({
+        //                     icon: 'error',
+        //                     title: 'Error!',
+        //                     text: 'Error Action Form',
+        //                     confirmButtonColor: '#ef4444'
+        //                 });
+        //             }
+        //         } else {
+        //             setActionTypeSelections(prev => ({
+        //                 ...prev,
+        //                 [caseId]: ''
+        //             }));
+        //         }
+        //     });
+        // } else if (value === 'Transfer') {
+        //     setTransferRowData(rowData);
+        //     setTransferOpen(true);
+        // }
+
+         if (value === 'New') {
+        const payload = { CHILD_CASEID: caseId };
+
+        Swal.fire({
+            title: 'Are you sure?',
+            html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, move it!',
+            cancelButtonText: 'Cancel'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const response = await axios.post(
+                        `${API_BASE_URL}/actns-Frm-Recruits`,
+                        payload,
+                        {
                             headers: {
                                 Authorization: `Bearer ${userToken.token}`,
                                 'Content-Type': 'application/json',
                             },
-                        });
+                        }
+                    );
 
-                        await Swal.fire({
-                            icon: "success",
-                            title: 'Success!',
-                            text: response.data.message || 'Case moved to Recruitment Mail successfully!',
-                            timer: 1500,
-                            showConfirmButton: false,
-                        });
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.data.message || 'Case moved to Recruitment Mail successfully!',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
 
-                        setData(prevData => prevData.filter(item => item.case_id !== caseId));
-                        setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
+                    setData(prevData => prevData.filter(item => item.case_id !== caseId));
+                    setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
 
-                    } catch (err) {
-                        await Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: 'Error Action Form',
-                            confirmButtonColor: '#ef4444'
-                        });
-                    }
-                } else {
-                    setActionTypeSelections(prev => ({
-                        ...prev,
-                        [caseId]: ''
-                    }));
+                } catch (err) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Error Action Form',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
-            });
-        } else if (value === 'Transfer') {
-            setTransferRowData(rowData);
-            setTransferOpen(true);
-        }
+            } else {
+                // ✅ Reset dropdown if cancelled
+                setActionTypeSelections(prev => ({
+                    ...prev,
+                    [caseId]: ''
+                }));
+            }
+        });
+
+    } else if (value === 'Transfer') {
+        setTransferRowData(rowData);
+        setTransferOpen(true);
+    }
+
     };
 
     useEffect(() => {
@@ -682,6 +763,14 @@ const handleDocumentUpload = async (caseId) => {
         return counts;
     }, [filteredData]);
 
+
+const Hr = HrData?.TaskAssignmentData || [];
+
+const hasTypePlant = Hr.some(row => row.TYPE_PLANT);
+const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
+
+
+
     const columns = [
         {
             field: 'SNO',
@@ -696,8 +785,9 @@ const handleDocumentUpload = async (caseId) => {
                 </Box>
             ),
         },
+  
         {
-            field: 'CASEID',
+            field: 'CHILD_CASEID',
             headerName: 'Case ID',
             flex: 1,
             minWidth: 120,
@@ -707,17 +797,33 @@ const handleDocumentUpload = async (caseId) => {
                 </Box>
             ),
         },
-        {
-            field: 'CHILD_CASEID',
-            headerName: 'Child CaseID',
-            flex: 1,
-            minWidth: 120,
-            renderCell: (params) => (
-                <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
-                    {params.value}
-                </Box>
-            ),
-        },
+
+        ...(hasTypePlant
+    ? [{
+        field: 'TYPE_PLANT',
+        headerName: 'Type Plant',
+        flex: 1.2,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+  // ✅ MUST be array
+  ...(recCycle
+    ? [{
+        field: 'RECRUIT_CYCLE',
+        headerName: 'Emp Level',
+        flex: 1.2,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
 
         {
             field: 'CUR_REV_ID',
@@ -767,33 +873,45 @@ const handleDocumentUpload = async (caseId) => {
             ),
         },
         {
-            field: 'DEPT',
-            headerName: 'Department',
-            flex: 1,
-            minWidth: 120,
-            renderCell: (params) => (
-                <Box sx={{ color: '#374151', fontWeight: 500 }}>
-                    {params.value}
-                </Box>
-            ),
+          field: 'DEPT',
+          headerName: 'Department',
+          flex: 1,
+          minWidth: 120,
+          renderCell: (params) => {
+            const groupCode = params.row.GROUP_CODE;
+            const dept = params.value;
+        
+            return (
+              <Box sx={{ color: '#374151', fontWeight: 500 }}>
+                {groupCode ? `${groupCode} - ${dept}` : dept}
+              </Box>
+            );
+          },
         },
-        {
-            field: 'MANPOWER_DESG',
-            headerName: 'Designation',
-            flex: 1.2,
-            minWidth: 130,
-            renderCell: (params) => (
-                <Box sx={{
-                    color: '#374151',
-                    padding: '2px 8px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                }}>
-                    {params.value || 'N/A'}
-                </Box>
-            ),
-        },
+         {
+         field: 'MANPOWER_DESG',
+         headerName: 'Designation',
+         flex: 1.2,
+         minWidth: 130,
+         renderCell: (params) => {
+           const subCode = params.row.SUB_CODE;
+           const value = params.value || 'N/A';
+       
+           return (
+             <Box
+               sx={{
+                 color: '#374151',
+                 padding: '2px 8px',
+                 borderRadius: '6px',
+                 fontSize: '12px',
+                 fontWeight: 600,
+               }}
+             >
+               {subCode ? `${subCode} - ${value}` : value}
+             </Box>
+           );
+         },
+       },
 
 
          {
@@ -807,6 +925,7 @@ const handleDocumentUpload = async (caseId) => {
     const caseId = params.row.CHILD_CASEID;
     const selectedFile = documentUploads[caseId];
     const isUploading = uploadingDoc[caseId];
+const isUploaded = uploadedDocs[caseId];
 
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, width: '100%' }}>
@@ -841,9 +960,9 @@ const handleDocumentUpload = async (caseId) => {
               backgroundColor: selectedFile ? '#f0fdf4' : '#f8faff',
               borderColor: selectedFile ? '#22c55e' : '#93c5fd',
               color: selectedFile ? '#15803d' : '#1e2022d8',
-              boxShadow: selectedFile
-                ? '0 1px 4px rgba(34,197,94,0.15)'
-                : '0 1px 4px rgba(59,130,246,0.10)',
+              // boxShadow: selectedFile
+              //   ? '0 1px 4px rgba(34,197,94,0.15)'
+              //   : '0 1px 4px rgba(59,130,246,0.10)',
               '&:hover': {
                 backgroundColor: selectedFile ? '#dcfce7' : '#eff6ff',
                 borderColor: selectedFile ? '#16a34a' : '#60a5fa',
@@ -859,44 +978,44 @@ const handleDocumentUpload = async (caseId) => {
         </label>
 
         {/* Save Button */}
-        {selectedFile && (
-          <Button
-            size="small"
-            variant="contained"
-            disabled={isUploading}
-            onClick={() => handleDocumentUpload(caseId)}
-            sx={{
-              minWidth: '58px',
-              fontSize: '11px',
-              padding: '4px 10px',
-              textTransform: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              background: isUploading
-                ? '#bdbdbd'
-                : 'linear-gradient(135deg, #1e40af, #2563eb)',
-              boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)',
-                boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
-              },
-              '&:disabled': {
-                backgroundColor: '#e5e7eb',
-                color: '#9ca3af',
-              },
-            }}
-          >
-            {isUploading ? (
-              <CircularProgress size={13} sx={{ color: 'white' }} />
-            ) : (
-              '💾 Save'
-            )}
-          </Button>
-        )}
+       {selectedFile && (
+  <Button
+    size="small"
+    variant="contained"
+    disabled={isUploading || isUploaded}  // disable after saved
+    onClick={() => handleDocumentUpload(caseId)}
+    sx={{
+      minWidth: '58px',
+      fontSize: '11px',
+      padding: '4px 10px',
+      textTransform: 'none',
+      borderRadius: '6px',
+      fontWeight: 600,
+      background: isUploaded
+        ? '#16a34a'                                          // green when saved
+        : isUploading
+          ? '#bdbdbd'
+          : 'linear-gradient(135deg, #1e40af, #2563eb)',    // blue normally
+      boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
+      '&:disabled': {
+        background: isUploaded ? '#16a34a' : '#e5e7eb',     // keep green when saved
+        color: 'white',
+      },
+    }}
+  >
+    {isUploading ? (
+      <CircularProgress size={13} sx={{ color: 'white' }} />
+    ) : isUploaded ? (
+      '✅ Saved'
+    ) : (
+      '💾 Save'
+    )}
+  </Button>
+)}
 
       </Box>
     );
-  },
+},
 },
 
  {

@@ -297,6 +297,12 @@ const CandidateApproval = () => {
 
       NAME: item.NAME || 'N/A',
 
+TYPE_PLANT: item?.TYPE_PLANT,
+GROUP_CODE: item?.GROUP_CODE,
+SUB_CODE: item?.SUB_CODE,
+SUB_POST: item?.SUB_POST,
+
+RECRUIT_CYCLE: item?.RECRUIT_CYCLE, 
       
        REVID: item.CUR_REV_ID || '00',
 
@@ -457,6 +463,16 @@ const CandidateApproval = () => {
 
 
 
+      const hasTypePlant = candidgetData?.some(row => row.TYPE_PLANT);
+
+  const recCycle = candidgetData?.some(row => row.RECRUIT_CYCLE);
+
+
+
+  console.log(hasTypePlant,"666666666666666666666666666");
+
+
+
   const columns = useMemo(() => [
 
     {
@@ -506,6 +522,35 @@ const CandidateApproval = () => {
       ),
 
     },
+
+          ...(hasTypePlant
+        ? [{
+            field: 'TYPE_PLANT',
+            headerName: 'Type Plant',
+            flex: 1.2,
+            renderCell: (params) => (
+              <Box sx={{ color: '#374151' }}>
+                {params.value}
+              </Box>
+            ),
+          }]
+        : []),
+    
+      // ✅ MUST be array
+      ...(recCycle
+        ? [{
+            field: 'RECRUIT_CYCLE',
+            headerName: 'Emp Level',
+            flex: 1.2,
+            renderCell: (params) => (
+              <Box sx={{ color: '#374151' }}>
+                {params.value}
+              </Box>
+            ),
+          }]
+        : []),
+
+ 
 
             {
                     field: 'REVID',
@@ -590,51 +635,48 @@ const CandidateApproval = () => {
 
     },
 
-
-     {
-
-      field: 'DEPT',
-
-      headerName: 'Department',
-
-      flex: 1,
-
-      minWidth: 120,
-
-      renderCell: (params) => (
-
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-
-          {params.value}
-
-        </Box>
-
-      ),
-
-    },
-
-
        {
+  field: 'DEPT',
+  headerName: 'Department',
+  flex: 1,
+  minWidth: 120,
+  renderCell: (params) => {
+    const groupCode = params.row.GROUP_CODE;
+    const dept = params.value;
 
-      field: 'DESIG',
+    return (
+      <Box sx={{ color: '#374151', fontWeight: 500 }}>
+        {groupCode ? `${groupCode} - ${dept}` : dept}
+      </Box>
+    );
+  },
+},
 
-      headerName: 'Designation',
+  {
+  field: 'DESIG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
 
-      flex: 1,
+    return (
+      <Box
+        sx={{
+          color: '#374151',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
 
-      minWidth: 130,
-
-      renderCell: (params) => (
-
-        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
-
-          {params.value}
-
-        </Box>
-
-      ),
-
-    },
     
     {
 
@@ -982,7 +1024,7 @@ const CandidateApproval = () => {
         onStatusChange={handleStatusChange}
           note = ""
         personalData=""
-        filterParticularData = ""
+
          
       />
 

@@ -468,7 +468,7 @@ const CandidateApproval = ({ caseId }) => {
   const ALLOWED_FILE_TYPE = "application/pdf";
 
 
-  console.log(offerLetterData,":ofrrrr666666666666666");
+ 
 
   
 // candidOfrLtrSigned
@@ -605,7 +605,29 @@ const CandidateApproval = ({ caseId }) => {
         setModifyDate("");
         setErrors({});
         setFileSizeError("");
-        fetchOfrData(); // ✅ Refresh → auto goes readonly
+        fetchOfrData(); 
+
+         try {
+        await fetch(`${API_BASE_URL}/logout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${userToken.token}`,
+            },
+            body: JSON.stringify({}),
+        });
+    } catch (err) {
+        console.error("Logout error:", err);
+    } finally {
+        localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
+        window.location.href = '/';
+    }
+
+        
+        
+        
+        // ✅ Refresh → auto goes readonly
       } else {
         Swal.fire("Error!", data?.message || "Something went wrong", "error");
       }

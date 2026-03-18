@@ -179,6 +179,9 @@ const HODInbox = () => {
   const [hrData, setHrData] = useState([]);
   const [hrEmployees, setHrEmployees] = useState([]);
 
+
+
+
   // Fetch HR employees list
   useEffect(() => {
     if (!userToken?.token) return;
@@ -206,6 +209,8 @@ const HODInbox = () => {
 
     fetchHrEmployees();
   }, [userToken?.token]);
+
+
 
   const onBoarding = async () => {
     try {
@@ -350,6 +355,12 @@ const HODInbox = () => {
     return counts;
   }, [filteredData]);
 
+  const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
+
+  const recCycle = hrData.some(row => row.RECRUIT_CYCLE);
+
+  
+
   const columns = [
     {
       field: 'SNO',
@@ -387,6 +398,38 @@ const HODInbox = () => {
       ),
     },
 
+    
+
+  ...(hasTypePlant
+    ? [{
+        field: 'TYPE_PLANT',
+        headerName: 'Type Plant',
+        flex: 1.2,
+        minWidth: 140,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+     ...(recCycle
+    ? [{
+        field: 'RECRUIT_CYCLE',
+        headerName: 'Emp Level',
+        flex: 1.2,
+        minWidth: 140,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+
+
      {
       field: 'PLANT',
       headerName: 'Plant',
@@ -398,35 +441,52 @@ const HODInbox = () => {
         </Box>
       ),
     },
-    {
-      field: 'DEPT',
-      headerName: 'Department',
-      flex: 1,
-      minWidth: 120,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontWeight: 500 }}>
-          {params.value}
-        </Box>
-      ),
-    },
 
-       {
-      field: 'MANPOWER_DESG',
-      headerName: 'Designation',
-      flex: 1.2,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{
+
+{
+  field: 'DEPT',
+  headerName: 'Department',
+  flex: 1,
+  minWidth: 120,
+  renderCell: (params) => {
+    const groupCode = params.row.GROUP_CODE;
+    const dept = params.value;
+
+    return (
+      <Box sx={{ color: '#374151', fontWeight: 500 }}>
+        {groupCode ? `${groupCode} - ${dept}` : dept}
+      </Box>
+    );
+  },
+},
+
+  {
+  field: 'MANPOWER_DESG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
+
+    return (
+      <Box
+        sx={{
           color: '#374151',
           padding: '2px 8px',
           borderRadius: '6px',
           fontSize: '12px',
           fontWeight: 600,
-        }}>
-          {params.value || 'N/A'}
-        </Box>
-      ),
-    },
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
+
+
+
     {
       field: 'RAISER',
       headerName: 'Raiser',

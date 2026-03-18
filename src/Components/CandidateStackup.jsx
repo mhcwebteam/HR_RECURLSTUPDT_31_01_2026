@@ -481,16 +481,52 @@ const CandidateStackup = ({ caseId }) => {
       setStatus("");
       setModifyDate("");
 
-      Swal.fire({
+
+
+
+
+
+
+      await Swal.fire({
         icon: "success",
         title: "Success!",
         text: "Submitted successfully!",
         timer: 1500,
         showConfirmButton: false,
       });
+
+
+
+try {
+        await fetch(`${API_BASE_URL}/logout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${userToken.token}`,
+            },
+            body: JSON.stringify({}),
+        });
     } catch (err) {
-      Swal.fire("Error", "API failed", "error");
+        console.error("Logout error:", err);
+    } finally {
+        localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
+        window.location.href = '/';
     }
+
+} catch (err) {
+    // ✅ Show specific error based on status
+    if (err.response?.status === 413) {
+        Swal.fire({
+            icon: "error",
+            title: "File Too Large",
+            text: "Please upload a file smaller than 5MB",
+            confirmButtonColor: '#a855f7'
+        });
+    } else {
+        Swal.fire("Error", err.response?.data?.message || "API failed", "error");
+    }
+} 
   };
 
   return (

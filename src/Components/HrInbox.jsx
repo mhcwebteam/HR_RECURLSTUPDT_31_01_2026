@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config';
 import { useNavigate } from 'react-router-dom';
+import ManPowerView from './ManPowerView';
 
 const HrInbox = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,10 +16,11 @@ const HrInbox = () => {
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [hrData, setHrData] = useState([]);
+const [isModalOpen, setIsModalOpen] = useState(false);
+ const [selectedCaseId, setSelectedCaseId] = useState(null);
 
 
-
-
+ 
 
   const navigate = useNavigate();
 
@@ -26,6 +28,21 @@ const HrInbox = () => {
     const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
     return info?.token;
   }, []);
+
+
+
+  
+   const handleViewClick = (caseId) => {
+    setSelectedCaseId(caseId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCaseId(null);
+  };
+
+
 
 const hrAprvlFetchData = async () => {
   if (!token) {
@@ -130,7 +147,7 @@ const stats = useMemo(() => {
   };
 }, [hrData]);
 
-console.log("statsstatsstatsstatsstats",stats);
+
  
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
@@ -178,6 +195,11 @@ console.log("statsstatsstatsstatsstats",stats);
   // Default color for other processes
   return 'bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border border-slate-300';
 };
+
+const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
+
+  const recCycle = hrData.some(row => row.RECRUIT_CYCLE);
+
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
       <div className="w-full px-1 py-0.1">
@@ -287,6 +309,16 @@ console.log("statsstatsstatsstatsstats",stats);
                   </span>
                 </div>
               </div>
+              {isModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-y-auto relative">
+     
+      <ManPowerView caseId={selectedCaseId} onClose={handleCloseModal} />
+    </div>
+  </div>
+)}
+
+
             </div>
           </div>
 
@@ -312,10 +344,14 @@ console.log("statsstatsstatsstatsstats",stats);
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
                         { key: 'sno', label: 'S.No', width: 'w-12' },
+                        
+                           { key: 'Action', label: 'Action', width: 'w-12' },
                         { key: 'caseId', label: 'Case ID', width: 'w-24' },
                         { key: 'plant', label: 'Plant', width: 'w-48' },
+                        ...(hasTypePlant ? [{ key: 'typeofplant', label: 'Type of Plant', width: 'w-44' }] : []),
+...(recCycle ? [{ key: 'Recruitcycle', label: 'Recruit cycle', width: 'w-34' }] : []),
                         { key: 'department', label: 'Department', width: 'w-24' },
-                        // { key: 'designation', label: 'Designation', width: 'w-24' },
+                         { key: 'designation', label: 'Designation', width: 'w-24' },
                         { key: 'created', label: 'Created', width: 'w-32' },
                         { key: 'updated', label: 'Updated', width: 'w-32' },
                         { key: 'process', label: 'Recruitment Process', width: 'w-48' },
@@ -338,6 +374,24 @@ console.log("statsstatsstatsstatsstats",stats);
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
                           {currentPage * pageSize + index + 1}
                         </td>
+
+                        
+                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+  <button
+    onClick={() => handleViewClick(row?.Child_CaseId)} 
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 
+               rounded-lg text-xs font-semibold 
+               transition-all duration-200 shadow-sm 
+               hover:shadow-md hover:scale-105 cursor-pointer
+               bg-gradient-to-r from-blue-100 to-indigo-200
+               text-indigo-700
+               hover:from-blue-200 hover:to-indigo-300
+               border border-indigo-200"
+  >
+    <Eye className="w-3.5 h-3.5" />
+    View
+  </button>
+</td>
                         <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
                             {row.Child_CaseId || ''}
@@ -348,11 +402,35 @@ console.log("statsstatsstatsstatsstats",stats);
                             {row.PLANT || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors ">
-                            {row.DEPT || ''}
-                          </span>
-                        </td>
+                       
+
+                       {hasTypePlant && (
+  <td className="px-3 py-2">
+    <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+      {row.TYPE_PLANT || ''}
+    </span>
+  </td>
+)}
+
+{/* Recruit Cycle - only show if any row has RECRUIT_CYCLE */}
+{recCycle && (
+  <td className="px-3 py-2">
+    <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+      {row.RECRUIT_CYCLE || ''}
+    </span>
+  </td>
+)}
+                       {/* ✅ FIXED - proper table cell for department */}
+<td className="px-3 py-2">
+  <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+    {row.GROUP_CODE ? `${row.GROUP_CODE} - ${row.DEPT}` : row.DEPT || ''}
+  </span>
+</td>
+<td className="px-3 py-2">
+  <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+    {row.SUB_CODE ? `${row.SUB_CODE} - ${row.MANPOWER_DESG}` : row.MANPOWER_DESG || 'N/A'}
+  </span>
+</td>
                         {/* <td className="px-3 py-2">
                           <span className="text-xs font-bold text-gray-900 ">
                             {row.designation || 'N/A'}
@@ -519,6 +597,8 @@ const StatCard = ({ title, value, icon, color }) => {
   const colors = colorClasses[color] || colorClasses.blue;
 
   return (
+    <>
+   
     <div className={`bg-gradient-to-br ${colors.bgGradient} rounded-xl p-2 border-2 ${colors.border} ${colors.hoverBorder} shadow-md hover:shadow-xl ${colors.hoverShadow} transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer group`}>
       {/* Change p-3 to p-2 */}
 
@@ -541,6 +621,9 @@ const StatCard = ({ title, value, icon, color }) => {
         </div>
       </div>
     </div>
+
+
+    </>
   );
 };
 

@@ -80,8 +80,7 @@ payslips_DocId: 'PAY_Status',
       });
     }
 
-    console.log("intitaaaaaaaaaa",initialApproved);
-    console.log("rejeeeeeeeeeeeee",initialRejected);
+   
     
     setApprovedDocs(initialApproved);
     setRejectedDocs(initialRejected);
@@ -122,7 +121,7 @@ payslips_DocId: 'PAY_Status',
     try {
       let payload = {};
       
-      if (type === 'document') {
+      if (type == 'document') {
         payload.Document_Id = documentId;
         payload.Verification_Id = data?.Verification_Id;
       } else if (type === 'payslip') {
@@ -1209,6 +1208,74 @@ payslips_DocId: 'PAY_Status',
                             </td>
                           </tr>
                         )}
+
+
+                         {data?.PHD_COLLEGE_NAME && (
+                          <tr style={{ background: '#f9f9f9' }}>
+                            <td style={{ padding: '6px' }}>
+                              <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                                PHD
+                              </span>
+                            </td>
+                            <td style={{ padding: '6px' }}>{data?.PHD_COLLEGE_NAME}</td>
+                            <td style={{ padding: '6px' }}>{data?.PHD_UNIVERSITY}</td>
+                            <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PHD_MARKS}</td>
+                            <td style={{ padding: '6px' }}>{data?.PHD_PASSED_YEAR}</td>
+                            <td style={{ padding: '6px', textAlign: 'center' }}>
+                              {data?.documents?.PHD_FILENAME && (
+                                <button onClick={() => handleViewDocument(data.documents.PHD_FILENAME, 'PHD Certificate')}
+                                  style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                  <Eye size={14} />
+                                </button>
+                              )}
+                            </td>
+                            <td style={{ padding: '6px' }}>
+                              {data?.documents?.PHD_DocId && !approvedDocs[data.documents.PHD_DocId] && (
+                                <button onClick={() => handleApprove(data.documents.PHD_DocId, 'PG Certificate', data.documents.PHD_FILENAME)}
+                                  style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
+                                  Approve
+                                </button>
+                              )}
+                              {data?.documents?.PHD_DocId && approvedDocs[data.documents.PHD_DocId] && (
+                                <span style={{ color: '#10b981', fontSize: '11px' }}>✓ Approved</span>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+
+
+                           {data?.OTHER_FILENAME && (
+                          <tr style={{ background: '#f9f9f9' }}>
+                            <td style={{ padding: '6px' }}>
+                              <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                                Others
+                              </span>
+                            </td>
+                            <td style={{ padding: '6px' }}>{data?.OTHER_FILENAME}</td>
+                            <td style={{ padding: '6px' }}>{data?.OTHER_UNIVERSITY}</td>
+                            <td style={{ padding: '6px', textAlign: 'center' }}>{data?.OTHER_MARKS}</td>
+                            <td style={{ padding: '6px' }}>{data?.OTHER_PASSED_YEAR}</td>
+                            <td style={{ padding: '6px', textAlign: 'center' }}>
+                              {data?.documents?.OTHER_FILENAME && (
+                                <button onClick={() => handleViewDocument(data.documents.OTHER_FILENAME, 'Others Certificate')}
+                                  style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                  <Eye size={14} />
+                                </button>
+                              )}
+                            </td>
+                            <td style={{ padding: '6px' }}>
+                              {data?.documents?.OTHER_DocId && !approvedDocs[data.documents.OTHER_DocId] && (
+                                <button onClick={() => handleApprove(data.documents.OTHER_DocId, 'PG Certificate', data.documents.OTHER_FILENAME)}
+                                  style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
+                                  Approve
+                                </button>
+                              )}
+                              {data?.documents?.OTHER_DocId && approvedDocs[data.documents.OTHER_DocId] && (
+                                <span style={{ color: '#10b981', fontSize: '11px' }}>✓ Approved</span>
+                              )}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1254,7 +1321,7 @@ payslips_DocId: 'PAY_Status',
                <>
   {data?.experienceData?.map((exp, index) => {
 
-    console.log(exp.noticePeriod,"exttttttttttttttttttttt");
+  
     const isCurrentCompany = exp.COMPANY_STAGES == "0";
 
     return (
