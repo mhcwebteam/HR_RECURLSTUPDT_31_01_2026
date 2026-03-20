@@ -570,41 +570,52 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
            },
          },
          
-           {
-           field: 'DESIG',
-           headerName: 'Designation',
-           flex: 1.2,
-           minWidth: 130,
-           renderCell: (params) => {
-             const subCode = params.row.SUB_CODE;
-             const value = params.value || 'N/A';
-         
-             return (
-               <Box
-                 sx={{
-                   color: '#374151',
-                   padding: '2px 8px',
-                   borderRadius: '6px',
-                   fontSize: '12px',
-                   fontWeight: 600,
-                 }}
-               >
-                 {subCode ? `${subCode} - ${value}` : value}
-               </Box>
-             );
-           },
-         },
-    // {
-    //   field: 'DESIGNATION',
-    //   headerName: 'Designation',
-    //   flex: 1,
-    //   minWidth: 130,
-    //   renderCell: (params) => (
-    //     <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-    //       {params.value}
-    //     </Box>
-    //   ),
-    // },
+        
+              {
+          field: 'MANPOWER_DESG',
+          headerName: 'M.Designation',
+          flex: 1.2,
+          minWidth: 130,
+          renderCell: (params) => {
+            const subCode = params.row.SUB_CODE;
+            const value = params.value || 'N/A';
+        
+            return (
+              <Box
+                sx={{
+                  color: '#374151',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                {subCode ? `${subCode} - ${value}` : value}
+              </Box>
+            );
+          },
+        },
+        
+        
+        
+        
+        
+          {
+          field: 'DESIG',
+          headerName: 'Designation',
+          flex: 1.2,
+          minWidth: 130,
+          
+           renderCell: (params) => (
+        
+                <Box sx={{ color: '#374151', fontSize: '12px' }}>
+        
+                  {params.value}
+        
+                </Box>
+        
+              ),
+        },
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',

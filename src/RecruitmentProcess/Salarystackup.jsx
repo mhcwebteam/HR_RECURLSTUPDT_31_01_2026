@@ -356,10 +356,10 @@ useEffect(() => {
     }
   };
 
-  console.log("ttttttttttttttttt",stackupData?.salaryStackUpGetData)
+ 
 
       const hasTypePlant = stackupData?.salaryStackUpGetData?.some(row => row.TYPE_PLANT);
-
+ console.log("ttttttttttttttttt", hasTypePlant)
   const recCycle = stackupData?.salaryStackUpGetData?.some(row => row.RECRUIT_CYCLE);
 
 
@@ -434,7 +434,7 @@ useEffect(() => {
 
   {
   field: 'MANPOWER_DESG',
-  headerName: 'Designation',
+  headerName: 'M.Designation',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {

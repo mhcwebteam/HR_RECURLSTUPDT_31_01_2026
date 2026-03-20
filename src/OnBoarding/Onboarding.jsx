@@ -4,43 +4,56 @@ import {  GroupAdd as GroupAddIcon} from '@mui/icons-material';
 import { FileText, Settings, BarChart3 } from 'lucide-react';
 import JoiningReportList from './JoiningReportList';
 import Appointement from './Appointement'
+import Mediclaim from './Mediclaim';
 
 const Onboarding = () => {
   const [activeComponent, setActiveComponent] = useState(null);
   const [hoveredTab, setHoveredTab] = useState(null);
 
 
-  const onboardingMenuItems = [
-    {
-      label: 'Joining Report',
-      component: 'joining-report',
-      icon: FileText,
-      color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-300',
-      hoverBg: 'hover:bg-orange-100'
-    },
- 
-
-    {
-
-       label: 'Appointment',
-      component: 'Appointement',
-      icon: FileText,
-      color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-300',
-      hoverBg: 'hover:bg-orange-100'
-    }
-
-
-
-  ];
+ const onboardingMenuItems = [
+  {
+    label: 'Joining Report',
+    component: 'joining-report',
+    icon: FileText,
+    color: 'from-orange-500 to-orange-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200',
+    hoverBg: 'hover:bg-orange-100',
+    textColor: 'text-orange-700',
+    iconColor: 'text-orange-600'
+  },
+  {
+    label: 'Mediclaim Enrolment',
+    component: 'Mediclaim-Enrolment',
+    icon: FileText,
+    color: 'from-blue-500 to-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    hoverBg: 'hover:bg-blue-100',
+    textColor: 'text-blue-700',
+    iconColor: 'text-blue-600'
+  },
+  {
+    label: 'Appointment',
+    component: 'Appointement',
+    icon: FileText,
+    color: 'from-emerald-500 to-emerald-600',
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    hoverBg: 'hover:bg-emerald-100',
+    textColor: 'text-emerald-700',
+    iconColor: 'text-emerald-600'
+  }
+];
 
   const renderOnboardingComponent = () => {
     switch (activeComponent) {
       case 'joining-report':
         return <JoiningReportList />;
+
+  case 'Mediclaim-Enrolment':
+    return <Mediclaim />;
       
       case 'Appointement':
 

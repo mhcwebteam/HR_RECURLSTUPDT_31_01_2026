@@ -303,6 +303,8 @@ SUB_CODE: item?.SUB_CODE,
 SUB_POST: item?.SUB_POST,
 
 RECRUIT_CYCLE: item?.RECRUIT_CYCLE, 
+
+MANPOWER_DESG: item?.MANPOWER_DESG,
       
        REVID: item.CUR_REV_ID || '00',
 
@@ -652,9 +654,10 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
   },
 },
 
-  {
-  field: 'DESIG',
-  headerName: 'Designation',
+
+ {
+  field: 'MANPOWER_DESG',
+  headerName: 'M.Designation',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
@@ -675,6 +678,27 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       </Box>
     );
   },
+},
+
+
+
+
+
+  {
+  field: 'DESIG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  
+   renderCell: (params) => (
+
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
 },
 
     

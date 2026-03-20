@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Calendar, User, Building2, MapPin, CheckCircle2, Download, Eye, CheckCircle, Clock, XCircle, FileDown } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -11,6 +6,8 @@ import jsPDF from 'jspdf';
 import axios from 'axios';
 
 const DocUpload = ({ rowData, onClose }) => {
+
+  console.log(rowData, "to55555555555555555555");
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
   const [formData, setFormData] = useState({
     employeeName: '',
@@ -25,7 +22,6 @@ const DocUpload = ({ rowData, onClose }) => {
   useEffect(() => {
     const styleId = 'swal-z-index-fix';
 
-    // Check if style already exists
     if (!document.getElementById(styleId)) {
       const style = document.createElement('style');
       style.id = styleId;
@@ -37,7 +33,6 @@ const DocUpload = ({ rowData, onClose }) => {
       document.head.appendChild(style);
     }
 
-    // Cleanup function to remove style when component unmounts
     return () => {
       const existingStyle = document.getElementById(styleId);
       if (existingStyle) {
@@ -46,13 +41,17 @@ const DocUpload = ({ rowData, onClose }) => {
     };
   }, []);
 
-  // Map API document keys to checklist items
+
+ 
+
+  // Map API document keys to checklist items - FIXED API KEYS
   const [documentChecklist, setDocumentChecklist] = useState([
     {
       id: 1,
       name: 'RESUME DULY SIGNED',
-      apiKey: 'resume',
-      statusKey: null,
+      apiKey: 'RESUME_UPLOAD', // Fixed: matches the actual key in documents
+      statusKey: 'RESUME_Status',
+      documentIdKey: 'RESUME_DocId',
       approved: false,
       fileName: '',
       filePath: '',
@@ -61,7 +60,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 2,
       name: 'CANDIDATE APPLICATION FORM',
-      apiKey: 'application_form',
+      apiKey: 'candidate_application', // You may need to add this to your backend
       statusKey: null,
       approved: false,
       fileName: '',
@@ -71,7 +70,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 3,
       name: 'INTERVIEW EVALUATION SHEET',
-      apiKey: 'interview_sheet',
+      apiKey: 'hrEvaluationFile', // You may need to add this to your backend
       statusKey: null,
       approved: false,
       fileName: '',
@@ -86,7 +85,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '4a',
           name: 'SSC (10th Certificate)',
-          apiKey: '10th_certi',
+          apiKey: '10th_certi', // Fixed: matches actual key
           statusKey: 'Tenth_Status',
           documentIdKey: 'Tenth_DocId',
           approved: false,
@@ -97,7 +96,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '4b',
           name: 'INTERMEDIATE / ITI / DIPLOMA',
-          apiKey: 'Inter_certi',
+          apiKey: 'Inter_certi', // Fixed: matches actual key
           statusKey: 'Inter_Status',
           documentIdKey: 'Inter_DocId',
           approved: false,
@@ -108,7 +107,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '4c',
           name: 'GRADUATION',
-          apiKey: 'Gradu_certi',
+          apiKey: 'Gradu_certi', // Fixed: matches actual key
           statusKey: 'Grad_Status',
           documentIdKey: 'grad_DocId',
           approved: false,
@@ -119,7 +118,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '4d',
           name: 'POST GRADUATION',
-          apiKey: 'Pg_certi',
+          apiKey: 'Pg_certi', // You may need to add this
           statusKey: 'Pg_Status',
           documentIdKey: 'pg_DocId',
           approved: false,
@@ -143,8 +142,9 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 5,
       name: 'DULY SIGNED OFFER LETTER',
-      apiKey: 'offer_letter',
-      statusKey: null,
+      apiKey: 'offer_letter', // Fixed: matches actual key
+      statusKey: 'offer_letter_Status',
+      documentIdKey: 'offer_letter_DocId',
       approved: false,
       fileName: '',
       filePath: '',
@@ -153,7 +153,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 6,
       name: 'DULY SIGNED APPOINTMENT LETTER',
-      apiKey: 'appointment_letter',
+      apiKey: 'appointment_letter', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -168,7 +168,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '7a',
           name: 'EXPERIENCE LETTER',
-          apiKey: 'Exp_Letter',
+          apiKey: 'Exp_Letter', // You may need to add this
           statusKey: 'Exp_Status',
           documentIdKey: 'Exp_DocId',
           approved: false,
@@ -179,7 +179,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '7b',
           name: 'RELIEVING LETTER',
-          apiKey: 'Relieving_Letter',
+          apiKey: 'Relieving_Letter', // You may need to add this
           statusKey: 'Reliv_Status',
           documentIdKey: 'Reliev_DocId',
           approved: false,
@@ -191,20 +191,35 @@ const DocUpload = ({ rowData, onClose }) => {
     },
     {
       id: 8,
-      name: 'LAST 3 MONTHS PAYSLIPS & BANK STATMENT',
-      apiKey: 'Payslip',
-      statusKey: 'PaySlip_Status',
-      documentIdKey: 'PaySlip_DocId',
+      name: 'LAST 3 MONTHS PAYSLIPS',
+      apiKey: 'payslips', // Fixed: matches actual key
+      statusKey: 'payslips_Status',
+      documentIdKey: 'payslips_DocId',
       approved: false,
       fileName: '',
       filePath: '',
       type: 'single'
     },
-    {
+
+        {
       id: 9,
+      name: 'Bank Statements',
+      apiKey: 'bank_statements',
+      statusKey: 'bank_statements_Status',
+      documentIdKey: 'bank_statements_DocId',
+      approved: false,
+      fileName: '',
+      filePath: '',
+      type: 'single'
+    },
+
+
+    {
+      id: 10,
       name: 'LATEST PASSPORT SIZE COLOUR PHOTOGRAPHS (8 Nos.)',
-      apiKey: 'photos',
-      statusKey: null,
+      apiKey: 'photo',
+      statusKey: 'photo_Status',
+      documentIdKey: 'photo_DocId',
       approved: false,
       fileName: '',
       filePath: '',
@@ -229,7 +244,7 @@ const DocUpload = ({ rowData, onClose }) => {
         {
           id: '10b',
           name: 'AADHAR CARD',
-          apiKey: 'Aadhar_certi',
+          apiKey: 'Aadhar_certi', // Fixed: matches actual key
           statusKey: 'Aadhr_Status',
           documentIdKey: 'Aadhar_DocId',
           approved: false,
@@ -242,7 +257,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 11,
       name: 'JOINING REPORT',
-      apiKey: 'joining_report',
+      apiKey: 'joining_report', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -252,7 +267,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 12,
       name: 'CODE OF CONDUCT WITH ATTESTATION',
-      apiKey: 'code_of_conduct',
+      apiKey: 'code_of_conduct', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -262,7 +277,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 13,
       name: 'PAYMENT OF GRATUITY FORM',
-      apiKey: 'gratuity_form',
+      apiKey: 'gratuity_form', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -272,7 +287,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 14,
       name: 'MEDICAL ENROLMENT FORM',
-      apiKey: 'medical_form',
+      apiKey: 'medical_form', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -282,7 +297,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 15,
       name: 'FORM-16 (IF APPLICABLE)',
-      apiKey: 'form_16',
+      apiKey: 'form_16', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -292,7 +307,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 16,
       name: 'NOMINATION AND DECLARATION FORM -2 (EPFO) / ESIC FORM -1',
-      apiKey: 'epfo_form',
+      apiKey: 'epfo_form', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -302,7 +317,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 17,
       name: 'DATA PROTECTION AND PRIVACY POLICY',
-      apiKey: 'privacy_policy',
+      apiKey: 'privacy_policy', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -312,7 +327,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 18,
       name: 'EPFO COMPOSITE DECLARATION FORM 11',
-      apiKey: 'epfo_form_11',
+      apiKey: 'epfo_form_11', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -322,7 +337,7 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 19,
       name: 'IT DECLARATION FILLED FORM (IF APPLICABLE)',
-      apiKey: 'it_declaration',
+      apiKey: 'it_declaration', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
@@ -332,17 +347,36 @@ const DocUpload = ({ rowData, onClose }) => {
     {
       id: 20,
       name: 'MEDICAL REPORTS (CBP, CUE & ABO Typing)',
-      apiKey: 'medical_reports',
+      apiKey: 'medical_reports', // You may need to add this
       statusKey: null,
       approved: false,
       fileName: '',
       filePath: '',
       type: 'single'
-    }
+    },
+
+      {
+      id: 21,
+      name: 'UAN Document',
+      apiKey: 'UAN_FILE', 
+      statusKey: 'UAN_Status',
+    documentIdKey: 'UAN_DocId',
+      approved: false,
+      fileName: '',
+      filePath: '',
+      type: 'single'
+    },
+
+
+
+
   ]);
 
   const [viewingPdf, setViewingPdf] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState({});
+
+
+   console.log("fffffffffff",documentChecklist);
 
   useEffect(() => {
     if (rowData && rowData.fullData) {
@@ -352,35 +386,44 @@ const DocUpload = ({ rowData, onClose }) => {
       setFormData({
         employeeName: employeeData.name || rowData.employee_name || '',
         empId: employeeData.child_caseid || rowData.CHILD_CASEID || '',
-        designation: employeeData.designation || employeeData.DEPT || rowData.department || '',
+        designation: employeeData.DESIG || employeeData.designation || rowData.department || '',
         doj: employeeData.joiningDate || rowData.joining_date || '',
         department: employeeData.DEPT || rowData.department || '',
-        siteLocation: employeeData.location || rowData.location || ''
+        siteLocation: employeeData.PLANT || rowData.location || ''
       });
 
       const normalizeFileUrl = (path) => {
         if (!path || typeof path !== 'string') return '';
         if (path.startsWith('http')) return path;
+        // If path already starts with verification_files, just append base URL
+        if (path.startsWith('verification_files/')) {
+          return `${API_BASE_URLss}${path}`;
+        }
         return `${API_BASE_URLss}${path}`;
       };
 
       // Populate document checklist with API data
       if (employeeData.documents) {
+        console.log("Documents from API:", employeeData.documents);
+        
         const updatedChecklist = documentChecklist.map(item => {
           if (item.type === 'single') {
+
+            console.log("iteeeeeeeeeeeeeeeeeee0",)
+            // Check if the document exists in the documents object
             const apiDoc = employeeData.documents[item.apiKey];
             const status = item.statusKey ? employeeData.documents[item.statusKey] : null;
             const documentId = item.documentIdKey ? employeeData.documents[item.documentIdKey] : null;
 
-            if (apiDoc && typeof apiDoc === 'string' && apiDoc.includes('/storage/')) {
+            if (apiDoc) {
               const filePath = normalizeFileUrl(apiDoc);
-              const fileName = filePath.split('/').pop() || 'Document';
+              const fileName = apiDoc.split('/').pop() || 'Document';
               return {
                 ...item,
                 fileName,
                 filePath,
+                status: status, // Keep original status (could be '0', '1', or null)
                 approved: status === '1' || status === 1,
-                status,
                 documentId,
                 verificationId: employeeData.Verification_Id
               };
@@ -391,6 +434,8 @@ const DocUpload = ({ rowData, onClose }) => {
           if (item.subItems && Array.isArray(item.subItems)) {
             const updatedSubItems = item.subItems.map(subItem => {
               const apiDoc = employeeData?.documents?.[subItem.apiKey];
+
+              console.log("aaaaaaaaaaaaaaaaa",employeeData?.documents?.[subItem.apiKey]);
               const status = subItem.statusKey
                 ? employeeData?.documents?.[subItem.statusKey]
                 : null;
@@ -398,20 +443,16 @@ const DocUpload = ({ rowData, onClose }) => {
                 ? employeeData?.documents?.[subItem.documentIdKey]
                 : null;
 
-              if (
-                apiDoc &&
-                typeof apiDoc === 'string' &&
-                apiDoc.includes('/storage/')
-              ) {
-                const filePath = `${API_BASE_URLss}${apiDoc}`;
+              if (apiDoc) {
+                const filePath = normalizeFileUrl(apiDoc);
                 const fileName = apiDoc.split('/').pop() || 'Document';
 
                 return {
                   ...subItem,
                   fileName,
                   filePath,
+                  status: status,
                   approved: status === '1' || status === 1,
-                  status,
                   documentId,
                   verificationId: employeeData.Verification_Id
                 };
@@ -458,7 +499,6 @@ const DocUpload = ({ rowData, onClose }) => {
     }
   };
 
-  // ✅ UPDATED: handleFileUpload now sets status to '0' (Pending) immediately and preserves IDs
   const handleFileUpload = (itemId, file, subItemId = null) => {
     if (file) {
       const updatedChecklist = documentChecklist.map(item => {
@@ -470,9 +510,8 @@ const DocUpload = ({ rowData, onClose }) => {
                   ...subItem,
                   fileName: file.name,
                   filePath: URL.createObjectURL(file),
-                  status: '0', // ✅ Set as Pending
+                  status: '0',
                   approved: false,
-                  // Preserve existing IDs if they exist
                   documentId: subItem.documentId || null,
                   verificationId: subItem.verificationId || rowData?.fullData?.Verification_Id || null
                 }
@@ -484,9 +523,8 @@ const DocUpload = ({ rowData, onClose }) => {
             ...item,
             fileName: file.name,
             filePath: URL.createObjectURL(file),
-            status: '0', // ✅ Set as Pending
+            status: '0',
             approved: false,
-            // Preserve existing IDs if they exist
             documentId: item.documentId || null,
             verificationId: item.verificationId || rowData?.fullData?.Verification_Id || null
           };
@@ -502,7 +540,6 @@ const DocUpload = ({ rowData, onClose }) => {
         [fileKey]: file
       }));
 
-      // ✅ Show success message
       Swal.fire({
         icon: 'success',
         title: 'File Uploaded!',
@@ -540,16 +577,15 @@ const DocUpload = ({ rowData, onClose }) => {
     }
   };
 
-  // ✅ CORRECTED: Handle document approval using the same logic as VerificationDetailsModal
   const handleApproveDocument = async (item, subItem = null) => {
     const targetItem = subItem || item;
     const documentName = targetItem.name;
     const documentId = targetItem.documentId;
     const verificationId = targetItem.verificationId;
 
-    console.log("documentId",documentId)
-    console.log("verificationId",verificationId,"jjjjjjjjjjjjjjjjjjjjj",targetItem)
- 
+    console.log("Approving document:", targetItem);
+    console.log("documentId", documentId);
+    console.log("verificationId", verificationId);
 
     // Check if we have the required IDs
     if (!documentId || !verificationId) {
@@ -578,7 +614,6 @@ const DocUpload = ({ rowData, onClose }) => {
       return;
     }
 
-    // Show confirmation dialog - matching the style from VerificationDetailsModal
     const result = await Swal.fire({
       title: 'Are you sure?',
       text: `Do you want to approve ${documentName}?`,
@@ -595,7 +630,6 @@ const DocUpload = ({ rowData, onClose }) => {
     }
 
     try {
-      // Prepare API payload - exact same format as VerificationDetailsModal
       const payload = {
         Verification_Id: verificationId,
         Document_Id: documentId,
@@ -603,7 +637,6 @@ const DocUpload = ({ rowData, onClose }) => {
 
       console.log('Approving document with payload:', payload);
 
-      // Make API call using axios - same as VerificationDetailsModal
       const response = await axios.post(
         `${API_BASE_URL}/verify-Doc-Status`,
         payload,
@@ -617,11 +650,10 @@ const DocUpload = ({ rowData, onClose }) => {
 
       console.log('Approval response:', response.data);
 
-      // Update local state to reflect approval - matching VerificationDetailsModal logic
+      // Update local state to reflect approval
       const updatedChecklist = documentChecklist.map(docItem => {
         if (docItem.id === item.id) {
           if (subItem) {
-            // Update subitem
             const updatedSubItems = docItem.subItems.map(sub =>
               sub.id === subItem.id
                 ? { ...sub, status: '1', approved: true }
@@ -629,7 +661,6 @@ const DocUpload = ({ rowData, onClose }) => {
             );
             return { ...docItem, subItems: updatedSubItems };
           } else {
-            // Update main item
             return { ...docItem, status: '1', approved: true };
           }
         }
@@ -638,7 +669,6 @@ const DocUpload = ({ rowData, onClose }) => {
 
       setDocumentChecklist(updatedChecklist);
 
-      // Show success message - matching VerificationDetailsModal style
       await Swal.fire({
         icon: 'success',
         title: 'Approved!',
@@ -650,7 +680,6 @@ const DocUpload = ({ rowData, onClose }) => {
     } catch (error) {
       console.error('Error approving document:', error);
 
-      // Show error message - matching VerificationDetailsModal style
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -661,7 +690,6 @@ const DocUpload = ({ rowData, onClose }) => {
 
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
 
-  // PDF Generation functions with improved visibility
   const generatePDFPreview = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -1113,6 +1141,8 @@ const DocUpload = ({ rowData, onClose }) => {
     // Save logic here
   };
 
+  console.log('documentChecklist', documentChecklist);
+
   const PdfViewer = ({ document, onClose }) => (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-6xl h-5/6 flex flex-col">
@@ -1180,68 +1210,68 @@ const DocUpload = ({ rowData, onClose }) => {
               EMPLOYEE INFORMATION
             </h3>
 
-     <div className="space-y-2">
-    {/* Row 1 */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-4">
-          EMP NAME:
-        </label>
-        <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.employeeName}
-        </div>
-      </div>
+            <div className="space-y-2">
+              {/* Row 1 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-4">
+                    EMP NAME:
+                  </label>
+                  <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.employeeName}
+                  </div>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-3">
-          EMP ID:
-        </label>
-        <div className="md:col-span-9 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.empId}
-        </div>
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-3">
+                    EMP ID:
+                  </label>
+                  <div className="md:col-span-9 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.empId}
+                  </div>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-4">
-          DESIGNATION:
-        </label>
-        <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.designation}
-        </div>
-      </div>
-    </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-4">
+                    DESIGNATION:
+                  </label>
+                  <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.designation}
+                  </div>
+                </div>
+              </div>
 
-    {/* Row 2 */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-2">
-          DOJ:
-        </label>
-        <div className="md:col-span-10 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.doj ? new Date(formData.doj).toLocaleDateString() : 'Not Set'}
-        </div>
-      </div>
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-2">
+                    DOJ:
+                  </label>
+                  <div className="md:col-span-10 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.doj ? new Date(formData.doj).toLocaleDateString() : 'Not Set'}
+                  </div>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-4">
-          DEPT:
-        </label>
-        <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.department}
-        </div>
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-4">
+                    DEPT:
+                  </label>
+                  <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.department}
+                  </div>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-        <label className="text-xs font-semibold text-gray-700 md:col-span-4">
-          SITE/LOCATION:
-        </label>
-        <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-          {formData.siteLocation || 'N/A'}
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700 md:col-span-4">
+                    SITE/LOCATION:
+                  </label>
+                  <div className="md:col-span-8 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
+                    {formData.siteLocation || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Documents Table */}
           <div className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden">
@@ -1283,7 +1313,6 @@ const DocUpload = ({ rowData, onClose }) => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {/* ✅ UPDATED: Show View, Preview, Download, and Approve buttons for uploaded files (status '0' or '1') */}
                             {item.filePath ? (
                               <>
                                 <button
@@ -1307,7 +1336,7 @@ const DocUpload = ({ rowData, onClose }) => {
                                   <Download size={14} />
                                   Download
                                 </button>
-                                {/* ✅ Show Approve button for pending documents (status '0') */}
+                                {/* Show Approve button only for pending documents (status '0') */}
                                 {(item.status === '0' || item.status === 0) && (
                                   <button
                                     onClick={() => handleApproveDocument(item)}
@@ -1366,7 +1395,6 @@ const DocUpload = ({ rowData, onClose }) => {
                           </td>
                           <td className="px-4 py-2">
                             <div className="flex items-center gap-2">
-                              {/* ✅ UPDATED: Show View, Preview, Download, and Approve buttons for uploaded sub-items */}
                               {subItem.filePath ? (
                                 <>
                                   <button
@@ -1390,7 +1418,7 @@ const DocUpload = ({ rowData, onClose }) => {
                                     <Download size={12} />
                                     Download
                                   </button>
-                                  {/* ✅ Show Approve button for pending sub-items (status '0') */}
+                                  {/* Show Approve button only for pending sub-items (status '0') */}
                                   {(subItem.status === '0' || subItem.status === 0) && (
                                     <button
                                       onClick={() => handleApproveDocument(item, subItem)}
@@ -1447,11 +1475,11 @@ const DocUpload = ({ rowData, onClose }) => {
             Preview PDF
           </button>
           <button
-            onClick={handleSaveChanges}
+            onClick={handleDownloadPDF}
             className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2"
           >
-            <CheckCircle2 size={18} />
-            Save Changes
+            <Download size={18} />
+            Download PDF
           </button>
         </div>
       </div>

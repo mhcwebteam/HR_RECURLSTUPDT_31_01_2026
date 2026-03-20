@@ -16,10 +16,9 @@ import { API_BASE_URL } from '../Config/Config.jsx';
 import DocUpload from './DocUpload.jsx';
 import History from './History.jsx';
 import Swal from 'sweetalert2';
-import { FilePen } from 'lucide-react';
-import JoiningReportForm from './JoiningReportForm.jsx';
+import MediDocUpload from './MediDocUpload.jsx';
 
-const JoiningReportList = () => {
+const Mediclaim = () => {
   const [joiningData, setJoiningData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchText, setSearchText] = useState('');
@@ -28,7 +27,6 @@ const JoiningReportList = () => {
   const [selectedRow, setSelectedRow] = useState(null);
   const [openDocModal, setOpenDocModal] = useState(false);
   const [openHistoryModal, setOpenHistoryModal] = useState(false);
-const [openReportModal, setOpenReportModal] = useState(false);
 
     const [joiningDates, setJoiningDates] = useState({});
 
@@ -106,24 +104,11 @@ hrEvaluationFile:item?.hrEvaluationFile,
     }
   };
 
-
-
   useEffect(() => {
     if (Token.token) {
       joinData();
     }
   }, [Token.token]);
-
-
-  const handleReportClick = (rowData) => {
-  setSelectedRow(rowData);
-  setOpenReportModal(true); 
-};
-const handleCloseReportModal = () => {
-  setOpenReportModal(false);
-  setSelectedRow(null);
-};
-  
 
   const handleSearch = (e) => {
     const searchValue = e.target.value;
@@ -285,39 +270,7 @@ const date_only = joiningDates
         </Box>
       ),
     },
-{
-  field: 'joiningreport',
-  headerName: 'Joining Report',
-  flex: 0.5,
-  minWidth: 120,
-  sortable: false,
-  renderCell: (params) => (
-    <Box sx={{ display: 'flex', gap: 1 }}>
-      <Button
-        size="small"
-        variant="contained"
-        startIcon={<FilePen size={13} strokeWidth={2} />}
-        onClick={() => handleReportClick(params.row)}
-        sx={{
-          fontSize: '10px',
-          padding: '4px 10px',
-          borderRadius: '8px',
-          textTransform: 'capitalize',
-          backgroundColor: '#0ea5e9',
-          fontWeight: 600,
-          boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)',
-          '&:hover': {
-            backgroundColor: '#0284c7',
-            boxShadow: '0 4px 6px rgba(14, 165, 233, 0.3)',
-            transform: 'translateY(-1px)',
-          },
-        }}
-      >
-        Click Here
-      </Button>
-    </Box>
-  ),
-},
+
     {
       field: 'doc_upload',
       headerName: 'Doc Upload',
@@ -788,7 +741,7 @@ const date_only = joiningDates
             overflow: 'auto',
             position: 'relative'
           }}>
-            {/* <button
+            <button
               onClick={handleCloseModal}
               style={{
                 position: 'absolute',
@@ -810,68 +763,16 @@ const date_only = joiningDates
               }}
             >
               ×
-            </button> */}
+            </button>
 
-            <DocUpload
+            <MediDocUpload
               rowData={selectedRow}
               onClose={handleCloseModal}
             />
           </div>
         </div>
       )}
-{openReportModal && selectedRow && (
-  <div style={{
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-    padding: '20px'
-  }}>
-    <div style={{
-      background: 'white',
-      borderRadius: '12px',
-      width: '90%',
-      maxWidth: '1000px',
-      maxHeight: '90vh',
-      overflow: 'auto',
-      position: 'relative'
-    }}>
-      {/* Close Button */}
-      <button
-        onClick={handleCloseReportModal}
-        style={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          border: 'none',
-          background: '#ef4444',
-          fontSize: '18px',
-          cursor: 'pointer',
-          color: '#fff',
-          zIndex: 10,
-          borderRadius: '50%',
-          width: '32px',
-          height: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-        }}
-      >
-        ×
-      </button>
 
-    
-      <JoiningReportForm
-        rowData={selectedRow}
-        onClose={handleCloseReportModal}
-      />
-    </div>
-  </div>
-)}
       {/* History Modal */}
       {openHistoryModal && selectedRow && (
         <History
@@ -888,4 +789,4 @@ const date_only = joiningDates
   );
 };
 
-export default JoiningReportList;
+export default Mediclaim;

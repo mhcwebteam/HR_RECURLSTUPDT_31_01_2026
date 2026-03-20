@@ -1242,16 +1242,19 @@ payslips_DocId: 'PAY_Status',
                             </td>
                           </tr>
                         )}
+                        <div>
+                        {data?.OTHER_FILENAME}
+                        </div>
 
 
-                           {data?.OTHER_FILENAME && (
+                           {data?.OTHER_COLLEGE_NAME && (
                           <tr style={{ background: '#f9f9f9' }}>
                             <td style={{ padding: '6px' }}>
                               <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
                                 Others
                               </span>
                             </td>
-                            <td style={{ padding: '6px' }}>{data?.OTHER_FILENAME}</td>
+                            <td style={{ padding: '6px' }}>{data?.OTHER_COLLEGE_NAME}</td>
                             <td style={{ padding: '6px' }}>{data?.OTHER_UNIVERSITY}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>{data?.OTHER_MARKS}</td>
                             <td style={{ padding: '6px' }}>{data?.OTHER_PASSED_YEAR}</td>

@@ -347,6 +347,101 @@ const [uploadedDocs, setUploadedDocs] = useState({});
     }));
 };
 
+
+
+
+
+
+const handleActionTypeChange = (caseId, value, rowData) => {
+    // Set the selected value first
+    setActionTypeSelections(prev => ({ ...prev, [caseId]: value }));
+
+    if (value === 'New') {
+        // ✅ Document validation only for "New" action
+        if (!uploadedDocs[caseId]) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'File Required',
+                text: 'Please upload and save the document before proceeding.',
+                confirmButtonColor: '#1e40af',
+            });
+            // Reset selection
+            setActionTypeSelections(prev => ({ ...prev, [caseId]: '' }));
+            return;
+        }
+
+        const payload = { CHILD_CASEID: caseId };
+
+        Swal.fire({
+            title: 'Are you sure?',
+            html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, move it!',
+            cancelButtonText: 'Cancel'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const response = await axios.post(
+                        `${API_BASE_URL}/actns-Frm-Recruits`,
+                        payload,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${userToken.token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.data.message || 'Case moved to Recruitment Mail successfully!',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+
+                    setData(prevData => prevData.filter(item => item.case_id !== caseId));
+                    setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
+
+                } catch (err) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Error Action Form',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            } else {
+                // Reset dropdown if cancelled
+                setActionTypeSelections(prev => ({ ...prev, [caseId]: '' }));
+            }
+        });
+
+    } else if (value === 'Transfer') {
+        // ✅ No file check – directly open transfer modal
+        setTransferRowData(rowData);
+        setTransferOpen(true);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const handleDocumentUpload = async (caseId) => {
 
 
@@ -436,153 +531,9 @@ setUploadedDocs(prev => ({ ...prev, [caseId]: true }))
     }
 };
 
-    const handleActionTypeChange = (caseId, value, rowData) => {
-        setActionTypeSelections(prev => ({
-            ...prev,
-            [caseId]: value
-        }));
- if (!uploadedDocs[caseId]) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'File Required',
-            text: 'Please upload and save the document before proceeding.',
-            confirmButtonColor: '#1e40af',
-        });
-        setActionTypeSelections(prev => ({
-            ...prev,
-            [caseId]: ''
-        }));
-        return;
-    }
-        // if (value == 'New') {
-        //    if (!documentUploads[caseId]) {
-        //     Swal.fire({
-        //         icon: 'warning',
-        //         title: 'File Required',
-        //         text: 'Please upload the document before proceeding.',
-        //         confirmButtonColor: '#1e40af',
-        //     });
-        //     // Reset selection
-        //     setActionTypeSelections(prev => ({
-        //         ...prev,
-        //         [caseId]: ''
-        //     }));
-        //     return;
-        // }
-        //     const payload = {
-        //         CHILD_CASEID: caseId
-        //     }
 
-        //     Swal.fire({
-        //         title: 'Are you sure?',
-        //         html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
-        //         icon: 'question',
-        //         showCancelButton: true,
-        //         confirmButtonColor: '#3085d6',
-        //         cancelButtonColor: '#d33',
-        //         confirmButtonText: 'Yes, move it!',
-        //         cancelButtonText: 'Cancel'
-        //     }).then(async (result) => {
-        //         if (result.isConfirmed) {
-        //             try {
-        //                 const response = await axios.post(`${API_BASE_URL}/actns-Frm-Recruits`, payload, {
-        //                     headers: {
-        //                         Authorization: `Bearer ${userToken.token}`,
-        //                         'Content-Type': 'application/json',
-        //                     },
-        //                 });
 
-        //                 await Swal.fire({
-        //                     icon: "success",
-        //                     title: 'Success!',
-        //                     text: response.data.message || 'Case moved to Recruitment Mail successfully!',
-        //                     timer: 1500,
-        //                     showConfirmButton: false,
-        //                 });
-
-        //                 setData(prevData => prevData.filter(item => item.case_id !== caseId));
-        //                 setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
-
-        //             } catch (err) {
-        //                 await Swal.fire({
-        //                     icon: 'error',
-        //                     title: 'Error!',
-        //                     text: 'Error Action Form',
-        //                     confirmButtonColor: '#ef4444'
-        //                 });
-        //             }
-        //         } else {
-        //             setActionTypeSelections(prev => ({
-        //                 ...prev,
-        //                 [caseId]: ''
-        //             }));
-        //         }
-        //     });
-        // } else if (value === 'Transfer') {
-        //     setTransferRowData(rowData);
-        //     setTransferOpen(true);
-        // }
-
-         if (value === 'New') {
-        const payload = { CHILD_CASEID: caseId };
-
-        Swal.fire({
-            title: 'Are you sure?',
-            html: `Do you want to move <span style="color: #28a745; font-weight: bold;">Case ID ${caseId}</span> to Recruitment Mail?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, move it!',
-            cancelButtonText: 'Cancel'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const response = await axios.post(
-                        `${API_BASE_URL}/actns-Frm-Recruits`,
-                        payload,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${userToken.token}`,
-                                'Content-Type': 'application/json',
-                            },
-                        }
-                    );
-
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: response.data.message || 'Case moved to Recruitment Mail successfully!',
-                        timer: 1500,
-                        showConfirmButton: false,
-                    });
-
-                    setData(prevData => prevData.filter(item => item.case_id !== caseId));
-                    setFilteredData(prevData => prevData.filter(item => item.case_id !== caseId));
-
-                } catch (err) {
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Error Action Form',
-                        confirmButtonColor: '#ef4444'
-                    });
-                }
-            } else {
-                // ✅ Reset dropdown if cancelled
-                setActionTypeSelections(prev => ({
-                    ...prev,
-                    [caseId]: ''
-                }));
-            }
-        });
-
-    } else if (value === 'Transfer') {
-        setTransferRowData(rowData);
-        setTransferOpen(true);
-    }
-
-    };
+  
 
     useEffect(() => {
         axios

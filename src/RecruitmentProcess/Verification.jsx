@@ -127,7 +127,6 @@ SRC_REFER_DEPT: item.SRC_REFER_DEPT || 'N/A',
 DRIVING_LICENSE_EXPIRY: item.DDRIVING_LICENSE_EXPIRY || 'N/A',
 
 TYPE_PLANT: item?.TYPE_PLANT,
-GROUP_CODE: item?.GROUP_CODE,
 SUB_CODE: item?.SUB_CODE,
 SUB_POST: item?.SUB_POST,
 
@@ -151,17 +150,16 @@ HIGHEST_QUA: item.HIGHEST_QUA,
   PAN_NUM: item.pan_number || 'N/A',
   UAN_NUM: item.UAN_NUM || item.UAN_NUMBER || 'N/A',
   ESI_NUM: item.ESI_NUM || item.ESINO || 'N/A',
-  TYPE_PLANT: item?.TYPE_PLANT,
+
 GROUP_CODE: item?.GROUP_CODE,
-SUB_CODE: item?.SUB_CODE,
-SUB_POST: item?.SUB_POST,
+
 
 RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
   // Passport & Driving
   PASSPORT_NUMBER: item.PASSPORT_NUMBER || item.PASSPORT_NUM || 'N/A',
   PASSPORT_EXPIRY: item.PASSPORT_EXPIRY || item.PASS_EXPIR_DATE || 'N/A',
-  DRIVING_LICENSE: item.DRIVING_LICENSE || 'N/A',
+
   DRIVING_LICENSE_EXPIRY: item.DRIVING_LICENSE_EXPIRY || item.DRIVING_EXPIRE_DATE || 'N/A',
 
     STARTDATE:  item.STARTDATE,
@@ -446,7 +444,7 @@ minWidth: 70,
 
   {
   field: 'MANPOWER_DESG',
-  headerName: 'Designation',
+  headerName: 'M.Designation',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {

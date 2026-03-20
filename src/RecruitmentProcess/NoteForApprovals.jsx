@@ -247,7 +247,7 @@ if(noteFrAprvlData) {
     EXP_CTC: item.EXP_CTC,
     OFFER_CTC: item.OFFER_CTC,
 
-    
+    MANPOWER_DESG: item.MANPOWER_DESG,
 TYPE_PLANT: item?.TYPE_PLANT,
 GROUP_CODE: item?.GROUP_CODE,
 SUB_CODE: item?.SUB_CODE,
@@ -262,7 +262,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
     STATUS: item.status,
     REVID: item.CUR_REV_ID,
      DESIG: item.DESIG,
-     DEPT: item.DEPT,
+
     SUBMITTED_DATE: item.created_at,
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
@@ -513,30 +513,54 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
        },
      },
      
-       {
-       field: 'DESIG',
-       headerName: 'Designation',
-       flex: 1.2,
-       minWidth: 130,
-       renderCell: (params) => {
-         const subCode = params.row.SUB_CODE;
-         const value = params.value || 'N/A';
      
-         return (
-           <Box
-             sx={{
-               color: '#374151',
-               padding: '2px 8px',
-               borderRadius: '6px',
-               fontSize: '12px',
-               fontWeight: 600,
-             }}
-           >
-             {subCode ? `${subCode} - ${value}` : value}
-           </Box>
-         );
-       },
-     },
+
+      {
+  field: 'MANPOWER_DESG',
+  headerName: 'M.Designation',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
+
+    return (
+      <Box
+        sx={{
+          color: '#374151',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
+
+
+
+
+
+  {
+  field: 'DESIG',
+  headerName: 'Designation',
+  flex: 1.2,
+  minWidth: 130,
+  
+   renderCell: (params) => (
+
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+
+          {params.value}
+
+        </Box>
+
+      ),
+},
+
     { 
       field: "HR", 
       headerName: "HR", 

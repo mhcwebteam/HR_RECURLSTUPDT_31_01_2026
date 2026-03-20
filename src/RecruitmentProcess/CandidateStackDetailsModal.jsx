@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../Config/Config';
+import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import logo from "../asset/imagesmy.png"
@@ -83,20 +83,9 @@ const SalaryStackup = ({ data, salary, remarks, setRemarks, TableHeader, DataRow
 
 const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,  personalData }) => {
 
-console.log("gtrrrrrrrrrrrr",personalData);
 
 
-// const personal = personalData?.find(
-//   (ele) => ele.child_caseid == note[0].CHILD_CASEID
-// );
 
-//   console.log("rttttttttttttttttttttttttt", personal);
-
-//  const presentCompanyExperience = personalData[0]?.experienceData?.find(
-//     exp => exp.COMPANY_STAGES == "0"
-//   );
-
-//   console.log("presentCompanyExperiencepresentCompanyExperiencepresentCompanyExperience",personalData);
 
   const [activeTab, setActiveTab] = useState('personal');
   const [token] = useState(() => {
@@ -350,9 +339,12 @@ console.log("gtrrrrrrrrrrrr",personalData);
 
 
   const PersonalDetails = () => {
+
 const matchedPersonal = Array.isArray(personalData)
     ? personalData.find((ele) => ele.child_caseid === data?.CHILD_CASEID)
     : null;
+
+   
 
   // ✅ Take ONLY index 0 from experienceData (present company)
   const presentExperience = matchedPersonal?.experienceData?.[0] || null;
@@ -369,7 +361,7 @@ const matchedPersonal = Array.isArray(personalData)
 
     const fileUrl = filePath.startsWith('http') 
       ? filePath 
-      : `${API_BASE_URL}${filePath}`;
+      : `${API_BASE_URLss}${filePath}`;
     
     window.open(fileUrl, '_blank');
   };
@@ -400,9 +392,9 @@ const getFileName = (path) => {
         <DetailRow label="Name"                 value={data?.FIRST_NAME || data?.NAME || 'N/A'} />
         <DetailRow label="Current CTC"          value={`₹ ${currentCTC.toLocaleString('en-IN')}`} valueColor="text-emerald-700 font-bold" />
         <DetailRow label="Present Company"       value={presentExperience?.COMPANY_NAME || 'N/A'} />
-        <DetailRow label="Total Experience"     value={`${personalData[0]?.TOTAL_EXP || 'N/A'} years`} />
+        <DetailRow label="Total Experience"     value={`${matchedPersonal?.TOTAL_EXP || 'N/A'} years`} />
         <DetailRow label="Designation"          value={data?.DESIGNATION || data?.DEPT || 'N/A'} />
-        <DetailRow label="Highest Qualification" value={personalData[0]?.HIGHEST_QUA || 'N/A'} />
+        <DetailRow label="Highest Qualification" value={matchedPersonal?.HIGHEST_QUA || 'N/A'} />
       </div>
     </div>
 
@@ -413,7 +405,7 @@ const getFileName = (path) => {
         PROPOSED DETAILS
       </h3>
       <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 shadow-sm">
-        <DetailRow label="Source Type"        value={personalData[0]?.SRC_TYPE || 'N/A'} />
+        <DetailRow label="Source Type"        value={matchedPersonal?.SRC_TYPE || 'N/A'} />
         <DetailRow label="Offered CTC"        value={`₹ ${offerCTC.toLocaleString('en-IN')}`} valueColor="text-blue-700 font-bold" />
         <DetailRow 
           label="Hike Percentage" 
@@ -426,13 +418,13 @@ const getFileName = (path) => {
         {/* HR Evaluation File */}
         <div className="flex justify-between items-center px-3 py-2 hover:bg-gray-50 transition-colors">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">HR Evaluation File</span>
-          {personalData[0]?.hrEvaluationFile ? (
+          {matchedPersonal?.hrEvaluationFile ? (
             <button
-              onClick={() => handleFileOpen(personalData[0]?.hrEvaluationFile)}
+              onClick={() => handleFileOpen(matchedPersonal?.hrEvaluationFile)}
               className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
             >
               <span>📄</span>
-              {getFileName(personalData[0].hrEvaluationFile)}
+              {getFileName(matchedPersonal?.hrEvaluationFile)}
             </button>
           ) : (
             <span className="text-xs font-semibold text-gray-400">No File</span>
