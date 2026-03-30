@@ -11,7 +11,7 @@ const SessionTimeout = () => {
     timer.current = setTimeout(() => {
       localStorage.removeItem("userInfo");
       setShowPopup(true);
-    }, 10 * 60 * 1000); // 2 minutes
+    }, 10 * 60 * 1000); // 10 minutes
   };
 
   const handleLoginRedirect = () => {

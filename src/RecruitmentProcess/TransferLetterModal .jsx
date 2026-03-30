@@ -6,7 +6,6 @@ import jsPDF from 'jspdf';
 const TransferLetterModal = ({ open, onClose, employeeData }) => {
 
 
- 
 
   const handleDownload = () => {
     // Create new PDF document
@@ -60,7 +59,7 @@ const TransferLetterModal = ({ open, onClose, employeeData }) => {
     y += 10;
 
     // Paragraph 1
-    const para1 = `Due to exigency of the work, it has been decided to transfer your services from ${employeeData?.name || ''} to ${employeeData?.toProject || ''} w.e.f. ${employeeData?.effectiveDate || ''}.`;
+    const para1 = `Due to exigency of the work, it has been decided to transfer your services from ${employeeData?.selectedToProject || ''} to ${employeeData?.toProject || ''} w.e.f. ${employeeData?.effectiveDate || ''}.`;
     const splitPara1 = pdf.splitTextToSize(para1, 170);
     pdf.setFontSize(12);
     pdf.text(splitPara1, 20, y);
@@ -134,7 +133,7 @@ const TransferLetterModal = ({ open, onClose, employeeData }) => {
           
           <Typography sx={{ fontSize: '13px', mb: 2, lineHeight: 1.6 }}>
             Due to exigency of the work, it has been decided to transfer your services from{' '}
-            <strong>{employeeData?.name || ''}</strong> to <strong>{employeeData?.toProject || ''}</strong>{' '}
+            <strong>{employeeData?.selectedToProject || ''}</strong> to <strong>{employeeData?.toProject || ''}</strong>{' '}
             w.e.f. <strong>{employeeData?.effectiveDate || ''}</strong>.
           </Typography>
           

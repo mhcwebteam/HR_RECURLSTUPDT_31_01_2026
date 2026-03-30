@@ -125,17 +125,15 @@ const Recruitments = () => {
       borderColor: 'border-indigo-300',
       hoverBg: 'hover:bg-indigo-100'
     },
-
-
-    {
-      label: 'Offer Approved',
-      component: 'Offer Approved',
-      icon: Send,
-      color: 'from-indigo-500 to-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-300',
-      hoverBg: 'hover:bg-indigo-100'
-    },
+{
+  label: 'Offer Approved',
+  component: 'Offer Approved',
+  icon: Send,
+  color: 'from-slate-600 to-slate-700',
+  bgColor: 'bg-slate-50',
+  borderColor: 'border-slate-300',
+  hoverBg: 'hover:bg-slate-100'
+}
   ];
 
   const handleMenuItemClick = (component) => {
@@ -276,15 +274,15 @@ const Recruitments = () => {
                     }}
                     onMouseEnter={() => setHoveredTab(item.component)}
                     onMouseLeave={() => setHoveredTab(null)}
-                    className={`
-                      relative group px-5 py-3 rounded-lg font-semibold text-sm
-                      transition-all duration-300 ease-out
-                      flex items-center gap-2.5 border-2
-                      ${isActive
-                        ? `bg-gradient-to-r ${item.color} text-white border-transparent shadow-lg scale-105 transform tab-button-active`
-                        : `${item.bgColor} ${item.borderColor} text-gray-700 ${item.hoverBg} hover:shadow-md hover:scale-102 hover:border-opacity-100`
-                      }
-                    `}
+                   className={`
+  relative group px-4 py-2.5 rounded-lg font-medium text-xs
+  transition-all duration-300 ease-out
+  flex items-center gap-2 border-2
+  ${isActive
+    ? `bg-gradient-to-r ${item.color} text-white border-transparent shadow-lg scale-105 transform tab-button-active`
+    : `${item.bgColor} ${item.borderColor} text-gray-700 ${item.hoverBg} hover:shadow-md hover:scale-102 hover:border-opacity-100`
+  }
+`}
                   >
                     {/* Animated background glow for active state */}
                     {isActive && (

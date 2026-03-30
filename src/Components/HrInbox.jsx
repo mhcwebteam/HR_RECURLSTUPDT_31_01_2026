@@ -111,19 +111,19 @@ const hrAprvlFetchData = async () => {
   }, [hrData, searchTerm, processFilter]);
 
 
-  console.log(hrData,"hrrrrrrrrrrrrrrrr")
+  
 
 const stats = useMemo(() => {
   return {
     total: hrData.length,
  
-    Actions: hrData.filter((i) =>
-      (i.Recruit_Process || '').toLowerCase().includes('Actions')
-    ).length,
+    Actions:  hrData.filter(i =>
+  (i.Recruit_Process || '').toLowerCase().includes('actions')
+).length,
 
 
     recruitmentMail: hrData.filter((i) =>
-      (i.Recruit_Process || '').toLowerCase().includes('Recruitment Mail')
+      (i.Recruit_Process || '').toLowerCase().includes('recruitment mail')
   
     ).length,
 
@@ -182,7 +182,7 @@ const stats = useMemo(() => {
     return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
   }
   // Change this line to include "hr recruitment"
-  if (processLower.includes('Recruitment Mail')) {
+  if (processLower.includes('recruitment mail')) {
     return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
   }
   if (processLower.includes('note for approval')) {
@@ -199,6 +199,10 @@ const stats = useMemo(() => {
 const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
 
   const recCycle = hrData.some(row => row.RECRUIT_CYCLE);
+
+
+ const tdStyle = "px-1 py-1 text-[11px] text-gray-800 font-medium";
+ 
 
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
@@ -343,22 +347,22 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                   <thead>
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
-                        { key: 'sno', label: 'S.No', width: 'w-12' },
+                        { key: 'sno', label: 'S.No', width: 'w-8' },
                         
-                           { key: 'Action', label: 'Action', width: 'w-12' },
-                        { key: 'caseId', label: 'Case ID', width: 'w-24' },
-                        { key: 'plant', label: 'Plant', width: 'w-48' },
-                        ...(hasTypePlant ? [{ key: 'typeofplant', label: 'Type of Plant', width: 'w-44' }] : []),
-...(recCycle ? [{ key: 'Recruitcycle', label: 'Recruit cycle', width: 'w-34' }] : []),
-                        { key: 'department', label: 'Department', width: 'w-24' },
-                         { key: 'designation', label: 'Designation', width: 'w-24' },
-                        { key: 'created', label: 'Created', width: 'w-32' },
-                        { key: 'updated', label: 'Updated', width: 'w-32' },
-                        { key: 'process', label: 'Recruitment Process', width: 'w-48' },
+                           { key: 'Action', label: 'Action', width: 'w-10' },
+                        { key: 'caseId', label: 'Case ID', width: 'w-20' },
+                        { key: 'plant', label: 'Plant', width: 'w-60' },
+                        ...(hasTypePlant ? [{ key: 'typeofplant', label: 'Type of Plant', width: 'w-32' }] : []),
+...(recCycle ? [{ key: 'Recruitcycle', label: 'Recruit cycle', width: 'w-32' }] : []),
+                        { key: 'department', label: 'Department', width: 'w-32' },
+                         { key: 'designation', label: 'Desig/Position', width: 'w-46' },
+                        { key: 'created', label: 'Created', width: 'w-26' },
+                        { key: 'updated', label: 'Updated', width: 'w-26' },
+                        { key: 'process', label: 'Recruitment Process', width: 'w-46' },
                       ].map((col) => (
                         <th
                           key={col.key}
-                          className={`${col.width} px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider`}
+                          className={`${col.width} px-0.5 py-1.5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider`}
                         >
                           {col.label}
                         </th>
@@ -371,15 +375,15 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                         key={row.all_apprvls_hr_Id}
                         className="hover:bg-gradient-to-r hover:from-blue-50 hover:via-indigo-50 hover:to-blue-50 transition-all duration-200 group hover:shadow-md"
                       >
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+                        <td className={tdStyle}>
                           {currentPage * pageSize + index + 1}
                         </td>
 
                         
-                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+                        <td className={tdStyle}>
   <button
     onClick={() => handleViewClick(row?.Child_CaseId)} 
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 
+    className="inline-flex items-center gap-1.5 px-3 py-1 
                rounded-lg text-xs font-semibold 
                transition-all duration-200 shadow-sm 
                hover:shadow-md hover:scale-105 cursor-pointer
@@ -392,12 +396,12 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
     View
   </button>
 </td>
-                        <td className="px-3 py-2">
+                       <td className={tdStyle}>
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
                             {row.Child_CaseId || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
+                     <td className={tdStyle}>
                           <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
                             {row.PLANT || ''}
                           </span>
@@ -405,7 +409,7 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                        
 
                        {hasTypePlant && (
-  <td className="px-3 py-2">
+  <td className={tdStyle}>
     <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
       {row.TYPE_PLANT || ''}
     </span>
@@ -414,19 +418,19 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
 
 {/* Recruit Cycle - only show if any row has RECRUIT_CYCLE */}
 {recCycle && (
-  <td className="px-3 py-2">
+     <td className={tdStyle}>
     <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
       {row.RECRUIT_CYCLE || ''}
     </span>
   </td>
 )}
                        {/* ✅ FIXED - proper table cell for department */}
-<td className="px-3 py-2">
+   <td className={tdStyle}>
   <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
     {row.GROUP_CODE ? `${row.GROUP_CODE} - ${row.DEPT}` : row.DEPT || ''}
   </span>
 </td>
-<td className="px-3 py-2">
+   <td className={tdStyle}>
   <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
     {row.SUB_CODE ? `${row.SUB_CODE} - ${row.MANPOWER_DESG}` : row.MANPOWER_DESG || 'N/A'}
   </span>
@@ -437,7 +441,7 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                           </span>
                         </td> */}
 
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+   <td className={tdStyle}>
                           {row.created_at
                             ? new Date(row.created_at).toLocaleDateString('en-IN', {
                               day: '2-digit',
@@ -446,7 +450,7 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                             })
                             : ''}
                         </td>
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
+   <td className={tdStyle}>
                           {row.updated_at
                             ? new Date(row.updated_at).toLocaleDateString('en-IN', {
                               day: '2-digit',
@@ -455,7 +459,7 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                             })
                             : ''}
                         </td>
-                      <td className="px-3 py-2">
+                   <td className={tdStyle}>
   <button
     onClick={() => handleViewDetails(row)}
     className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getProcessStyle(row.Recruit_Process)}`}

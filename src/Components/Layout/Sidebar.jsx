@@ -35,18 +35,7 @@ const Sidebar = () => {
     if (!isEmployee) setIsSidebarOpen(false);
   };
 
-//   const menuItems = [
-//     { path: '/HrInbox', icon: Home, label: "HR Inbox", gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
-//     { path: '/PendingMRFS', icon: Home, label: 'PendingMRFS', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
-//     { path: '/AssignedTasks', icon: ClipboardList, label: 'AssignedTasks', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
-//     { path: '/RecruitmentProcess', icon: FileKey2, label: 'Recruitments', gradient: 'from-violet-400 to-purple-400', hoverGradient: 'from-violet-500 to-purple-500' },
-//     { path: '/onBoarding', icon: Home, label: 'Onboarding', gradient: 'from-fuchsia-400 to-purple-400', hoverGradient: 'from-fuchsia-500 to-purple-500' },
-//     { path: '/History', icon: Home, label: 'History', gradient: 'from-violet-400 to-purple-700', hoverGradient: 'from-fuchsia-500 to-purple-500' },
-//     { path: '/HODHistory', icon: Home, label: 'HODHistory', gradient: 'from-violet-400 to-purple-700', hoverGradient: 'from-fuchsia-500 to-purple-500' },
 
-//  { path: '/Reports', icon: Home, label: 'Reports', gradient: 'from-violet-400 to-purple-700', hoverGradient: 'from-violet-500 to-purple-500' },
-
-//   ];
  const menuItems = [
     { path: '/HrInbox', icon: Inbox, label: "HR Inbox", gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
     { path: '/PendingMRFS', icon: Clock, label: 'PendingMRFS', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },

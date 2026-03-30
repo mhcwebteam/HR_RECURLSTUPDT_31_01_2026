@@ -5,19 +5,19 @@
 
 
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
-import { Upload, User, Mail, Phone, Briefcase, BookOpen, Award, Plus, Trash2, GraduationCap, Info, FileUp, RotateCcw, Send } from 'lucide-react';
+import { Upload, User, Mail, Phone, Briefcase,Eye, BookOpen, Award, Plus, Trash2, GraduationCap, Info, FileUp, RotateCcw, Send } from 'lucide-react';
 import axios from 'axios';
-import { API_BASE_URL } from "../Config/Config"
-import { ContextData } from '../Context/ContextData';
-import { useParams } from 'react-router-dom';
+import { API_BASE_URL, API_BASE_URLss } from "../Config/Config"
+import { useNavigate, useParams } from 'react-router-dom';
 
 const RecruitmentForm = () => {
-  const { case_Id } = useParams();
+
 
   const [sameAsPermanent, setSameAsPermanent] = useState(null);
-  const [personalData, setPersonalData] = useState([]);
+
+const [statusEdit, setStatusEdit] = useState(null); //
 
   // ✅ CORRECT ORDER
   const [formStatus, setFormStatus] = useState('');
@@ -113,15 +113,16 @@ const RecruitmentForm = () => {
     AGE: "",
     address_status: "",
 
-   TYPE_PLANT: "utsydfuystfs",
-  GROUP_CODE: "sdjfbskjdf",
-    SUB_CODE: "akkkkkkkk",
-  SUB_POST:"5555555555",
-GROUP_DEPT: "666666666",
-RAISER_EMP_ID: "777777777777",
+   TYPE_PLANT: "",
+  GROUP_CODE: "",
+    SUB_CODE: "",
+  SUB_POST:"",
+GROUP_DEPT: "",
+RAISER_EMP_ID: "",
+RECRUIT_CYCLE: "",
+HIGHEST_QUA: ""
 
   });
-
 
 
 
@@ -154,8 +155,8 @@ RAISER_EMP_ID: "777777777777",
   ]);
 
 
+ const navigate = useNavigate();
 
- 
 
   const [errors, setErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
@@ -164,19 +165,26 @@ RAISER_EMP_ID: "777777777777",
   const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
 
 
+  // Refs for scrolling to error fields
+  const fieldRefs = useRef({});
+  
+  const registerRef = (fieldName, element) => {
+    if (element) {
+      fieldRefs.current[fieldName] = element;
+    }
+  };
 
- 
 
 
 
   const fieldValidations = {
                                            
     FIRST_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),                // letters + space
-       LANG_KNOWN: (val) => val.replace(/[^a-zA-Z ]/g, ''),     
+       LANG_KNOWN: (val) => val.replace(/[^a-zA-Z ,\.]/g, ''),   
          MOTHER_TONGUE: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
-            HIGHEST_QUA: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+            HIGHEST_QUA: (val) => val.replace(/[^a-zA-Z ,\.]/g, ''),   
              SSC_SCHOOL_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),     
-         SSC_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+        SSC_BOARD: (val) => val.replace(/[^a-zA-Z0-9 .,-]/g, ''), 
             INTER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
              INTER_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
             GRAD_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
@@ -204,10 +212,20 @@ RAISER_EMP_ID: "777777777777",
       if (response.data?.success && response.data?.data) {
         // Filter records for this specific candidate that are drafts
         const userCaseId = userToken?.Manpower?.CHILD_CASEID || userToken?.CHILD_CASEID;
-        const draftRecords = response.data.data.filter(
-          item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
-            (item.status?.toLowerCase() === "draft" || item.status?.toLowerCase() === "pending")
-        );
+
+
+         const draftRecords = response.data.data.filter(
+  item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
+    (
+      item.status?.toLowerCase() === "draft" || 
+      item.status?.toLowerCase() === "pending" ||
+      item.Status_Edit === "Edit"  // ✅ ADD THIS LINE ONLY
+    )
+);
+        // const draftRecords = response.data.data.filter(
+        //   item => String(item.child_caseid || '').trim() == String(userCaseId || '').trim() &&
+        //     (item.status?.toLowerCase() == "draft" || item.status?.toLowerCase() == "pending")
+        // );
         console.log(draftRecords, "Filtered draft records");
 
         if (draftRecords.length > 0) {
@@ -216,11 +234,14 @@ RAISER_EMP_ID: "777777777777",
 
           console.log("Using draft data:", draftData);
 
+          setFormStatus(draftData.status?.toLowerCase() || '');
+setStatusEdit(draftData.Status_Edit || null); 
+
           // Map API fields to form fields
           setFormData(prev => ({
             ...prev,
             CHILD_CASEID: draftData.child_caseid || '',
-            PLANT: draftData.PLANT || '',
+           PLANT: draftData.PLANT || '',
             FIRST_NAME: draftData.name || '',
             EMAIL: draftData.email || '',
             HIGHEST_QUA: draftData.HIGHEST_QUA || '',
@@ -363,46 +384,42 @@ RAISER_EMP_ID: "777777777777",
     EmpVerify();
   }, [userToken?.token]);
 
-  useEffect(() => {
-    EmpVerify();
-  }, [userToken?.token]);
 
-const openFile = async (file) => {
+
+const openFile = async (file, fileName = 'Document') => {
   if (!file) return;
 
   try {
-    let blob;
     let url;
 
     if (file instanceof File) {
       // Newly uploaded file (File object)
       url = URL.createObjectURL(file);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } else if (typeof file === 'string') {
-      // Existing file path from server
-      const response = await fetch(`${API_BASE_URL}${file}`, {
-        headers: { Authorization: `Bearer ${userToken.token}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch file');
-      blob = await response.blob();
-      url = URL.createObjectURL(blob);
-    } else {
-      return;
+      // Existing file path from server - just construct URL and open
+      let fullUrl = file;
+      
+      if (!file.startsWith('http') && !file.startsWith('https')) {
+        if (file.startsWith('/')) {
+          fullUrl = `${API_BASE_URLss}${file}`;
+        } else {
+          fullUrl = `${API_BASE_URLss}/${file}`;
+        }
+      }
+      
+      // Open directly in new tab
+      window.open(fullUrl, '_blank');
     }
-
-    // Open in new tab
-    const newWindow = window.open(url, '_blank');
-    if (!newWindow) {
-      // Fallback: create an anchor and click
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.click();
-    }
-
-    // Revoke blob URL after a delay to free memory
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
   } catch (error) {
-    Swal.fire('Error', 'Could not open file', 'error');
+    console.error("Error opening file:", error);
+    Swal.fire({
+      title: 'Error',
+      text: 'Could not open file. Please try again.',
+      icon: 'error',
+      confirmButtonColor: '#ef4444'
+    });
   }
 };
 
@@ -417,18 +434,17 @@ const openFile = async (file) => {
        TYPE_PLANT: userToken?.Manpower?.TYPE_PLANT,
 
        GROUP_CODE: userToken?.Manpower?.GROUP_CODE,
-    SUB_CODE: userToken.Manpower.SUB_CODE,
-  SUB_POST: userToken.Manpower.SUB_POST,
-GROUP_DEPT: userToken.Manpower.DEPT,
+    SUB_CODE: userToken?.Manpower?.SUB_CODE,
+  SUB_POST: userToken?.Manpower?.SUB_POST,
+GROUP_DEPT: userToken?.Manpower?.DEPT,
 RAISER_EMP_ID: "",
-
+RECRUIT_CYCLE: userToken?.Manpower?.RECRUIT_CYCLE,
 
       }));
     }
   }, [userToken?.Emp_Id]);
 
 
-  console.log("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", userToken);
 
   // Calculate age from DOBAADHAR
   const calculateAge = (dob) => {
@@ -448,34 +464,97 @@ RAISER_EMP_ID: "",
 
 
 
+const handleInputChange = (e) => {
+  if (isPending) return;
 
+  const { name, value } = e.target;
 
+  let sanitized = fieldValidations[name]
+    ? fieldValidations[name](value)
+    : value;
 
+  const dateFields = [
+    "ORIGINAL_DOB",
+    "DOB_ASPER_ADHAR",
+    "PASSPORT_EXPIRY",
+    "DRIVING_LICENSE_EXPIRY",
+    "INTER_PASSED_YEAR",
+    "SSC_PASSED_YEAR",
+    "DEGREE_PASSED_YEAR",
+     "PG_PASSED_YEAR",
+      "PHD_PASSED_YEAR",
+       "OTHER_PASSED_YEAR"
+  ];
 
+  if (dateFields.includes(name)) {
+    if (value) {
+      let [year, month, day] = value.split("-");
 
-  const handleInputChange = (e) => {
-    if (isPending) return;
-    const { name, value } = e.target;
-const sanitized = fieldValidations[name] ? fieldValidations[name](value) : value;
-    if (name === "DOB_ASPER_ADHAR") {
-      const age = calculateAge(value);
-      setFormData((prev) => ({
-        ...prev,
-        DOB_ASPER_ADHAR: value,
-        AGE: age,
-      }));
-    } else {
-        setFormData((prev) => ({
-            ...prev,
-            [name]: sanitized,  // ✅ sanitized value
+      // ❌ If year more than 4 digits → trim
+      if (year.length > 4) {
+        year = year.slice(0, 4);
+      }
+
+      // ❌ If year less than 4 → stop
+      if (!/^\d{4}$/.test(year)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "Year must be exactly 4 digits (YYYY)",
         }));
-    
-    }
+        return;
+      }
 
-    if (showErrors && errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      // ✅ Rebuild safe value
+      sanitized = `${year}-${month}-${day}`;
     }
-  };
+  }
+
+  if (name === "DOB_ASPER_ADHAR") {
+    const age = calculateAge(sanitized);
+
+    setFormData((prev) => ({
+      ...prev,
+      DOB_ASPER_ADHAR: sanitized,
+      AGE: age,
+    }));
+  } else {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: sanitized,
+    }));
+  }
+
+  if (showErrors && errors[name]) {
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  }
+};
+
+
+
+
+//   const handleInputChange = (e) => {
+//     if (isPending) return;
+//     const { name, value } = e.target;
+// const sanitized = fieldValidations[name] ? fieldValidations[name](value) : value;
+//     if (name === "DOB_ASPER_ADHAR") {
+//       const age = calculateAge(value);
+//       setFormData((prev) => ({
+//         ...prev,
+//         DOB_ASPER_ADHAR: value,
+//         AGE: age,
+//       }));
+//     } else {
+//         setFormData((prev) => ({
+//             ...prev,
+//             [name]: sanitized,  // ✅ sanitized value
+//         }));
+    
+//     }
+
+//     if (showErrors && errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
 
 
   const handleFileChange = (e) => {
@@ -483,7 +562,6 @@ const sanitized = fieldValidations[name] ? fieldValidations[name](value) : value
     const { name, files } = e.target;
     const file = files[0];
 
-    console.log("fileeeeeeeeeeee", file);
 
     if (!file) return;
 
@@ -616,7 +694,7 @@ const handleExperienceChange = (id, field, value) => {
                         updated.DURATION = '';
                     }
                 }
-            }
+           }
             return updated;
         }
         return exp;
@@ -631,81 +709,7 @@ const handleExperienceChange = (id, field, value) => {
     }
 };
 
-  const handleExperienceFileChange = (id, field, e) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
-    const maxSize = (field === 'PAYSLIPS' || field === 'BANK_STATEMENTS') ? 500 * 1024 : 200 * 1024;
-    const isMultiple = field === 'PAYSLIPS' || field === 'BANK_STATEMENTS';
-
-    if (isMultiple) {
-      const validFiles = [];
-      const invalidFiles = [];
-
-      Array.from(files).forEach(file => {
-        if (file.type !== 'application/pdf') {
-          invalidFiles.push(`${file.name} - Only PDF files are allowed`);
-          return;
-        }
-        if (file.size > maxSize) {
-          invalidFiles.push(`File size must be less than 500kb`);
-          return;
-        }
-        validFiles.push(file);
-      });
-
-      if (invalidFiles.length > 0) {
-        Swal.fire({
-          title: "Invalid Files",
-          text: "File size must be less than 500KB",
-          icon: "error",
-        });
-        e.target.value = '';
-        return;
-      }
-
-      setExperiences(prev => prev.map(exp =>
-        exp.id === id ? {
-          ...exp,
-          [field]: [...(exp[field] || []), ...validFiles]
-        } : exp
-      ));
-    } else {
-      const file = files[0];
-
-      if (file.type !== 'application/pdf') {
-        Swal.fire({
-          title: "Invalid File Type",
-          text: "Only PDF files are allowed",
-          icon: "error",
-        });
-        e.target.value = '';
-        return;
-      }
-
-      if (file.size > maxSize) {
-        Swal.fire({
-          title: "File Too Large",
-          text: "File size must be less than 200KB",
-          icon: "error",
-        });
-        e.target.value = '';
-        return;
-      }
-
-      setExperiences(prev => prev.map(exp =>
-        exp.id === id ? { ...exp, [field]: file } : exp
-      ));
-    }
-
-    if (showErrors && errors[`exp_${id}_${field}`]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[`exp_${id}_${field}`];
-        return newErrors;
-      });
-    }
-  };
 
 
 
@@ -721,7 +725,20 @@ const handleExperienceChange = (id, field, value) => {
       cancelButtonText: "No, Continue Editing"
     });
 
-    if (!draftResult.isConfirmed) return;
+
+
+      if (!draftResult.isConfirmed) return;
+
+  // ✅ LOADING POPUP
+  Swal.fire({
+    title: "Processing...",
+    text: "Saving your draft, please wait...",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
     const data = new FormData();
 
@@ -735,7 +752,7 @@ const handleExperienceChange = (id, field, value) => {
         data.append(key, value);
        
       } else if (typeof value == "string") {
-      
+     
         data.append(key, value);
       }
     });
@@ -759,14 +776,11 @@ experiences.forEach((exp, index) => {
   data.append(`experiences[${index}][duration]`, exp.DURATION || "");
   data.append(`experiences[${index}][stage]`, index);
   data.append(`experiences[${index}][isCurrent]`, exp.isCurrent ? "true" : "false");
-  
-  // ✅ CRITICAL: ALWAYS send EMP_COMP_ID for ALL experiences (both current AND previous)
 
-console.log(experiences,"t6666666666666666666666",exp.EMP_COMP_ID);
 
   data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID || '');
 
-    console.log(`Experienc333333e ${index}: isCurrent=${exp.isCurrent}, EMP_COMP_ID=${exp.EMP_COMP_ID || '""'}`);
+    
   
   // Notice Period - only for current company
   if (exp.isCurrent) {
@@ -780,7 +794,7 @@ console.log(experiences,"t6666666666666666666666",exp.EMP_COMP_ID);
   
     
 
- 
+
     const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
       headers: {
         Authorization: `Bearer ${userToken.token}`,
@@ -802,21 +816,6 @@ console.log(experiences,"t6666666666666666666666",exp.EMP_COMP_ID);
   };
 
   
-
-
-
-
-
-  const handleExperienceRemoveFile = (id, field, index = null) => {
-    setExperiences(prev => prev.map(exp => {
-      if (exp.id !== id) return exp;
-      if (index !== null && Array.isArray(exp[field])) {
-        return { ...exp, [field]: exp[field].filter((_, i) => i !== index) };
-      } else {
-        return { ...exp, [field]: field === 'PAYSLIPS' || field === 'BANK_STATEMENTS' ? [] : null };
-      }
-    }));
-  };
 
   const addExperience = () => {
     setExperiences(prev => [...prev, {
@@ -918,74 +917,133 @@ const removeExperience = async (id) => {
   }
 };
 
+
+
+  const scrollToError = (fieldName) => {
+    // ── 1. Determine which section owns this field and open it ──
+    const basicInfoFields = [
+      'FIRST_NAME','LAST_NAME','GENDER','MARITAL_STATUS','LANG_KNOWN','MOTHER_TONGUE',
+      'EMAIL','PHONE_NUMBER','EMER_CONTACT_NUM','ORIGINAL_DOB','DOB_ASPER_ADHAR','AGE',
+      'HIGHEST_QUA','AADHAR_NUM','PAN_NUM','UAN_NUM','UAN_FILE','ESI_NUM',
+      'SRC_TYPE','SRC_REFER_NAME','SRC_REFER_DEPT','BLOOD_GROUP',
+      'PASSPORT_NUMBER','PASSPORT_EXPIRY','DRIVING_LICENSE','DRIVING_LICENSE_EXPIRY',
+      'HNO','CITY','MANDAL','DISTRICT','STATE','PINCODE',
+      'PRESENT_HNO','PRESENT_CITY','PRESENT_MANDAL','PRESENT_DISTRICT','PRESENT_STATE','PRESENT_PINCODE',
+      'AADHAR_PATH','PAN_PATH','PHOTO','RESUME_UPLOAD',
+    ];
+    const educationFields = [
+      'SSC_SCHOOL_NAME','SSC_BOARD','SSC_MARKS','SSC_PASSED_YEAR','10TH_FILENAME',
+      'INTER_COLLEGE_NAME','INTER_BOARD','INTER_MARKS','INTER_PASSED_YEAR','INTER_FILENAME',
+      'GRAD_COLLEGE_NAME','DEGREE_UNIVERSITY','BTECH_MARKS','DEGREE_PASSED_YEAR','BTECH_FILENAME',
+      'PG_COLLEGE_NAME','PG_UNIVERSITY','PG_MARKS','PG_PASSED_YEAR','PG_FILENAME',
+      'PHD_COLLEGE_NAME','PHD_UNIVERSITY','PHD_MARKS','PHD_PASSED_YEAR','PHD_FILENAME',
+      'OTHER_COLLEGE_NAME','OTHER_UNIVERSITY','OTHER_MARKS','OTHER_PASSED_YEAR','OTHER_FILENAME',
+    ];
+    const experienceFields = [
+      'CURRENT_CTC','EXP_CTC','TOTAL_EXP','payslips','bank_statements',
+    ];
+
+    const isExperienceField = fieldName.startsWith('exp_') || experienceFields.includes(fieldName);
+
+    let sectionToOpen = null;
+    if (basicInfoFields.includes(fieldName)) sectionToOpen = 'basicInfo';
+    else if (educationFields.includes(fieldName)) sectionToOpen = 'education';
+    else if (isExperienceField) sectionToOpen = 'experience';
+
+    // Open the section if needed, then scroll after React re-renders
+    if (sectionToOpen) {
+      setOpenSections(prev => {
+        if (!prev[sectionToOpen]) {
+          // Section was closed – open it and schedule scroll after paint
+          setTimeout(() => performScroll(fieldName), 300);
+          return { ...prev, [sectionToOpen]: true };
+        }
+        // Section already open – scroll immediately
+        setTimeout(() => performScroll(fieldName), 50);
+        return prev;
+      });
+    } else {
+      setTimeout(() => performScroll(fieldName), 50);
+    }
+  };
+
+  // ─── FIX: performScroll handles refs AND id-based fallback for ALL element types ───
+  const performScroll = (fieldName) => {
+    let element = fieldRefs.current[fieldName] || document.getElementById(fieldName);
+
+    if (!element) return false;
+
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Only focus focusable elements (inputs, selects, textareas)
+    const focusable = ['INPUT', 'SELECT', 'TEXTAREA'];
+    if (focusable.includes(element.tagName)) {
+      element.focus();
+    }
+
+    // Highlight animation
+    const originalBorder = element.style.border;
+    const originalBoxShadow = element.style.boxShadow;
+    element.style.transition = 'all 0.3s';
+    element.style.border = '2px solid #ef4444';
+    element.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.2)';
+
+    setTimeout(() => {
+      if (element) {
+        element.style.border = originalBorder;
+        element.style.boxShadow = originalBoxShadow;
+      }
+    }, 2000);
+
+    return true;
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
     // Basic fields
     if (!formData.FIRST_NAME?.trim()) newErrors.FIRST_NAME = "First Name is required";
-    // if (!formData.LAST_NAME?.trim()) newErrors.LAST_NAME = "Last Name is required";
     if (!formData.GENDER) newErrors.GENDER = "Gender is required";
     if (!formData.MARITAL_STATUS) newErrors.MARITAL_STATUS = "Marital Status is required";
+    
     if (!formData.LANG_KNOWN?.trim()) newErrors.LANG_KNOWN = "Languages Known is required";
     if (!formData.MOTHER_TONGUE?.trim()) newErrors.MOTHER_TONGUE = "Mother Tongue is required";
-    if (!formData.TOTAL_EXP?.trim()) newErrors.TOTAL_EXP = "Total Experience is required";
-
-    if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
     if (!formData.EMAIL?.trim()) {
       newErrors.EMAIL = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.EMAIL)) {
       newErrors.EMAIL = "Invalid email format";
     }
-
-
-    if (!formData.PHONE_NUMBER?.trim()) {
+     if (!formData.PHONE_NUMBER?.trim()) {
       newErrors.PHONE_NUMBER = "Phone Number is required";
     } else if (formData.PHONE_NUMBER.length !== 10) {
       newErrors.PHONE_NUMBER = "Phone number must be 10 digits";
     }
-    if (!formData.EMER_CONTACT_NUM?.trim()) {
+     if (!formData.EMER_CONTACT_NUM?.trim()) {
       newErrors.EMER_CONTACT_NUM = "Emergency Contact is required";
     } else if (formData.EMER_CONTACT_NUM.length !== 10) {
       newErrors.EMER_CONTACT_NUM = "Emergency contact must be 10 digits";
     }
     if (!formData.ORIGINAL_DOB) newErrors.ORIGINAL_DOB = "Date of Birth is required";
     if (!formData.DOB_ASPER_ADHAR) newErrors.DOB_ASPER_ADHAR = "DOB (as per Aadhar) is required";
-
-    // Permanent Address
-    if (!formData.HNO?.trim()) newErrors.HNO = "House No/Street is required";
-    if (!formData.CITY?.trim()) newErrors.CITY = "City is required";
-
-    if (!formData.DISTRICT?.trim()) newErrors.DISTRICT = "District is required";
-    if (!formData.STATE?.trim()) newErrors.STATE = "State is required";
-    if (!formData.PINCODE?.trim()) newErrors.PINCODE = "Pincode is required";
-
-    // Present Address – only required if not same as permanent
-    if (sameAsPermanent !== true) {
-      if (!formData.PRESENT_HNO?.trim()) newErrors.PRESENT_HNO = "House No/Street is required";
-      if (!formData.PRESENT_CITY?.trim()) newErrors.PRESENT_CITY = "City is required";
-      if (!formData.PRESENT_DISTRICT?.trim()) newErrors.PRESENT_DISTRICT = "District is required";
-      if (!formData.PRESENT_STATE?.trim()) newErrors.PRESENT_STATE = "State is required";
-      if (!formData.PRESENT_PINCODE?.trim()) newErrors.PRESENT_PINCODE = "Pincode is required";
-    }
-
-    // ID proofs
-    if (!formData.AADHAR_NUM?.trim()) {
+if (!formData.HIGHEST_QUA?.trim()) newErrors.HIGHEST_QUA = "Highest Qualification is required";
+if (!formData.AADHAR_NUM?.trim()) {
       newErrors.AADHAR_NUM = "Aadhaar Number is required";
     } else if (formData.AADHAR_NUM.length !== 12) {
       newErrors.AADHAR_NUM = "Aadhaar must be 12 digits";
     }
-    if (!formData.PAN_NUM?.trim()) newErrors.PAN_NUM = "PAN Number is required";
-    if (!formData.UAN_NUM?.trim()) newErrors.UAN_NUM = "UAN Number is required";
+    if (!formData.PAN_NUM?.trim()) newErrors.PAN_NUM = "PAN Number is required";   
+
+if (!formData.UAN_NUM?.trim()) newErrors.UAN_NUM = "UAN Number is required";
     if (formData.UAN_NUM?.length === 12 && !formData.UAN_FILE) newErrors.UAN_FILE = "UAN File is required";
-    if (!formData.ESI_NUM?.trim()) newErrors.ESI_NUM = "ESI Number is required";
+if (!formData.ESI_NUM?.trim()) newErrors.ESI_NUM = "ESI Number is required";
     if (!formData.SRC_TYPE) newErrors.SRC_TYPE = "Source is required";
     if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_NAME?.trim()) {
       newErrors.SRC_REFER_NAME = "Reference Name is required";
     }
-
     if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_DEPT?.trim()) {
       newErrors.SRC_REFER_DEPT = "Reference dept is required";
     }
+
 
     if (formData.PASSPORT_NUMBER?.trim() && !formData.PASSPORT_EXPIRY) {
       newErrors.PASSPORT_EXPIRY = "Passport Expiry date is required";
@@ -994,85 +1052,111 @@ const removeExperience = async (id) => {
       newErrors.DRIVING_LICENSE_EXPIRY = "Licence Expiry date is required";
     }
 
-    // Education (mandatory)
-// Education validation - 10th is ALWAYS mandatory for EVERYONE
-if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
-if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC Marks is required";
-if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
 
-// For non-workman ONLY, validate higher education
-if (formData.EMP !== "Work Man") {  // If NOT workman, then all education required
-    // Intermediate
-    if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
-    if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter Marks is required";
-    if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
 
-    // Degree/B.Tech
-    if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
-    if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree Marks is required";
-    if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
-}
+    // Permanent Address
+    if (!formData.HNO?.trim()) newErrors.HNO = "House No/Street is required";
+    if (!formData.CITY?.trim()) newErrors.CITY = "City is required";
+    if (!formData.DISTRICT?.trim()) newErrors.DISTRICT = "District is required";
+    if (!formData.STATE?.trim()) newErrors.STATE = "State is required";
+    if (!formData.PINCODE?.trim()) newErrors.PINCODE = "Pincode is required";
 
-    // File uploads
-    if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
+    // Present Address
+    if (sameAsPermanent !== true) {
+      if (!formData.PRESENT_HNO?.trim()) newErrors.PRESENT_HNO = "House No/Street is required";
+      if (!formData.PRESENT_CITY?.trim()) newErrors.PRESENT_CITY = "City is required";
+      if (!formData.PRESENT_DISTRICT?.trim()) newErrors.PRESENT_DISTRICT = "District is required";
+      if (!formData.PRESENT_STATE?.trim()) newErrors.PRESENT_STATE = "State is required";
+      if (!formData.PRESENT_PINCODE?.trim()) newErrors.PRESENT_PINCODE = "Pincode is required";
+    }
+
+if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
+     if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
     if (!formData.PAN_PATH) newErrors.PAN_PATH = "PAN Card is required";
-     if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
-    if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
-const hasCurrentCompany = experiences.some(exp => exp.isCurrent);
-if (hasCurrentCompany && !formData.bank_statements) {
-    newErrors.bank_statements = "Bank Statements are required";
-}
-if (hasCurrentCompany && !formData.payslips) {
-    newErrors.payslips = "payslips are required";
-}
-    if (!formData.RESUME_UPLOAD) newErrors.RESUME_UPLOAD = "Resume is required";
+    if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
+   
 
 
+
+    // ID proofs
+    
+    
+    
+    // Education
+    if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
+        if (!formData.SSC_BOARD?.trim()) newErrors.SSC_BOARD = "SSC Board is required";
+    if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC %";
+    if(!formData.SSC_PASSED_YEAR) newErrors.SSC_PASSED_YEAR = "SSC passed yr is required";
+    if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
+
+    if (formData.EMP !== "Work Man") {
+      if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
+        if (!formData.INTER_BOARD?.trim()) newErrors.INTER_BOARD = "Inter Board is required";
+      if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter %";
+         if(!formData.INTER_PASSED_YEAR) newErrors.INTER_PASSED_YEAR = "Inter passed yr is required";
+
+      if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
+      
+
+      if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
+           if (!formData.DEGREE_UNIVERSITY?.trim()) newErrors.DEGREE_UNIVERSITY = "Degree univ is required";
+
+      if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree % ";
+       if (!formData.DEGREE_PASSED_YEAR?.trim()) newErrors.DEGREE_PASSED_YEAR = "Degree passed yr is required";
+      if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
+    }
+
+   
+   
+ experiences.forEach((exp, index) => {
+      if (!exp.COMPANY_NAME?.trim()) {
+        newErrors[`exp_${exp.id}_COMPANY_NAME`] = "Company name is required";
+      }
+      if (!exp.DESIGNATION?.trim()) {
+        newErrors[`exp_${exp.id}_DESIGNATION`] = "Designation is required";
+      }
+      if (!exp.FROM_DATE) {
+        newErrors[`exp_${exp.id}_FROM_DATE`] = "From date is required";
+      }
+      if (!exp.TO_DATE) {
+        newErrors[`exp_${exp.id}_TO_DATE`] = "To date is required";
+      }
+      if (exp.FROM_DATE && exp.TO_DATE) {
+        const fromDate = new Date(exp.FROM_DATE);
+        const toDate = new Date(exp.TO_DATE);
+        if (toDate < fromDate) {
+          newErrors[`exp_${exp.id}_TO_DATE`] = "To date cannot be before from date";
+        }
+      }
+      if (exp.isCurrent) {
+        if (!exp.NOTICE_PERIOD?.toString().trim()) {
+          newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period is required for current company";
+        } else if (exp.NOTICE_PERIOD < 0) {
+          newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period cannot be negative";
+        }
+      }
+    });
+
+    
 
     // CTC
     if (!formData.CURRENT_CTC?.toString().trim()) newErrors.CURRENT_CTC = "Current CTC is required";
     if (!formData.EXP_CTC?.toString().trim()) newErrors.EXP_CTC = "Expected CTC is required";
+    if (!formData.TOTAL_EXP?.trim()) newErrors.TOTAL_EXP = "Total Experience is required";
 
-    experiences.forEach((exp, index) => {
-  // Company Name validation
-  if (!exp.COMPANY_NAME?.trim()) {
-    newErrors[`exp_${exp.id}_COMPANY_NAME`] = "Company name is required";
-  }
-  
-  // Designation validation
-  if (!exp.DESIGNATION?.trim()) {
-    newErrors[`exp_${exp.id}_DESIGNATION`] = "Designation is required";
-  }
-  
-  // From Date validation
-  if (!exp.FROM_DATE) {
-    newErrors[`exp_${exp.id}_FROM_DATE`] = "From date is required";
-  }
-  
-  // To Date validation
-  if (!exp.TO_DATE) {
-    newErrors[`exp_${exp.id}_TO_DATE`] = "To date is required";
-  }
-  
-  // Validate that TO_DATE is not before FROM_DATE
-  if (exp.FROM_DATE && exp.TO_DATE) {
-    const fromDate = new Date(exp.FROM_DATE);
-    const toDate = new Date(exp.TO_DATE);
-    if (toDate < fromDate) {
-      newErrors[`exp_${exp.id}_TO_DATE`] = "To date cannot be before from date";
-    }
-  }
-  
-  // For current company, validate notice period
-  if (exp.isCurrent) {
-    if (!exp.NOTICE_PERIOD?.toString().trim()) {
-      newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period is required for current company";
-    } else if (exp.NOTICE_PERIOD < 0) {
-      newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period cannot be negative";
-    }
-  }
-});
+   
 
+   
+   
+   
+
+   const hasCurrentCompany = experiences.some(exp => exp.isCurrent);
+    if (hasCurrentCompany && !formData.bank_statements) {
+      newErrors.bank_statements = "Bank Statements are required";
+    }
+    if (hasCurrentCompany && !formData.payslips) {
+      newErrors.payslips = "payslips are required";
+    }
 
     return newErrors;
   };
@@ -1086,20 +1170,23 @@ if (hasCurrentCompany && !formData.payslips) {
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      setShowErrors(true);
+     setShowErrors(true);
 
-      const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
+      const firstErrorField = Object.keys(validationErrors)[0];
+      
+      // Scroll to the first error field
       if (firstErrorField) {
-        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+       scrollToError(firstErrorField);
       }
 
-      Swal.fire({
-        title: "Validation Error",
-        text: "Please fill all required fields correctly",
-        icon: "error",
-      });
+      // Swal.fire({
+      //   title: "Validation Error",
+      //   text: "Please fill all required fields correctly",
+      //   icon: "error",
+      // });
       return;
     }
+
 
     const result = await Swal.fire({
       title: "Confirm Submission",
@@ -1113,6 +1200,18 @@ if (hasCurrentCompany && !formData.payslips) {
     });
 
     if (!result.isConfirmed) return;
+
+
+  // ✅ LOADING POPUP
+  Swal.fire({
+    title: "Processing...",
+    text: "Saving your submit, please wait...",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
     const data = new FormData();
 
@@ -1151,11 +1250,8 @@ experiences.forEach((exp, index) => {
 
 
 
-  // ✅ SIMPLE: Just use exp.EMP_COMP_ID directly
 
-  console.log(`Experienc333333e ${index}: isCurrent=${exp.isCurrent}, EMP_COMP_ID=${exp.EMP_COMP_ID || '""'}`);
-
- data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
+data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
 
   if (exp.isCurrent) {
      
@@ -1184,204 +1280,30 @@ experiences.forEach((exp, index) => {
           timer: 1500,
           showConfirmButton: false,
         });
-       
 resetForm();
   try {
-        await fetch(`${API_BASE_URL}/logout`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${userToken.token}`,
-            },
-            body: JSON.stringify({}),
+      const LogoutResponse = await fetch(`${API_BASE_URL}/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${userToken.token}`,
+          },
+          body: JSON.stringify({}),
         });
-    } catch (err) {
-        console.error("Logout error:", err);
-    } finally {
-        // ✅ Clear localStorage and reload regardless of logout API result
+  
         localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
-        window.location.href = '/'; // ✅ full page refresh + redirect to login
-    }
-
+        navigate('/');
+  
+        if (!LogoutResponse.ok) throw new Error("Server is Not Responding Error 500");
+      } catch (error) {
+        console.error("Logout Failed 401");
+      }
         // Optionally reset or redirect
       } else {
         await Swal.fire("Failed", response.data.message, "error");
       }
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   const validationErrors = validateForm();
-
-  //   if (Object.keys(validationErrors).length > 0) {
-  //     setErrors(validationErrors);
-  //     setShowErrors(true);
-
-  //     const firstErrorField = document.querySelector('[style*="border-color: #ef4444"]');
-  //     if (firstErrorField) {
-  //       firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  //     }
-
-  //     Swal.fire({
-  //       title: "Validation Error",
-  //       text: "Please fill all required fields correctly",
-  //       icon: "error",
-  //     });
-  //     return;
-  //   }
-
-  //   const result = await Swal.fire({
-  //     title: "Confirm Submission",
-  //     text: "Are you sure you want to submit this form?",
-  //     icon: "question",
-  //     showCancelButton: true,
-  //     confirmButtonColor: "#3085d6",
-  //     cancelButtonColor: "#d33",
-  //     confirmButtonText: "Yes, Submit!",
-  //     cancelButtonText: "No, Cancel"
-  //   });
-
-  //   if (!result.isConfirmed) return;
-
-  //   try {
-  //     Swal.fire({
-  //       title: "Processing...",
-  //       showConfirmButton: false,
-  //       allowOutsideClick: false,
-  //       willOpen: () => {
-  //         Swal.showLoading();
-  //       }
-  //     });
-
-  //     const data = new FormData();
-
-  //     // Add form data fields - only include File objects and regular strings (not file paths)
-  //     Object.entries(formData).forEach(([key, value]) => {
-
-
-  //       if (!value) return;
-
-  //       // If it's a File object (new upload), append it
-  //       if (value instanceof File) {
-  //         data.append(key, value);
-  //       }
-  //       // If it's a string that does NOT look like a file path, append it as a regular field
-  //       else if (typeof value === 'string' && !value.startsWith('/storage/') && !value.startsWith('http')) {
-  //         data.append(key, String(value));
-  //       }
-  //       // If it's a string that is a file path (existing file), skip it - we don't send it
-  //       // The backend should keep the existing file
-  //     });
-
-  //     // Add status and other fields that might be missing
-  //     data.append('status', "submit");
-
-  //     if (formData.AGE) {
-  //       data.append('AGE', String(formData.AGE));
-  //     }
-  //     data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
-
-  //     // Process experiences (similar logic)
-  //     const experiencesArray = experiences.map((exp, index) => {
-  //       const experienceObj = {
-  //         companyname: exp.COMPANY_NAME || '',
-  //         designation: exp.DESIGNATION || '',
-  //         fromdate: exp.FROM_DATE || '',
-  //         todate: exp.TO_DATE || '',
-  //         duration: exp.DURATION || '',
-  //         currentCTC: exp.CURRENT_CTC || '',
-  //         expectedCTC: exp.EXP_CTC || '',
-  //         stage: index,
-  //         isCurrent: exp.isCurrent || false
-  //       };
-
-
-
-  //       if (exp.isCurrent) {
-  //         experienceObj.noticePeriod = exp.NOTICE_PERIOD || '';
-
-
-         
-    
-  //    data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID || '');
-
-
-        
-
-  //       }
-
-     
-
-
-  //       return experienceObj;
-  //     });
-
-  //     data.append('experiences', JSON.stringify(experiencesArray));
-
-  //     // Log what we're sending for debugging
-  //     console.log('Submitting FormData with entries:');
-  //     for (let [key, value] of data.entries()) {
-  //       if (value instanceof File) {
-  //         console.log(key, 'File:', value.name);
-  //       } else {
-  //         console.log(key, value);
-  //       }
-  //     }
-
-  //     const response = await axios.post(
-  //       `${API_BASE_URL}/recruitStore`,
-  //       data,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${userToken.token}`,
-  //           "Content-Type": "multipart/form-data",
-  //         },
-  //       }
-  //     );
-
-  //     Swal.close();
-
-  //     if (response.data.success) {
-  //       await Swal.fire({
-  //         title: "Success",
-  //         text: "Recruitment data updated successfully",
-  //         icon: "success",
-  //         timer: 1500,
-  //         showConfirmButton: false,
-  //       });
-  //       resetForm();
-
-  //       // Optionally reset or redirect
-  //     } else {
-  //       await Swal.fire("Failed", response.data.message, "error");
-  //     }
-  //   } catch (error) {
-  //     Swal.close();
-  //     console.error(error);
-  //     await Swal.fire(
-  //       "Error",
-  //       error.response?.data?.message || "Something went wrong",
-  //       "error"
-  //     );
-  //   }
-  // };
-
-
   
 
   const resetForm = () => {
@@ -1423,7 +1345,7 @@ resetForm();
       SRC_REFER_DEPT: '',
       EMER_CONTACT_NUM: '',
       PASSPORT_NUMBER: '',
-      PASSPORT_EXPIRY: '',
+     PASSPORT_EXPIRY: '',
       DRIVING_LICENSE: '',
       DRIVING_LICENSE_EXPIRY: '',
       BLOOD_GROUP: '',
@@ -1486,7 +1408,7 @@ resetForm();
       }
     ]);
     setSameAsPermanent(null);
-    setErrors({});
+   setErrors({});
     setShowErrors(false);
   };
 
@@ -1533,13 +1455,14 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
 
   return (
-    <div>
+    <div id={name} ref={(ele) => registerRef(name, ele)}>
       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
         {label}
       </label>
+      
       {!isPending ? (
-        // Normal mode: upload button
-        <>
+        // Normal mode: upload and view buttons
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
             <input
               ref={inputRef}
@@ -1557,14 +1480,59 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
                 borderRadius: '6px',
                 fontWeight: '600',
                 fontSize: '11px',
-                border: error ? '2px solid #ef4444' : '2px solid #bfdbfe',
               }}
             >
               Choose File
             </span>
           </label>
+          
           {selectedFile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenFile(selectedFile)}
+                style={{
+                  padding: '5px 10px',
+                  background: 'linear-gradient(to right, #6fb6ed, #76b2ee)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  fontSize: '11px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                   pointerEvents: 'auto',   // ← ADD
+    position: 'relative',    // ← ADD
+    zIndex: 10,              // ← ADD
+                }}
+              >
+               <span>
+  <Eye size={12} color="#1e40af" strokeWidth={3} />
+</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleRemove}
+                style={{
+                  background: '#c84141',
+                  color: '#f6efef',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  fontSize: '9px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+              
               <span
                 style={{
                   color: '#1e40af',
@@ -1578,53 +1546,203 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
               >
                 {fileName || 'Selected file'}
               </span>
-              <button
-                type="button"
-                onClick={handleRemove}
-                style={{
-                  background: '#c84141',
-                  color: '#f6efef',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '14px',
-                  height: '14px',
-                  fontSize: '9px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            </>
           )}
-        </>
+        </div>
       ) : (
-        // Pending mode: show clickable file name if file exists
+        
         selectedFile && (
-          <div style={{ marginTop: '3px' }}>
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+            <button
+              type="button"
               onClick={() => onOpenFile(selectedFile)}
               style={{
-                color: '#1e40af',
-                fontSize: '10px',
+                padding: '4px 12px',
+                background: 'linear-gradient(to right, #7baaeb, #6998e9)',
+                color: 'white',
+                borderRadius: '6px',
                 fontWeight: '600',
-                textDecoration: 'underline',
+                fontSize: '11px',
+                border: 'none',
                 cursor: 'pointer',
-                pointerEvents: 'auto', // override parent pointer-events: none
-                wordBreak: 'break-all',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                 pointerEvents: 'auto',   // ← ADD
+    position: 'relative',    // ← ADD
+    zIndex: 10,              // ← ADD
               }}
             >
-              {fileName || 'Open file'}
+              <span>
+  <Eye size={12} color="#1e40af" strokeWidth={3} />
+</span>
+            </button>
+            <span
+              style={{
+                color: '#1e40af',
+                fontSize: '9px',
+                fontWeight: '500',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '140px',
+              }}
+            >
+              {fileName || 'File uploaded'}
             </span>
           </div>
         )
       )}
+      
       {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px' }}>{error}</p>}
     </div>
   );
 };
+// const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPending, onOpenFile }) => {
+//   const inputRef = React.useRef();
+
+//   const getFileNameFromPath = (path) => {
+//     if (!path) return null;
+//     if (typeof path === 'string') {
+//       const parts = path.split('/');
+//       return parts[parts.length - 1];
+//     }
+//     return path?.name;
+//   };
+
+//   const handleChange = (e) => onChange(e);
+//   const handleRemove = () => {
+//     if (inputRef.current) inputRef.current.value = '';
+//     onRemove(name);
+//   };
+
+//   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
+
+//   return (
+//     <div id={name} ref={(ele) => registerRef(name, ele)}>
+//       {!isPending ? (
+//         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+//           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+//             <label style={{ cursor: 'pointer' }}>
+//               <input
+//                 ref={inputRef}
+//                 type="file"
+//                 name={name}
+//                 accept="application/pdf"
+//                 onChange={handleChange}
+//                 style={{ display: 'none' }}
+//               />
+//               <span
+//                 style={{
+//                   padding: '4px 8px',
+//                   background: selectedFile ? '#10b981' : '#3b82f6',
+//                   color: 'white',
+//                   borderRadius: '4px',
+//                   fontSize: '10px',
+//                   fontWeight: '600',
+//                   display: 'inline-block',
+//                   cursor: 'pointer',
+//                 }}
+//               >
+//                 {selectedFile ? '📎 Replace' : '📁 Upload'}
+//               </span>
+//             </label>
+            
+//             {selectedFile && (
+//               <>
+//                 <button
+//                   type="button"
+//                   onClick={() => onOpenFile(selectedFile)}
+//                   style={{
+//                     padding: '4px 8px',
+//                     background: '#059669',
+//                     color: 'white',
+//                     borderRadius: '4px',
+//                     fontSize: '10px',
+//                     fontWeight: '600',
+//                     border: 'none',
+//                     cursor: 'pointer',
+//                   }}
+//                 >
+//                   View
+//                 </button>
+                
+//                 <button
+//                   type="button"
+//                   onClick={handleRemove}
+//                   style={{
+//                     background: '#ef4444',
+//                     color: 'white',
+//                     border: 'none',
+//                     borderRadius: '50%',
+//                     width: '18px',
+//                     height: '18px',
+//                     fontSize: '9px',
+//                     cursor: 'pointer',
+//                     display: 'flex',
+//                     alignItems: 'center',
+//                     justifyContent: 'center',
+//                     padding: 0,
+//                   }}
+//                 >
+//                  ✕
+//                 </button>
+//               </>
+//             )}
+//           </div>
+          
+//           {selectedFile && (
+//             <span
+//               style={{
+//                 fontSize: '9px',
+//                 color: '#1e40af',
+//                 maxWidth: '100px',
+//                 overflow: 'hidden',
+//                 textOverflow: 'ellipsis',
+//                 whiteSpace: 'nowrap',
+//                 textAlign: 'center',
+//               }}
+//             >
+//               {fileName}
+//             </span>
+//           )}
+//         </div>
+//       ) : (
+//         // Pending/View mode
+//         selectedFile && (
+//           <div style={{ textAlign: 'center' }}>
+//             <button
+//               type="button"
+//               onClick={() => onOpenFile(selectedFile)}
+//               style={{
+//                 padding: '4px 8px',
+//                 background: '#059669',
+//                 color: 'white',
+//                 borderRadius: '4px',
+//                 fontSize: '10px',
+//                 fontWeight: '600',
+//                 border: 'none',
+//                 cursor: 'pointer',
+//                 display: 'inline-flex',
+//                 alignItems: 'center',
+//                 gap: '4px',
+//               }}
+//             >
+//               <span>👁️</span> View
+//             </button>
+//             <div style={{ fontSize: '9px', color: '#1e40af', marginTop: '2px' }}>
+//               {fileName}
+//             </div>
+//           </div>
+//         )
+//       )}
+      
+//       {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px', textAlign: 'center' }}>{error}</p>}
+//     </div>
+//   );
+// };
+
+
 const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPending, onOpenFile }) => {
   const inputRef = React.useRef();
 
@@ -1646,179 +1764,141 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
 
   return (
-    <div>
+    <div id={name} ref={(ele) => registerRef(name, ele)}>
       {!isPending ? (
-        <>
-          <label style={{ cursor: 'pointer' }}>
-            <input
-              ref={inputRef}
-              type="file"
-              name={name}
-              accept="application/pdf"
-              onChange={handleChange}
-              style={{ display: 'none' }}
-            />
-            <span
-              style={{
-                padding: '4px 8px',
-                background: selectedFile ? '#10b981' : '#3b82f6',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: '600',
-                display: 'inline-block',
-                cursor: 'pointer',
-              }}
-            >
-              {selectedFile ? '📎 File' : '📁 Upload'}
-            </span>
-          </label>
-          {selectedFile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <label style={{ cursor: 'pointer' }}>
+              <input
+                ref={inputRef}
+                type="file"
+                name={name}
+                accept="application/pdf"
+                onChange={handleChange}
+                style={{ display: 'none' }}
+              />
               <span
                 style={{
-                  fontSize: '9px',
-                  color: '#1e40af',
-                  maxWidth: '80px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {fileName}
-              </span>
-              <button
-                type="button"
-                onClick={handleRemove}
-                style={{
-                  background: '#ef4444',
+                  padding: '4px 8px',
+                  background: selectedFile ? '#3b82f6' : '#3b82f6',
                   color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '16px',
-                  height: '16px',
-                  fontSize: '9px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  display: 'inline-block',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 0,
                 }}
               >
-                ✕
-              </button>
-            </div>
-          )}
-        </>
-      ) : (
-        selectedFile && (
-          <div>
+                {selectedFile ? 'Upload' : '📁 Upload'}
+              </span>
+            </label>
+            
+            {selectedFile && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOpenFile(selectedFile, name)}  // Pass file and name to open function
+                  style={{
+                    padding: '4px 8px',
+                    background: '#9db6f5',
+                    color: 'white',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+              <Eye size={12} color="#1e40af" strokeWidth={3} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  style={{
+                    background: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    fontSize: '9px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                  }}
+                >
+                  ✕
+                </button>
+              </>
+            )}
+          </div>
+          
+          {selectedFile && (
             <span
-              onClick={() => onOpenFile(selectedFile)}
               style={{
                 fontSize: '9px',
                 color: '#1e40af',
-                textDecoration: 'underline',
+                maxWidth: '100px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
+             }}
+            >
+              {fileName}
+            </span>
+          )}
+        </div>
+      ) : (
+        // Pending/View mode
+        selectedFile && (
+          <div style={{ textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => onOpenFile(selectedFile, name)}  // Pass file and name to open function
+              style={{
+                padding: '4px 8px',
+                background: '#a5bef0',
+                color: 'white',
+                borderRadius: '4px',
+                fontSize: '9px',
+                fontWeight: '600',
+                border: 'none',
                 cursor: 'pointer',
-                pointerEvents: 'auto',
-                wordBreak: 'break-all',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                  pointerEvents: 'auto',   // ← ADD
+    position: 'relative',    // ← ADD
+    zIndex: 10,              // ← ADD
               }}
             >
-              {fileName || 'Open file'}
-            </span>
+           <span>
+  <Eye size={12} color="#1e40af" strokeWidth={3} />
+</span>
+            </button>
+            <div style={{ fontSize: '7px', color: '#1e40af', marginTop: '2px' }}>
+              {fileName}
+            </div>
           </div>
-        )
+       )
       )}
-      {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
+      
+      {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px', textAlign: 'center' }}>{error}</p>}
     </div>
   );
 };
-  // Table file upload component for education rows
-  // const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error }) => {
-  //   const inputRef = React.useRef();
 
-  //   const getFileNameFromPath = (path) => {
-  //     if (!path) return null;
-  //     if (typeof path === 'string') {
-  //       const parts = path.split('/');
-  //       return parts[parts.length - 1];
-  //     }
-  //     return path?.name; // File object
-  //   };
-
-  //   const handleChange = (e) => onChange(e);
-  //   const handleRemove = () => {
-  //     if (inputRef.current) inputRef.current.value = '';
-  //     onRemove(name);
-  //   };
-
-  //   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
-
-  //   return (
-  //     <div>
-  //       <label style={{ cursor: 'pointer' }}>
-  //         <input
-  //           ref={inputRef}
-  //           type="file"
-  //           name={name}
-  //           accept="application/pdf"
-  //           onChange={handleChange}
-  //           style={{ display: 'none' }}
-  //         />
-  //         <span
-  //           style={{
-  //             padding: '4px 8px',
-  //             background: selectedFile ? '#10b981' : '#3b82f6',
-  //             color: 'white',
-  //             borderRadius: '4px',
-  //             fontSize: '10px',
-  //             fontWeight: '600',
-  //             display: 'inline-block',
-  //             cursor: 'pointer'
-  //           }}
-  //         >
-  //           {selectedFile ? '📎 File' : '📁 Upload'}
-  //         </span>
-  //       </label>
-
-  //       {selectedFile && (
-  //         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-  //           <span style={{ fontSize: '9px', color: '#1e40af', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-  //             {fileName}
-  //           </span>
-  //           <button
-  //             type="button"
-  //             onClick={handleRemove}
-  //             style={{
-  //               background: '#ef4444',
-  //               color: 'white',
-  //               border: 'none',
-  //               borderRadius: '50%',
-  //               width: '16px',
-  //               height: '16px',
-  //               fontSize: '9px',
-  //               cursor: 'pointer',
-  //               display: 'flex',
-  //               alignItems: 'center',
-  //               justifyContent: 'center',
-  //               padding: 0
-  //             }}
-  //           >
-  //             ✕
-  //           </button>
-  //         </div>
-  //       )}
-  //       {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{error}</p>}
-  //     </div>
-  //   );
-  // };
-
+  
   return (
     <div style={{
       maxWidth: '100%',
       width: '100%',
       margin: '0 auto',
-      padding: '8px',
+      padding: '4px',
       borderRadius: '10px',
       boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
       border: '3px solid #87b5ee',
@@ -1826,7 +1906,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
     }}>
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>
         <form
-          id="recruitmentForm"
+         id="recruitmentForm"
           onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
           {/* ================= BASIC INFORMATION ================= */}
@@ -1835,12 +1915,13 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(30,64,175,0.08), 0 8px 32px rgba(59,130,246,0.10), inset 0 1px 0 rgba(255,255,255,0.9)',
             padding: '8px',
+            paddingTop: '20px',
             border: '1.5px solid rgba(147,197,253,0.6)',
             position: 'relative',
             overflow: 'hidden',
           }}>
             {/* decorative top bar and blobs (omitted for brevity, keep as original) */}
-            <div style={{
+             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
               background: 'linear-gradient(90deg, #1e40af 0%, #2563eb 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%)',
               borderRadius: '12px 12px 0 0',
@@ -1858,388 +1939,647 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
               pointerEvents: 'none',
             }} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h2 style={{
-                ...sectionHeading,
-                margin: 0,
-                fontSize: '13px',
-                fontWeight: '800',
-                letterSpacing: '0.6px',
-                textTransform: 'uppercase',
-                background: 'linear-gradient(90deg, #1e3a8a, #1d4ed8, #0284c7)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                display: 'flex', alignItems: 'center', gap: '6px',
-              }}>
-                <User size={16} strokeWidth={2} />
-                Basic Information
-              </h2>
-              <button
-                type="button"
-                onClick={() => toggleSection('basicInfo')}
-                style={{
-                  background: 'linear-gradient(135deg, #1e40af, #2563eb)',
-                  border: 'none', cursor: 'pointer', color: '#fff',
-                  borderRadius: '6px', width: '20px', height: '20px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '9px', fontWeight: '700',
-                  boxShadow: '0 2px 6px rgba(37,99,235,0.35)',
-                }}
-              >
-                {openSections.basicInfo ? '▲' : '▼'}
-              </button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                       <h2 style={{
+                         ...sectionHeading,
+                         margin: 0,
+                         fontSize: '13px',
+                         fontWeight: '800',
+                         letterSpacing: '0.6px',
+                         textTransform: 'uppercase',
+                         background: 'linear-gradient(90deg, #1e3a8a, #1d4ed8, #0284c7)',
+                         WebkitBackgroundClip: 'text',
+                         WebkitTextFillColor: 'transparent',
+                         display: 'flex', alignItems: 'center', gap: '6px',
+                       }}>
+                         <User size={16} strokeWidth={2} />
+                         Basic Information
+                       </h2>
+                       <button
+                         type="button"
+                         onClick={() => toggleSection('basicInfo')}
+                         style={{
+                           background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+                           border: 'none', cursor: 'pointer', color: '#fff',
+                           borderRadius: '6px', width: '20px', height: '20px',
+                           display: 'flex', alignItems: 'center', justifyContent: 'center',
+                           fontSize: '9px', fontWeight: '700',
+                           boxShadow: '0 2px 6px rgba(37,99,235,0.35)',
+                         }}
+                       >
+                         {openSections.basicInfo ? '▲' : '▼'}
+                       </button>
+                     </div>
             <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
-              {openSections.basicInfo && (
-                <>
+    
+  {openSections.basicInfo && (
+    <>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px' }}>
-                    <InputField label="Child Case ID" name="CHILD_CASEID" value={formData.CHILD_CASEID} onChange={handleInputChange} disabled />
-                    <InputField label="Plant" name="PLANT" value={formData.PLANT} onChange={handleInputChange} disabled />
-                    <InputField label="Department" name="DEPT" value={formData.DEPT} onChange={handleInputChange} disabled />
-                    <InputField label="Employee level" name="EMP" value={formData.EMP} onChange={handleInputChange} disabled />
-                    <InputField label={<>Name <span style={{ color: '#070606' }}>*</span></>} name="FIRST_NAME" value={formData.FIRST_NAME} onChange={handleInputChange} error={showErrors ? errors.FIRST_NAME : ''} placeholder="As per Aadhar" />
-                    {/* <InputField label={<>Last Name <span style={{ color: '#ef4444' }}>*</span></>} name="LAST_NAME" value={formData.LAST_NAME} onChange={handleInputChange} error={showErrors ? errors.LAST_NAME : ''} /> */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px' }}>
+        <InputField 
+          label="Child Case ID" 
+          name="CHILD_CASEID" 
+          value={formData.CHILD_CASEID} 
+          onChange={handleInputChange}   
+          inputRef={(el) => registerRef('CHILD_CASEID', el)}  
+          disabled 
+        />
+        <InputField 
+          label="Plant" 
+          name="PLANT" 
+          value={formData.PLANT} 
+          onChange={handleInputChange} 
+          disabled 
+          inputRef={(el) => registerRef('PLANT', el)}
+        />
+        <InputField 
+          label="Department" 
+          name="DEPT" 
+          value={formData.DEPT} 
+          onChange={handleInputChange} 
+          disabled 
+          inputRef={(el) => registerRef('DEPT', el)}
+        />
+        <InputField 
+          label="Employee level" 
+          name="EMP" 
+          value={formData.EMP} 
+          onChange={handleInputChange} 
+          disabled 
+          inputRef={(el) => registerRef('EMP', el)}
+        />
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Gender <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <select name="GENDER" value={formData.GENDER} onChange={handleInputChange} style={{
-                        width: '100%', padding: '2px 8px', height: '28px',
-                        border: `1.5px solid ${showErrors && errors.GENDER ? '#ef4444' : '#1572dd'}`,
-                        borderRadius: '6px', fontSize: '12px', outline: 'none',
-                        background: '#ffffff',
-                        color: '#1e3a8a', fontWeight: '500',
-                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                      }}>
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                      {showErrors && errors.GENDER && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GENDER}</p>}
-                    </div>
+        <InputField 
+          label={<>Name <span style={{ color: '#d30f0f' }}>*</span></>}
+          name="FIRST_NAME" 
+          value={formData.FIRST_NAME} 
+          onChange={handleInputChange} 
+          error={showErrors ? errors.FIRST_NAME : ''}
+          inputRef={(el) => registerRef('FIRST_NAME', el)}
+        />
+        
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+            Gender <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <select 
+            id="GENDER"
+            name="GENDER" 
+            value={formData.GENDER} 
+            onChange={handleInputChange}
+            inputRef={(el) => registerRef('GENDER', el)}
+            style={{
+              width: '100%', padding: '2px 8px', height: '28px',
+              border: `1.5px solid ${showErrors && errors.GENDER ? '#ef4444' : '#1572dd'}`,
+              borderRadius: '6px', fontSize: '12px', outline: 'none',
+              background: '#ffffff',
+              color: '#1e3a8a', fontWeight: '500',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+          {showErrors && errors.GENDER && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GENDER}</p>}
+        </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Marital Status <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <select name="MARITAL_STATUS" value={formData.MARITAL_STATUS} onChange={handleInputChange} style={{
-                        width: '100%', padding: '2px 8px', height: '28px',
-                        border: `1.5px solid ${showErrors && errors.MARITAL_STATUS ? '#ef4444' : '#1472dd'}`,
-                        borderRadius: '6px', fontSize: '12px', outline: 'none',
-                        background: '#ffffff',
-                        color: '#1e3a8a', fontWeight: '500',
-                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                      }}>
-                        <option value="">Select Status</option>
-                        <option value="Married">Married</option>
-                        <option value="Unmarried">Unmarried</option>
-                      </select>
-                      {showErrors && errors.MARITAL_STATUS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.MARITAL_STATUS}</p>}
-                    </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+            Marital Status <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <select 
+            id="MARITAL_STATUS"
+            name="MARITAL_STATUS" 
+            value={formData.MARITAL_STATUS} 
+            onChange={handleInputChange}
+            inputRef={(el) => registerRef('MARITAL_STATUS', el)}
+            style={{
+              width: '100%', padding: '2px 8px', height: '28px',
+              border: `1.5px solid ${showErrors && errors.MARITAL_STATUS ? '#ef4444' : '#1472dd'}`,
+              borderRadius: '6px', fontSize: '12px', outline: 'none',
+              background: '#ffffff',
+              color: '#1e3a8a', fontWeight: '500',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+            <option value="">Select Status</option>
+            <option value="Married">Married</option>
+            <option value="Unmarried">Unmarried</option>
+          </select>
+          {showErrors && errors.MARITAL_STATUS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.MARITAL_STATUS}</p>}
+        </div>
 
-                    <InputField label={<>Languages Known <span style={{ color: '#ef4444' }}>*</span></>} name="LANG_KNOWN" value={formData.LANG_KNOWN} onChange={handleInputChange} placeholder="e.g. English, Telugu" error={showErrors ? errors.LANG_KNOWN : ''} />
-                    <InputField label={<>Mother Tongue <span style={{ color: '#ef4444' }}>*</span></>} name="MOTHER_TONGUE" value={formData.MOTHER_TONGUE} onChange={handleInputChange} error={showErrors ? errors.MOTHER_TONGUE : ''} />
+        <InputField 
+          label={<>Languages Known <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="LANG_KNOWN" 
+          value={formData.LANG_KNOWN} 
+          onChange={handleInputChange} 
+          placeholder="e.g. English, Telugu" 
+          error={showErrors ? errors.LANG_KNOWN : ''}
+          inputRef={(el) => registerRef('LANG_KNOWN', el)}
+        />
+        
+        <InputField 
+          label={<>Mother Tongue <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="MOTHER_TONGUE" 
+          value={formData.MOTHER_TONGUE} 
+          onChange={handleInputChange} 
+          error={showErrors ? errors.MOTHER_TONGUE : ''}
+          inputRef={(el) => registerRef('MOTHER_TONGUE', el)}
+        />
 
-                    <InputField label={<>Email <span style={{ color: '#ef4444' }}>*</span></>} name="EMAIL" type="email" value={formData.EMAIL} onChange={handleInputChange} error={showErrors ? errors.EMAIL : ''} />
-                    <InputField label={<>Phone Number <span style={{ color: '#ef4444' }}>*</span></>} name="PHONE_NUMBER" value={formData.PHONE_NUMBER} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "PHONE_NUMBER", value: val } }); } }} error={showErrors ? errors.PHONE_NUMBER : ''} />
-                    <InputField label={<>Emergency Contact <span style={{ color: '#ef4444' }}>*</span></>} name="EMER_CONTACT_NUM" value={formData.EMER_CONTACT_NUM} maxLength={10} onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); if (val.length <= 10) { handleInputChange({ target: { name: "EMER_CONTACT_NUM", value: val } }); } }} error={showErrors ? errors.EMER_CONTACT_NUM : ''} />
+        <InputField 
+          label={<>Email <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="EMAIL" 
+          type="email" 
+          value={formData.EMAIL} 
+          onChange={handleInputChange} 
+          error={showErrors ? errors.EMAIL : ''}
+          inputRef={(el) => registerRef('EMAIL', el)}
+        />
+        
+        <InputField 
+          label={<>Phone Number <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="PHONE_NUMBER" 
+          value={formData.PHONE_NUMBER} 
+          maxLength={10} 
+       onChange={handleInputChange} 
+          error={showErrors ? errors.PHONE_NUMBER : ''}
+          inputRef={(el) => registerRef('PHONE_NUMBER', el)}
+        />
+        
+        <InputField 
+          label={<>Emergency Contact <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="EMER_CONTACT_NUM" 
+          value={formData.EMER_CONTACT_NUM} 
+          maxLength={10} 
+          onChange={(e) => { 
+            const val = e.target.value.replace(/\D/g, ""); 
+            if (val.length <= 10) { 
+              handleInputChange({ target: { name: "EMER_CONTACT_NUM", value: val } }); 
+            } 
+          }} 
+          error={showErrors ? errors.EMER_CONTACT_NUM : ''}
+          inputRef={(el) => registerRef('EMER_CONTACT_NUM', el)}
+        />
 
-                    <InputField label={<>DOB (as per original) <span style={{ color: '#ef4444' }}>*</span></>} name="ORIGINAL_DOB" type="date" value={formData.ORIGINAL_DOB} onChange={handleInputChange} error={showErrors ? errors.ORIGINAL_DOB : ''} />
-                    <InputField label={<>DOB (as per Aadhar) <span style={{ color: '#ef4444' }}>*</span></>} name="DOB_ASPER_ADHAR" type="date" value={formData.DOB_ASPER_ADHAR} onChange={handleInputChange} error={showErrors ? errors.DOB_ASPER_ADHAR : ''} />
-                    <InputField label="Age" name="AGE" value={formData.AGE} disabled />
+        <InputField 
+          label={<>DOB (as per original) <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="ORIGINAL_DOB" 
+          type="date" 
+          value={formData.ORIGINAL_DOB} 
+          onChange={handleInputChange} 
+          error={showErrors ? errors.ORIGINAL_DOB : ''}
+          inputRef={(el) => registerRef('ORIGINAL_DOB', el)}
+        />
+        
+        <InputField 
+          label={<>DOB (as per Aadhar) <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="DOB_ASPER_ADHAR" 
+          type="date" 
+          value={formData.DOB_ASPER_ADHAR} 
+          onChange={handleInputChange} 
+          error={showErrors ? errors.DOB_ASPER_ADHAR : ''}
+          inputRef={(el) => registerRef('DOB_ASPER_ADHAR', el)}
+        />
+        
+        <InputField 
+          label="Age" 
+          name="AGE" 
+          value={formData.AGE} 
+          disabled 
+          inputRef={(el) => registerRef('AGE', el)}
+        />
 
-                    <InputField label={<>Highest Qualification <span style={{ color: '#ef4444' }}>*</span></>} name="HIGHEST_QUA" value={formData.HIGHEST_QUA} onChange={handleInputChange} error={showErrors ? errors.HIGHEST_QUA : ''} />
+   <InputField 
+  label={<>Highest Qualification <span style={{ color: '#ef4444' }}>*</span></>} 
+  name="HIGHEST_QUA" 
+  value={formData.HIGHEST_QUA} 
+  onChange={handleInputChange} 
+  error={showErrors ? errors.HIGHEST_QUA : ''} 
+  inputRef={(el) => registerRef('HIGHEST_QUA', el)} 
+/>
 
-                    <InputField label={<>Aadhaar Number <span style={{ color: "#ef4444" }}>*</span></>} name="AADHAR_NUM" value={formData.AADHAR_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "AADHAR_NUM", value: val } }); }} error={showErrors ? errors.AADHAR_NUM : ""} />
-                    <InputField label={<>PAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="PAN_NUM" value={formData.PAN_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PAN_NUM", value: val } }); }} error={showErrors ? errors.PAN_NUM : ""} />
-                    <InputField label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} name="UAN_NUM" value={formData.UAN_NUM} maxLength={12} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 12) handleInputChange({ target: { name: "UAN_NUM", value: val } }); }} error={showErrors ? errors.UAN_NUM : ""} />
+        <InputField 
+          label={<>Aadhaar Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          name="AADHAR_NUM" 
+          value={formData.AADHAR_NUM} 
+          maxLength={12} 
+          onChange={(e) => { 
+            let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); 
+            if (val.length <= 12) handleInputChange({ target: { name: "AADHAR_NUM", value: val } }); 
+          }} 
+          error={showErrors ? errors.AADHAR_NUM : ""}
+          inputRef={(el) => registerRef('AADHAR_NUM', el)}
+        />
+        
+        <InputField 
+          label={<>PAN Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          name="PAN_NUM" 
+          value={formData.PAN_NUM} 
+          maxLength={10} 
+          onChange={(e) => { 
+            let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); 
+            if (val.length <= 10) handleInputChange({ target: { name: "PAN_NUM", value: val } }); 
+          }} 
+          error={showErrors ? errors.PAN_NUM : ""}
+          inputRef={(el) => registerRef('PAN_NUM', el)}
+        />
+        
+        <InputField 
+          label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          name="UAN_NUM" 
+          value={formData.UAN_NUM} 
+          maxLength={12} 
+          onChange={(e) => { 
+            let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); 
+            if (val.length <= 12) handleInputChange({ target: { name: "UAN_NUM", value: val } }); 
+          }} 
+          error={showErrors ? errors.UAN_NUM : ""}
+          inputRef={(el) => registerRef('UAN_NUM', el)}
+        />
 
-                    {
-                      (formData.UAN_NUM || '').length == 12 && (
+        {
+          (formData.UAN_NUM || '').length == 12 && (
+            <FileUpload
+              label={<>UAN Document <span style={{ color: '#ef4444' }}>*</span></>}
+              name="UAN_FILE" 
+              onChange={handleFileChange}
+              onRemove={handleRemoveFile}
+              selectedFile={formData.UAN_FILE}
+                onOpenFile={openFile} 
+            isPending={isPending} 
+              error={showErrors ? errors.UAN_FILE : ''} 
+            />
+          )
+        }
 
-                        <FileUpload
-                          label={<>UAN Document
-                            <span style={{ color: '#ef4444' }}>*</span></>}
-                          name="UAN_FILE" onChange={handleFileChange}
-                          onRemove={handleRemoveFile}
-                          selectedFile={formData.UAN_FILE}
-                          error={showErrors ? errors.UAN_FILE : ''} />
+        <InputField 
+          label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          name="ESI_NUM" 
+          value={formData.ESI_NUM} 
+          maxLength={10} 
+          onChange={(e) => { 
+            let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); 
+            if (val.length <= 10) handleInputChange({ target: { name: "ESI_NUM", value: val } }); 
+          }} 
+          error={showErrors ? errors.ESI_NUM : ""}
+          inputRef={(el) => registerRef('ESI_NUM', el)}
+        />
 
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+            Source <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <select 
+            id="SRC_TYPE"
+            name="SRC_TYPE" 
+            value={formData.SRC_TYPE} 
+            onChange={handleInputChange}
+            ref={(el) => registerRef('SRC_TYPE', el)}
+            style={{
+              width: '100%', padding: '2px 8px', height: '28px',
+              border: `1.5px solid ${showErrors && errors.SRC_TYPE ? "#ef4444" : "#217be3"}`,
+              borderRadius: '6px', fontSize: '12px', outline: 'none',
+              background: '#ffffff',
+              color: '#1e3a8a', fontWeight: '500', cursor: 'pointer',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+            <option value="">Select Source</option>
+            <option value="Social Media">Social Media</option>
+            <option value="Naukri">Naukri</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Indeed">Indeed</option>
+            <option value="reference">Reference</option>
+            <option value="Others">Others</option>
+          </select>
+          {showErrors && errors.SRC_TYPE && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_TYPE}</p>}
+        </div>
 
-                      )}
+        {formData.SRC_TYPE === "reference" && (
+          <>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                Reference Name <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input 
+                id="SRC_REFER_NAME"
+                type="text" 
+                name="SRC_REFER_NAME" 
+                value={formData.SRC_REFER_NAME || ''} 
+                onChange={handleInputChange}
+                ref={(el) => registerRef('SRC_REFER_NAME', el)}
+                placeholder="Enter reference name"
+                style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_NAME ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
+              />
+              {showErrors && errors.SRC_REFER_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_NAME}</p>}
+            </div>
 
-                    <InputField label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} name="ESI_NUM" value={formData.ESI_NUM} maxLength={10} onChange={(e) => { let val = e.target.value.replace(/\s/g, "").replace(/[^0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "ESI_NUM", value: val } }); }} error={showErrors ? errors.ESI_NUM : ""} />
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+                DEPT(Referal Person) <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input 
+                id="SRC_REFER_DEPT"
+                type="text" 
+                name="SRC_REFER_DEPT" 
+                value={formData.SRC_REFER_DEPT || ''} 
+                onChange={handleInputChange}
+                ref={(el) => registerRef('SRC_REFER_DEPT', el)}
+                placeholder="Enter reference dept"
+                style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_DEPT ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
+              />
+              {showErrors && errors.SRC_REFER_DEPT && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_DEPT}</p>}
+            </div>
+          </>
+        )}
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Source <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <select name="SRC_TYPE" value={formData.SRC_TYPE} onChange={handleInputChange} style={{
-                        width: '100%', padding: '2px 8px', height: '28px',
-                        border: `1.5px solid ${showErrors && errors.SRC_TYPE ? "#ef4444" : "#217be3"}`,
-                        borderRadius: '6px', fontSize: '12px', outline: 'none',
-                        background: '#ffffff',
-                        color: '#1e3a8a', fontWeight: '500', cursor: 'pointer',
-                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                      }}>
-                        <option value="">Select Source</option>
-                        <option value="Social Media">Social Media</option>
-                        <option value="Naukri">Naukri</option>
-                        <option value="LinkedIn">LinkedIn</option>
-                        <option value="Indeed">Indeed</option>
-                        <option value="reference">Reference</option>
-                        <option value="Others">Others</option>
-                      </select>
-                      {showErrors && errors.SRC_TYPE && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_TYPE}</p>}
-                    </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+            Blood Group
+          </label>
+          <select 
+            id="BLOOD_GROUP"
+            name="BLOOD_GROUP" 
+            value={formData.BLOOD_GROUP} 
+            onChange={handleInputChange}
+            ref={(el) => registerRef('BLOOD_GROUP', el)}
+            style={{
+              width: '100%', padding: '2px 8px', height: '28px',
+              border: `1.5px solid ${showErrors && errors.BLOOD_GROUP ? '#ef4444' : '#1d74d7'}`,
+              borderRadius: '6px', fontSize: '12px', outline: 'none',
+              background: '#ffffff',
+              color: '#1e3a8a', fontWeight: '600',
+             boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+            <option value="">Select Blood Group</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+          </select>
+          {showErrors && errors.BLOOD_GROUP && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BLOOD_GROUP}</p>}
+        </div>
 
-                    {formData.SRC_TYPE === "reference" && (
-                      <>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                            Reference Name <span style={{ color: '#ef4444' }}>*</span>
-                          </label>
-                          <input type="text" name="SRC_REFER_NAME" value={formData.SRC_REFER_NAME || ''} onChange={handleInputChange} placeholder="Enter reference name"
-                            style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_NAME ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
-                          />
-                          {showErrors && errors.SRC_REFER_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_NAME}</p>}
+        <InputField 
+          label="Passport Number" 
+          name="PASSPORT_NUMBER" 
+          value={formData.PASSPORT_NUMBER} 
+          maxLength={9} 
+          onChange={(e) => { 
+            let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); 
+            if (val.length <= 10) handleInputChange({ target: { name: "PASSPORT_NUMBER", value: val } }); 
+          }} 
+          error={showErrors ? errors.PASSPORT_NUMBER : ""}
+          inputRef={(el) => registerRef('PASSPORT_NUMBER', el)}
+        />
 
+        {(formData.PASSPORT_NUMBER || '').length > 0 && (
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+              Passport Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input 
+              id="PASSPORT_EXPIRY"
+              type="date" 
+              name="PASSPORT_EXPIRY" 
+              value={formData.PASSPORT_EXPIRY || ''} 
+              onChange={handleInputChange}
+              ref={(el) => registerRef('PASSPORT_EXPIRY', el)}
+              style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.PASSPORT_EXPIRY ? '#ef4444' : '#207ce6'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
+            />
+            {showErrors && errors.PASSPORT_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.PASSPORT_EXPIRY}</p>}
+          </div>
+        )}
 
-                        </div>
+        <InputField 
+          label="Driving Licence Number" 
+          name="DRIVING_LICENSE" 
+          value={formData.DRIVING_LICENSE} 
+          maxLength={16} 
+          onChange={(e) => { 
+            const val = e.target.value.toUpperCase(); 
+            if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENSE", value: val } }); 
+          }} 
+          error={showErrors ? errors.DRIVING_LICENSE : ''}
+          inputRef={(el) => registerRef('DRIVING_LICENSE', el)}
+        />
 
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                            DEPT(Referal Person) <span style={{ color: '#ef4444' }}>*</span>
-                          </label>
-                          <input type="text" name="SRC_REFER_DEPT" value={formData.SRC_REFER_DEPT || ''} onChange={handleInputChange} placeholder="Enter reference dept"
-                            style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.SRC_REFER_DEPT ? "#ef4444" : "#1974db"}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff', color: '#1e3a8a' }}
-                          />
-                          {showErrors && errors.SRC_REFER_DEPT && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SRC_REFER_DEPT}</p>}
+        {(formData.DRIVING_LICENSE || '').length > 0 && (
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+              Driving Licence Expiry Date <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input 
+              id="DRIVING_LICENSE_EXPIRY"
+              type="date" 
+              name="DRIVING_LICENSE_EXPIRY" 
+              value={formData.DRIVING_LICENSE_EXPIRY || ''} 
+              onChange={handleInputChange}
+              ref={(el) => registerRef('DRIVING_LICENSE_EXPIRY', el)}
+              style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENSE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
+            />
+            {showErrors && errors.DRIVING_LICENSE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENSE_EXPIRY}</p>}
+          </div>
+        )}
+      </div>
 
+      {/* ADDRESS SECTION */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '6px', marginBottom: '4px', padding: '6px 0 4px', borderTop: '1px solid rgba(147,197,253,0.45)', width: '100%' }}>
+        {/* Permanent Address */}
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
+            <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              Permanent Address <span style={{ color: '#ef4444' }}>*</span>
+            </h3>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            {[
+              { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
+              { name: 'CITY', label: 'Village / City', err: errors.CITY },
+              { name: 'MANDAL', label: 'Mandal', err: errors.MANDAL },
+              { name: 'DISTRICT', label: 'District', err: errors.DISTRICT },
+              { name: 'STATE', label: 'State', err: errors.STATE },
+              { name: 'PINCODE', label: 'Pincode', err: errors.PINCODE },
+            ].map(f => (
+              <div key={f.name} style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
+                <input
+                  id={f.name}
+                  name={f.name}
+                  value={formData[f.name]}
+                  onChange={handleInputChange}
+                  ref={(el) => registerRef(f.name, el)}
+                  placeholder={f.label}
+                  maxLength={f.name === 'PINCODE' ? 6 : undefined}
+                  style={{
+                    width: '100%', padding: '2px 6px', height: '28px',
+                    border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1771d8'}`,
+                    borderRadius: '5px', fontSize: '11px', outline: 'none',
+                    background: '#ffffff', color: '#1e3a8a'
+                  }}
+                />
+                {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
 
-                        </div>
+        {/* Radio buttons */}
+        <div style={{ marginTop: '16px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <label style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Same as Permanent Address?</label>
+          <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input
+              type="radio"
+              name="address_status"
+              checked={sameAsPermanent === true}
+              onChange={() => {
+                setSameAsPermanent(true);
+                setFormData(prev => ({
+                  ...prev,
+                  PRESENT_HNO: prev.HNO || '',
+                  PRESENT_CITY: prev.CITY || '',
+                  PRESENT_MANDAL: prev.MANDAL || '',
+                  PRESENT_DISTRICT: prev.DISTRICT || '',
+                  PRESENT_STATE: prev.STATE || '',
+                  PRESENT_PINCODE: prev.PINCODE || '',
+                }));
+              }}
+            /> Yes
+          </label>
+          <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input
+              type="radio"
+              name="address_status"
+              checked={sameAsPermanent === false}
+              onChange={() => {
+                setSameAsPermanent(false);
+                setFormData(prev => ({
+                  ...prev,
+                  PRESENT_HNO: '',
+                  PRESENT_CITY: '',
+                  PRESENT_MANDAL: '',
+                  PRESENT_DISTRICT: '',
+                  PRESENT_STATE: '',
+                  PRESENT_PINCODE: '',
+                }));
+              }}
+            /> No
+          </label>
+        </div>
 
-                      </>
+        {/* Present Address */}
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
+            <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              Present Address <span style={{ color: '#ef4444' }}>*</span>
+            </h3>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            {[
+              { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
+              { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
+              { name: 'PRESENT_MANDAL', label: 'Mandal', err: errors.PRESENT_MANDAL },
+              { name: 'PRESENT_DISTRICT', label: 'District', err: errors.PRESENT_DISTRICT },
+              { name: 'PRESENT_STATE', label: 'State', err: errors.PRESENT_STATE },
+              { name: 'PRESENT_PINCODE', label: 'Pincode', err: errors.PRESENT_PINCODE },
+            ].map(f => (
+              <div key={f.name} style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
+                <input
+                  id={f.name}
+                  name={f.name}
+                  value={formData[f.name]}
+                  onChange={handleInputChange}
+                  ref={(el) => registerRef(f.name, el)}
+                  disabled={sameAsPermanent === true}
+                  style={{
+                    width: '100%', padding: '2px 6px', height: '28px',
+                    border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1f79e0'}`,
+                    borderRadius: '5px', fontSize: '11px', outline: 'none',
+                    background: sameAsPermanent === true ? '#e9ecef' : '#ffffff',
+                    color: sameAsPermanent === true ? '#495057' : '#1e3a8a',
+                    cursor: sameAsPermanent === true ? 'not-allowed' : 'text'
+                  }}
+                />
+                {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-                    )}
+      {/* FILE UPLOADS */}
+      <div style={{
+        marginTop: '6px',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px',
+        padding: '6px 8px',
+        background: 'linear-gradient(135deg, rgb(255, 255, 255) 0%, rgba(2rgb(243, 249, 247)rgb(246, 245, 250) 100%)',
+        borderRadius: '8px',
+        border: '1.5px dashed #71acef',
+        boxShadow: 'inset 0 1px 4px rgba(147,197,253,0.12)',
+      }}>
+        <div style={{
+          gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b',
+          letterSpacing: '0.8px', textTransform: 'uppercase',
+          marginBottom: '1px', paddingBottom: '3px',
+          borderBottom: '1px solid rgb(19, 17, 100), 0.4)',
+          display: 'flex', alignItems: 'center', gap: '6px',
+        }}>
+          <FileUp size={13} color="#0f3f8b" />
+          Document Uploads
+        </div>
+        <FileUpload 
+          label={<>Aadhaar Card <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="AADHAR_PATH" 
+          onChange={handleFileChange} 
+          onRemove={handleRemoveFile} 
+          selectedFile={formData.AADHAR_PATH} 
+          error={showErrors ? errors.AADHAR_PATH : ''}  
+           onOpenFile={openFile} 
+            isPending={isPending} 
+        />
+        <FileUpload 
+          label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="RESUME_UPLOAD" 
+          onChange={handleFileChange} 
+          onRemove={handleRemoveFile} 
+          selectedFile={formData.RESUME_UPLOAD} 
+          error={showErrors ? errors.RESUME_UPLOAD : ''} 
+           onOpenFile={openFile}
+             isPending={isPending}  
+        />
+        <FileUpload 
+          label={<>PAN Card <span style={{ color: '#ef4444' }}>*</span></>} 
+          name="PAN_PATH" 
+          onChange={handleFileChange} 
+          onRemove={handleRemoveFile} 
+          selectedFile={formData.PAN_PATH} 
+          error={showErrors ? errors.PAN_PATH : ''} 
+           onOpenFile={openFile} 
+             isPending={isPending} 
+        />
+        <FileUpload
+          label={<>Photo <span style={{ color: "#ef4444" }}>*</span></>}
+          name="PHOTO"
+          accept=".jpg,.jpeg,.png"
+          onChange={handleFileChange}
+          selectedFile={formData.PHOTO}
+          error={showErrors ? errors.PHOTO : ""}
+           onOpenFile={openFile} 
+             isPending={isPending} 
+        />
+      </div>
+    </>
+  )}
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                        Blood Group
-                      </label>
-                      <select name="BLOOD_GROUP" value={formData.BLOOD_GROUP} onChange={handleInputChange} style={{
-                        width: '100%', padding: '2px 8px', height: '28px',
-                        border: `1.5px solid ${showErrors && errors.BLOOD_GROUP ? '#ef4444' : '#1d74d7'}`,
-                        borderRadius: '6px', fontSize: '12px', outline: 'none',
-                        background: '#ffffff',
-                        color: '#1e3a8a', fontWeight: '600',
-                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
-                      }}>
-                        <option value="">Select Blood Group</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                      </select>
-                      {showErrors && errors.BLOOD_GROUP && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BLOOD_GROUP}</p>}
-                    </div>
-
-                    <InputField label="Passport Number" name="PASSPORT_NUMBER" value={formData.PASSPORT_NUMBER} maxLength={9} onChange={(e) => { let val = e.target.value.toUpperCase().replace(/\s/g, "").replace(/[^A-Z0-9]/g, ""); if (val.length <= 10) handleInputChange({ target: { name: "PASSPORT_NUMBER", value: val } }); }} error={showErrors ? errors.PASSPORT_NUMBER : ""} />
-
-                    {(formData.PASSPORT_NUMBER || '').length > 0 && (
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                          Passport Expiry Date <span style={{ color: '#ef4444' }}>*</span>
-                        </label>
-                        <input type="date" name="PASSPORT_EXPIRY" value={formData.PASSPORT_EXPIRY || ''} onChange={handleInputChange}
-                          style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.PASSPORT_EXPIRY ? '#ef4444' : '#207ce6'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
-                        />
-                        {showErrors && errors.PASSPORT_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.PASSPORT_EXPIRY}</p>}
-                      </div>
-                    )}
-
-                    <InputField label="Driving Licence Number" name="DRIVING_LICENSE" value={formData.DRIVING_LICENSE} maxLength={16} onChange={(e) => { const val = e.target.value.toUpperCase(); if (val.length <= 16) handleInputChange({ target: { name: "DRIVING_LICENSE", value: val } }); }} error={showErrors ? errors.DRIVING_LICENSE : ''} />
-
-                    {(formData.DRIVING_LICENSE || '').length > 0 && (
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-                          Driving Licence Expiry Date <span style={{ color: '#ef4444' }}>*</span>
-                        </label>
-                        <input type="date" name="DRIVING_LICENSE_EXPIRY" value={formData.DRIVING_LICENSE_EXPIRY || ''} onChange={handleInputChange}
-                          style={{ width: '100%', padding: '2px 8px', height: '28px', boxSizing: 'border-box', border: `1.5px solid ${showErrors && errors.DRIVING_LICENSE_EXPIRY ? '#ef4444' : '#2078dd'}`, borderRadius: '6px', fontSize: '12px', outline: 'none', background: '#ffffff' }}
-                        />
-                        {showErrors && errors.DRIVING_LICENSE_EXPIRY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DRIVING_LICENSE_EXPIRY}</p>}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ADDRESS SECTION */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '6px', marginBottom: '4px', padding: '6px 0 4px', borderTop: '1px solid rgba(147,197,253,0.45)', width: '100%' }}>
-                    {/* Permanent Address */}
-                    <div style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
-                        <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                          Permanent Address <span style={{ color: '#ef4444' }}>*</span>
-                        </h3>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                        {[
-                          { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
-                          { name: 'CITY', label: 'Village / City', err: errors.CITY },
-                          { name: 'MANDAL', label: 'Mandal', err: errors.MANDAL },
-                          { name: 'DISTRICT', label: 'District', err: errors.DISTRICT },
-                          { name: 'STATE', label: 'State', err: errors.STATE },
-                          { name: 'PINCODE', label: 'Pincode', err: errors.PINCODE },
-                        ].map(f => (
-                          <div key={f.name} style={{ flex: 1 }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
-                            <input
-                              name={f.name}
-                              value={formData[f.name]}
-                              onChange={handleInputChange}
-                              placeholder={f.label}
-                              maxLength={f.name === 'PINCODE' ? 6 : undefined}
-                              style={{
-                                width: '100%', padding: '2px 6px', height: '28px',
-                                border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1771d8'}`,
-                                borderRadius: '5px', fontSize: '11px', outline: 'none',
-                                background: '#ffffff', color: '#1e3a8a'
-                              }}
-                            />
-                            {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Radio buttons */}
-                    <div style={{ marginTop: '16px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <label style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Same as Permanent Address?</label>
-                      <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input
-                          type="radio"
-                          name="address_status"
-                          checked={sameAsPermanent === true}
-                          onChange={() => {
-                            setSameAsPermanent(true);
-                            setFormData(prev => ({
-                              ...prev,
-                              PRESENT_HNO: prev.HNO || '',
-                              PRESENT_CITY: prev.CITY || '',
-                              PRESENT_MANDAL: prev.MANDAL || '',
-                              PRESENT_DISTRICT: prev.DISTRICT || '',
-                              PRESENT_STATE: prev.STATE || '',
-                              PRESENT_PINCODE: prev.PINCODE || '',
-                            }));
-                          }}
-                        /> Yes
-                      </label>
-                      <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input
-                          type="radio"
-                          name="address_status"
-                          checked={sameAsPermanent === false}
-                          onChange={() => {
-                            setSameAsPermanent(false);
-                            setFormData(prev => ({
-                              ...prev,
-                              PRESENT_HNO: '',
-                              PRESENT_CITY: '',
-                              PRESENT_MANDAL: '',
-                              PRESENT_DISTRICT: '',
-                              PRESENT_STATE: '',
-                              PRESENT_PINCODE: '',
-                            }));
-                          }}
-                        /> No
-                      </label>
-                    </div>
-
-                    {/* Present Address */}
-                    <div style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px', width: 'fit-content', margin: '0 auto 10px' }}>
-                        <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', margin: 0, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                          Present Address <span style={{ color: '#ef4444' }}>*</span>
-                        </h3>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                        {[
-                          { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
-                          { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
-                          { name: 'PRESENT_MANDAL', label: 'Mandal', err: errors.PRESENT_MANDAL },
-                          { name: 'PRESENT_DISTRICT', label: 'District', err: errors.PRESENT_DISTRICT },
-                          { name: 'PRESENT_STATE', label: 'State', err: errors.PRESENT_STATE },
-                          { name: 'PRESENT_PINCODE', label: 'Pincode', err: errors.PRESENT_PINCODE },
-                        ].map(f => (
-                          <div key={f.name} style={{ flex: 1 }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>{f.label}</label>
-                            <input
-                              name={f.name}
-                              value={formData[f.name]}
-                              onChange={handleInputChange}
-                              disabled={sameAsPermanent === true}
-                              style={{
-                                width: '100%', padding: '2px 6px', height: '28px',
-                                border: `1.5px solid ${showErrors && f.err ? '#ef4444' : '#1f79e0'}`,
-                                borderRadius: '5px', fontSize: '11px', outline: 'none',
-                                background: sameAsPermanent === true ? '#e9ecef' : '#ffffff',
-                                color: sameAsPermanent === true ? '#495057' : '#1e3a8a',
-                                cursor: sameAsPermanent === true ? 'not-allowed' : 'text'
-                              }}
-                            />
-                            {showErrors && f.err && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px' }}>{f.err}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* FILE UPLOADS */}
-                  <div style={{
-                    marginTop: '6px',
-                    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px',
-                    padding: '6px 8px',
-                    background: 'linear-gradient(135deg, rgb(255, 255, 255) 0%, rgba(2rgb(243, 249, 247)rgb(246, 245, 250) 100%)',
-                    borderRadius: '8px',
-                    border: '1.5px dashed #71acef',
-                    boxShadow: 'inset 0 1px 4px rgba(147,197,253,0.12)',
-                  }}>
-                    <div style={{
-                      gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b',
-                      letterSpacing: '0.8px', textTransform: 'uppercase',
-                      marginBottom: '1px', paddingBottom: '3px',
-                      borderBottom: '1px solid rgb(19, 17, 100), 0.4)',
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                    }}>
-                      <FileUp size={13} color="#0f3f8b" />
-                      Document Uploads
-                    </div>
-                    <FileUpload label={<>Aadhaar Card <span style={{ color: '#ef4444' }}>*</span></>} name="AADHAR_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.AADHAR_PATH} error={showErrors ? errors.AADHAR_PATH : ''}  />
-                    <FileUpload label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} name="RESUME_UPLOAD" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.RESUME_UPLOAD} error={showErrors ? errors.RESUME_UPLOAD : ''} />
-                    <FileUpload label={<>PAN Card <span style={{ color: '#ef4444' }}>*</span></>} name="PAN_PATH" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PAN_PATH} error={showErrors ? errors.PAN_PATH : ''} />
-
-                    <FileUpload
-                      label={<>Photo <span style={{ color: "#ef4444" }}>*</span></>}
-                      name="PHOTO"
-                      accept=".jpg,.jpeg,.png"
-                      onChange={handleFileChange}
-                      selectedFile={formData.PHOTO}
-                      error={showErrors ? errors.PHOTO : ""}
-                    />
-
-                  </div>
-                </>
-              )}
             </div></div>
 
           {/* ================= EDUCATION DETAILS ================= */}
-          <div style={{
+         <div style={{
             background: '#f8fbff',
             borderRadius: '10px',
             boxShadow: '0 2px 8px rgba(30,64,175,0.08)',
@@ -2305,19 +2645,25 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="SSC_SCHOOL_NAME" value={formData.SSC_SCHOOL_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_SCHOOL_NAME ? '#ef4444' : '#93c5fd' }} />
+                          <input type="text" name="SSC_SCHOOL_NAME"   ref={(el) => registerRef('SSC_SCHOOL_NAME', el)}     value={formData.SSC_SCHOOL_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_SCHOOL_NAME ? '#ef4444' : '#93c5fd' }} />
+                     {showErrors && errors.SSC_SCHOOL_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_SCHOOL_NAME}</p>}
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="SSC_BOARD" value={formData.SSC_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_BOARD ? '#ef4444' : '#93c5fd' }} />
+                          <input type="text" name="SSC_BOARD"  ref={(el) => registerRef('SSC_BOARD', el)}  value={formData.SSC_BOARD || ''} onChange={handleInputChange} placeholder="University/Board"    style={{ ...inputStyle, borderColor: showErrors && errors.SSC_BOARD ? '#ef4444' : '#93c5fd' }}  />
+                       {showErrors && errors.SSC_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_BOARD}</p>}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <input type="number" name="SSC_MARKS" value={formData.SSC_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.SSC_MARKS ? '#ef4444' : '#93c5fd' }} />
+                          <input type="number" name="SSC_MARKS"   ref={(el) => registerRef('SSC_MARKS', el)} value={formData.SSC_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.SSC_MARKS ? '#ef4444' : '#93c5fd' }} />
+                           {showErrors && errors.SSC_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_MARKS}</p>}
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="date" name="SSC_PASSED_YEAR" value={formData.SSC_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.SSC_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                          <input type="date" name="SSC_PASSED_YEAR"  ref={(el) => registerRef('SSC_PASSED_YEAR', el)}   value={formData.SSC_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.SSC_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                           {showErrors && errors.SSC_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_PASSED_YEAR}</p>}
+
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="10TH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']} error={showErrors ? errors['10TH_FILENAME'] : ''} />
+                          <TableFileUpload name="10TH_FILENAME" onChange={handleFileChange} onOpenFile={openFile} 
+            isPending={isPending}   onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']} error={showErrors ? errors['10TH_FILENAME'] : ''} />
                         </td>
                       </tr>
 
@@ -2329,19 +2675,25 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="INTER_COLLEGE_NAME" value={formData.INTER_COLLEGE_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                          <input type="text" name="INTER_COLLEGE_NAME"   ref={(el) => registerRef('INTER_COLLEGE_NAME', el)} value={formData.INTER_COLLEGE_NAME}    onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                           {showErrors && errors.INTER_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_COLLEGE_NAME}</p>}
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="INTER_BOARD" value={formData.INTER_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_BOARD ? '#ef4444' : '#93c5fd' }} />
+                          
+                          <input type="text" name="INTER_BOARD"  ref={(el) => registerRef('INTER_BOARD', el)} value={formData.INTER_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_BOARD ? '#ef4444' : '#93c5fd' }} />
+                          {showErrors && errors.INTER_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_BOARD}</p>}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <input type="number" name="INTER_MARKS" value={formData.INTER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.INTER_MARKS ? '#ef4444' : '#93c5fd' }} />
+                          <input type="number" name="INTER_MARKS" ref={(el) => registerRef('INTER_MARKS', el)} value={formData.INTER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.INTER_MARKS ? '#ef4444' : '#93c5fd' }} />
+                          {showErrors && errors.INTER_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_MARKS}</p>}
+
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="date" name="INTER_PASSED_YEAR" value={formData.INTER_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.INTER_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                           {showErrors && errors.INTER_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_PASSED_YEAR}</p>}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
+                          <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile}  isPending={isPending} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
                         </td>
                       </tr>
 
@@ -2353,19 +2705,29 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="GRAD_COLLEGE_NAME" value={formData.GRAD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={{ ...inputStyle, borderColor: showErrors && errors.GRAD_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                          <input type="text" name="GRAD_COLLEGE_NAME"  ref={(el) => registerRef('GRAD_COLLEGE_NAME', el)} value={formData.GRAD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={{ ...inputStyle, borderColor: showErrors && errors.GRAD_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                {showErrors && errors.GRAD_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GRAD_COLLEGE_NAME}</p>}
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="text" name="DEGREE_UNIVERSITY" value={formData.DEGREE_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_UNIVERSITY ? '#ef4444' : '#93c5fd' }} />
+                          <input type="text" name="DEGREE_UNIVERSITY" ref={(el) => registerRef('DEGREE_UNIVERSITY', el)}     value={formData.DEGREE_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_UNIVERSITY ? '#ef4444' : '#93c5fd' }} />
+                {showErrors && errors.DEGREE_UNIVERSITY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_UNIVERSITY}</p>}
+
+
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <input type="number" name="BTECH_MARKS" value={formData.BTECH_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.BTECH_MARKS ? '#ef4444' : '#93c5fd' }} />
+                          <input type="number" name="BTECH_MARKS"   ref={(el) => registerRef('BTECH_MARKS', el)} value={formData.BTECH_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.BTECH_MARKS ? '#ef4444' : '#93c5fd' }} />
+                {showErrors && errors.BTECH_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BTECH_MARKS}</p>}
+
+
                         </td>
                         <td style={{ padding: '6px' }}>
-                          <input type="date" name="DEGREE_PASSED_YEAR" value={formData.DEGREE_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                          <input type="date" name="DEGREE_PASSED_YEAR" ref={(el) => registerRef('DEGREE_PASSED_YEAR', el)} value={formData.DEGREE_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                {showErrors && errors.DEGREE_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_PASSED_YEAR}</p>}
+
+
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="BTECH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.BTECH_FILENAME} error={showErrors ? errors.BTECH_FILENAME : ''} />
+                          <TableFileUpload name="BTECH_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile}  isPending={isPending}  selectedFile={formData.BTECH_FILENAME} error={showErrors ? errors.BTECH_FILENAME : ''} />
                         </td>
                       </tr>
 
@@ -2389,7 +2751,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           <input type="date" name="PG_PASSED_YEAR" value={formData.PG_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="PG_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PG_FILENAME} />
+                          <TableFileUpload name="PG_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile} isPending={isPending}  selectedFile={formData.PG_FILENAME} />
                         </td>
                       </tr>
 
@@ -2413,7 +2775,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           <input type="date" name="PHD_PASSED_YEAR" value={formData.PHD_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="PHD_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.PHD_FILENAME} />
+                          <TableFileUpload name="PHD_FILENAME" onChange={handleFileChange} onOpenFile={openFile}  isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData.PHD_FILENAME} />
                         </td>
                       </tr>
 
@@ -2437,7 +2799,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                           <input type="date" name="OTHER_PASSED_YEAR" value={formData.OTHER_PASSED_YEAR || ''} onChange={handleInputChange} style={inputStyle} />
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
-                          <TableFileUpload name="OTHER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.OTHER_FILENAME} />
+                          <TableFileUpload name="OTHER_FILENAME" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending}  onRemove={handleRemoveFile} selectedFile={formData.OTHER_FILENAME} />
                         </td>
                       </tr>
                     </tbody>
@@ -2495,13 +2857,15 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
-             <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME} onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}/>
-                    <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
+             <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME}  inputRef={(el) => registerRef(`exp_${exp.id}_COMPANY_NAME`, el)}  onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}/>
+                    <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION}  inputRef={(el) => registerRef(`exp_${exp.id}_DESIGNATION`, el)} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
                    <InputField
     label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>}
     name={`exp_${exp.id}_FROM_DATE`}
     type="date"
     value={exp.FROM_DATE}
+
+      inputRef={(el) => registerRef(`exp_${exp.id}_FROM_DATE`, el)}
     max={new Date().toISOString().split('T')[0]}  // ✅ cannot select future date
     onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)}
     error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''}
@@ -2512,19 +2876,20 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
     name={`exp_${exp.id}_TO_DATE`}
     type="date"
     value={exp.TO_DATE}
+       inputRef={(el) => registerRef(`exp_${exp.id}_TO_DATE`, el)}
     min={exp.FROM_DATE || ''}                      // ✅ cannot select before From Date
     max={new Date().toISOString().split('T')[0]}   // ✅ cannot select future date
     onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)}
     error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}
 />  <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
                     {exp.isCurrent && (
-                      <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
+                      <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)}    inputRef={(el) => registerRef(`exp_${exp.id}_NOTICE_PERIOD`, el)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
                     )}
                     {exp.isCurrent && (
                       <>
-                        <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange} error={showErrors ? errors.CURRENT_CTC : ''} />
-                        <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange} error={showErrors ? errors.EXP_CTC : ''} />
-                        <InputField label={<>Total Experience <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange} error={showErrors ? errors.TOTAL_EXP : ''} />
+                        <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange}     inputRef={(el) => registerRef('CURRENT_CTC', el)} error={showErrors ? errors.CURRENT_CTC : ''} />
+                        <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange}   inputRef={(el) => registerRef('EXP_CTC', el)} error={showErrors ? errors.EXP_CTC : ''} />
+                        <InputField label={<>Total Experience <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange}    inputRef={(el) => registerRef('TOTAL_EXP', el)} error={showErrors ? errors.TOTAL_EXP : ''} />
                       </>
                     )}
                   </div>
@@ -2537,13 +2902,13 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                       </div>
                       {/* <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} /> */}
 
-                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData.payslips}  error={showErrors ? errors.payslips : ''}  />
+                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange}  onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData.payslips}   error={showErrors ? errors.payslips : ''}  />
 
-                      <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
-                      <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
+                      <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
+                      <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
 
-                      <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
-                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
+                      <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
+                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
                     </div>
                   )}
                 </div>
@@ -2687,7 +3052,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
 };
 
 // ================= HELPER COMPONENTS =================
-const InputField = ({ label, name, type = "text", value, onChange, error, disabled = false, maxLength, placeholder,min,max }) => (
+const InputField = ({ label, name, type = "text", value, onChange, error, disabled = false, maxLength, placeholder,min,max,  inputRef }) => (
   <div>
     <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>{label}</label>
     <input
@@ -2696,6 +3061,7 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
       value={value}
       onChange={onChange}
       disabled={disabled}
+          ref={inputRef}
       maxLength={maxLength}
       placeholder={placeholder}
         min={min}   // ✅ add this
@@ -2721,94 +3087,9 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
   </div>
 );
 
-const FileUpload = ({ label, name, onChange, onRemove, multiple = false, error, selectedFile }) => {
-  const inputRef = React.useRef();
-  const handleChange = (e) => onChange(e);
-  const handleRemove = () => { if (inputRef.current) inputRef.current.value = ''; onRemove(name); };
 
-
-  const getFileNameFromPath = (path) => {
-    if (!path) return null;
-    if (typeof path === 'string') {
-      // Extract filename from path (e.g., "/storage/verification_files/UAN_FILE_1772449576_Offer_Letter.pdf")
-      const parts = path.split('/');
-      return parts[parts.length - 1];
-    }
-    return path?.name; // If it's a File object
-  };
-  const isFilePath = (file) => {
-    return typeof file === 'string' && (file.startsWith('/storage/') || file.startsWith('http'));
-  };
-
-
-  const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
-  const isExistingFile = isFilePath(selectedFile);
-  return (
-    <div>
-      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>{label}</label>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-        <input ref={inputRef} type="file" name={name} accept="application/pdf" onChange={handleChange} multiple={multiple} style={{ display: 'none' }} />
-        <span style={{ padding: '5px 10px', background: 'linear-gradient(to right, #dbeafe, #bfdbfe)', color: '#1e40af', borderRadius: '6px', fontWeight: '600', fontSize: '11px', border: error ? '2px solid #ef4444' : '2px solid #bfdbfe', transition: 'all 0.2s' }}>
-          Choose File
-        </span>
-      </label>
-      {selectedFile && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-          <p style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}> {fileName || 'Selected file'}</p>
-          <button type="button" onClick={handleRemove} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, padding: 0 }}>✕</button>
-        </div>
-      )}
-
-      {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>{error}</p>}
-    </div>
-  );
-};
-
-
-
-
-
-
-const ExperienceFileUpload = ({ label, name, onChange, onRemove, multiple = false, maxSize = '200kB', error, selectedFiles = [] }) => {
-  const inputRef = React.useRef();
-  const handleChange = (e) => onChange(e);
-  const handleRemoveSingle = () => { if (inputRef.current) inputRef.current.value = ''; onRemove(); };
-  const handleRemoveMultiple = (index) => onRemove(index);
-  return (
-    <div>
-      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>{label}</label>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-        <input ref={inputRef} type="file" name={name} accept="application/pdf" onChange={handleChange} multiple={multiple} style={{ display: 'none' }} />
-        <span style={{ padding: '5px 10px', background: 'linear-gradient(to right, #dbeafe, #bfdbfe)', color: '#1e40af', borderRadius: '6px', fontWeight: '600', fontSize: '11px', border: error ? '2px solid #ef4444' : '2px solid #bfdbfe', transition: 'all 0.2s' }}>
-          Choose File
-        </span>
-      </label>
-      {multiple && selectedFiles.length > 0 && (
-        <div style={{ marginTop: '3px' }}>
-          {selectedFiles.map((file, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-              <p style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{file.name}</p>
-              <button type="button" onClick={() => handleRemoveMultiple(index)} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, padding: 0 }}>✕</button>
-            </div>
-          ))}
-        </div>
-      )}
-      {!multiple && selectedFiles && (selectedFiles.name || (Array.isArray(selectedFiles) && selectedFiles.length > 0)) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-          <p style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{selectedFiles.name || selectedFiles[0]?.name}</p>
-          <button type="button" onClick={handleRemoveSingle} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, padding: 0 }}>✕</button>
-        </div>
-      )}
-      <p style={{ color: '#6b7280', fontSize: '10px', marginTop: '2px' }}>PDF only, max {maxSize}</p>
-      {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>{error}</p>}
-    </div>
-  );
-};
 
 export default RecruitmentForm;
-
-
-
 
 
 

@@ -267,42 +267,61 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
 
-  /* -------------------- FILTERED DATA -------------------- */
-  // const filteredData = useMemo(() => {
-  //   if (!Array.isArray(noteAprvlData)) return [];
-  //   let result = [...noteAprvlData];
-  //   if (searchTerm) {
-  //     result = result.filter(
-  //       (item) =>
-  //         item.FIRST_NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //         item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //         item.CHILD_CASEID?.includes(searchTerm)
-  //     );
-  //   }
-  //   if (statusFilter !== "all") {
-  //     result = result.filter(
-  //       (item) => item.status?.toLowerCase() === statusFilter
-  //     );
-  //   }
-  //   return result.map((item, index) => ({
-  //     id: item.verification_id, // REQUIRED BY DATAGRID
-  //     SNO: index + 1,
-  //     CHILD_CASEID: item.CHILD_CASEID,
-  //     PLANT: item.PLANT,
-  //      FIRST_NAME: `${item.FIRST_NAME} ${item.LAST_NAME}`,
-  //     EMAIL: item.EMAIL,
-  //     PHONE_NUMBER: item.PHONE_NUMBER,
-  //     DEPT: item.DEPT,
-  //     CURRENT_CTC: item.CURRENT_CTC,
-  //     EXP_CTC: item.EXP_CTC,
-  //     OFFER_CTC: item.OFFER_CTC,
-  //     HR: item.HR,
-  //     DIRECTOR: item.DIRECTOR,
-  //     EVC: item.EVC,
-  //     STATUS: item.status,
-  //     SUBMITTED_DATE: item.created_at,
-  //   }));
-  // }, [noteAprvlData, searchTerm, statusFilter]);
+
+const getCurrentStep = (row) => {
+  if (row.HR !== "Approved") return "HR";
+  if (row.DIRECTOR !== "Approved") return "DIRECTOR";
+  if (row.EVC !== "Approved") return "EVC";
+  return null;
+};
+
+
+const getStatusBadge = (row, role) => {
+  const currentStep = getCurrentStep(row);
+
+  let type = "";
+
+  if (row[role] === "Approved") {
+    type = "approved";
+  } else if (currentStep === role) {
+    type = "wip";
+  } else {
+    type = "pending";
+  }
+
+  const style =
+    type === "approved"
+      ? { bg: "#10b981", color: "#fff", text: "Approved", icon: "✓" }
+      : type === "wip"
+      ? { bg: "#3b82f6", color: "#fff", text: "WIP", icon: "⚡" }
+      : { bg: "#f59e0b", color: "#fff", text: "Pending", icon: "⏳" };
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: style.bg,
+        color: style.color,
+        fontSize: "10px",
+        fontWeight: 600,
+        height: "25px",
+        minWidth: "80px",
+        borderRadius: "6px",
+        gap: "4px",
+        px: 1.5,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        textTransform: "capitalize",
+      }}
+    >
+      <span>{style.icon}</span>
+      <span>{style.text}</span>
+    </Box>
+  );
+};
+
+ 
 
   /* -------------------- STATUS CHIP -------------------- */
   const getStatusChip = (status) => {
@@ -344,13 +363,21 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
   const recCycle = noteAprvlData?.some(row => row.RECRUIT_CYCLE);
 
+  const HR = token?.Emp_Category;
+
+  console.log("hrrrrrrrrrrrrrr",HR);
+
+
+
+
+
   /* ------------------------- COLUMNS -------------------- */
   const columns = [
     { 
       field: "SNO", 
       headerName: "S.NO", 
       flex: 0.5,
-      minWidth: 70,
+      minWidth: 50,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 600, color: '#374151' }}>
           {params.value}
@@ -360,47 +387,47 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
 
 
-    {
-      field: "View",
-      headerName: "Action",
-      width: 80,
-      sortable: false,
-   renderCell: (params) => (
-  <Button
-    variant="contained"
-    size="small"
-    onClick={() => {
-      setSelectedUser(params.row);
-      setModalOpen(true);
-    }}
-    sx={{
-      background: 'linear-gradient(135deg, #16a211 0%, #239a11 100%)',
-      color: 'white',
-      fontSize: '8px',
-      fontWeight: 700,
-      padding: '6px 8px',
-      borderRadius: '5px',
-      textTransform: 'uppercase',
-      boxShadow: '0 2px 6px rgba(60, 157, 89, 0.3)',
-      minWidth: '70px',
-      '&:hover': {
-        background: 'linear-gradient(135deg, #066332 0%, #1b780a 100%)',
-        transform: 'translateY(-1px)',
-        boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)',
-      },
-    }}
-  >
-    Approve
-  </Button>
-)
-    },
+   ...(token?.Emp_Category !== "HR" ? [{
+    field: "View",
+    headerName: "Action",
+    width: 80,
+    sortable: false,
+    renderCell: (params) => (
+      <Button
+        variant="contained"
+        size="small"
+        onClick={() => {
+          setSelectedUser(params.row);
+          setModalOpen(true);
+        }}
+        sx={{
+          background: 'linear-gradient(135deg, #16a211 0%, #239a11 100%)',
+          color: 'white',
+          fontSize: '8px',
+          fontWeight: 700,
+          padding: '6px 8px',
+          borderRadius: '5px',
+          textTransform: 'uppercase',
+          boxShadow: '0 2px 6px rgba(60, 157, 89, 0.3)',
+          minWidth: '70px',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #066332 0%, #1b780a 100%)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)',
+          },
+        }}
+      >
+        Approve
+      </Button>
+    )
+  }] : []),
 
     
     { 
       field: "CHILD_CASEID", 
       headerName: "Case ID", 
       flex: 1,
-      minWidth: 130,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
           {params.value}
@@ -414,6 +441,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
                 field: 'TYPE_PLANT',
                 headerName: 'Type Plant',
                 flex: 1.2,
+                 minWidth: 80,
                 renderCell: (params) => (
                   <Box sx={{ color: '#374151' }}>
                     {params.value}
@@ -428,6 +456,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
                 field: 'RECRUIT_CYCLE',
                 headerName: 'Emp Level',
                 flex: 1.2,
+                 minWidth: 100,
                 renderCell: (params) => (
                   <Box sx={{ color: '#374151' }}>
                     {params.value}
@@ -439,9 +468,9 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
         { 
       field: "REVID", 
-      headerName: "REVID", 
+      headerName: "Rev ID", 
       flex: 1,
-      minWidth: 130,
+      minWidth: 60,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
         {params.value || "00"} 
@@ -461,6 +490,8 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
         </Box>
       ),
     },
+
+
     { 
       field: "FIRST_NAME", 
       headerName: "Candidate Name", 
@@ -472,6 +503,8 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
         </Box>
       ),
     },
+
+
     { 
       field: "EMAIL", 
       headerName: "Email", 
@@ -487,7 +520,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       field: "PHONE_NUMBER", 
       headerName: "Phone", 
       flex: 0.9,
-      minWidth: 120,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 500 }}>
           {params.value}
@@ -565,40 +598,29 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       field: "HR", 
       headerName: "HR", 
       flex: 1.2,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
+      minWidth: 100,
+       renderCell: (params) => getStatusBadge(params.row, "HR"),
     },
+
     { 
       field: "DIRECTOR", 
       headerName: "DIRECTOR", 
       flex: 1.2,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
+      minWidth: 100,
+      renderCell: (params) => getStatusBadge(params.row, "DIRECTOR"),
     },
     { 
       field: "EVC", 
       headerName: "EVC", 
       flex: 1.2,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151', fontSize: '12px' }}>
-          {params.value}
-        </Box>
-      ),
+      minWidth: 100,
+renderCell: (params) => getStatusBadge(params.row, "EVC"),
     },
 
     {
       field: "CURRENT_CTC",
       headerName: "Current CTC",
-      width: 110,
+      width: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>
           ₹{params.value ?? 0}
@@ -608,7 +630,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
     {
       field: "EXP_CTC",
       headerName: "Expected CTC",
-      width: 120,
+      width: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>
           ₹{params.value ?? 0}
@@ -618,7 +640,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
     {
       field: "OFFER_CTC",
       headerName: "Offer CTC",
-      width: 110,
+      width: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#dc2626', fontWeight: 600, fontSize: '12px' }}>
           ₹{params.value ?? 0}
@@ -629,7 +651,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       field: "STATUS",
       headerName: "Overall Status",
       flex: 0.9,
-      minWidth: 120,
+      minWidth: 80,
       renderCell: (params) => getStatusChip(params.value),
     },
    
@@ -683,14 +705,7 @@ token?.Emp_Category == "HR" && {
       margin: "0 auto",
       padding: "12px",
     }}>
-      <Paper sx={{
-        width: '100%',
-        padding: 2,
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        border: '1px solid #e2e8f0',
-      }}>
+
         
       
         {/* DataGrid */}
@@ -743,7 +758,7 @@ token?.Emp_Category == "HR" && {
             }}
           />
         </Box>
-      </Paper>
+      
 
       {/**--------------------------------------------ApprovalModal Here --------------------------------------**/}
       <Dialog

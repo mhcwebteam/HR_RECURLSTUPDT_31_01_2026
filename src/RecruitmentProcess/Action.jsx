@@ -41,7 +41,6 @@ const Actions = () => {
     const [remarks, setRemarks] = useState("");
     const [HrData, setHrData] = useState([]);
 
-    console.log("HrDataHrDataHrDataHrData",HrData);
     const [emailInputs, setEmailInputs] = useState({});
     const [submitting, setSubmitting] = useState({});
     const [actionTypeSelections, setActionTypeSelections] = useState({});
@@ -62,7 +61,7 @@ const [documentUploads, setDocumentUploads] = useState({});
 const [uploadingDoc, setUploadingDoc] = useState({});
 
 const [uploadedDocs, setUploadedDocs] = useState({}); 
-
+const [fileError, setFileError] = useState("");
 
 
     const [transferData, setTransferData] = useState({
@@ -78,6 +77,25 @@ const [uploadedDocs, setUploadedDocs] = useState({});
             [field]: value
         }));
     };
+
+
+
+
+    const handleHistory = async () => {
+
+            const response = await axios.get(
+                    `${API_BASE_URL}/empTrsferGetDt`,
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                            Authorization: `Bearer ${userToken.token}`,
+                        },
+                    }
+                );
+
+
+    }
 
     const Employee = async () => {
         try {
@@ -138,6 +156,9 @@ const [uploadedDocs, setUploadedDocs] = useState({});
         );
     }, [selectedEmpId, employeeData?.employeeData]);
 
+
+    console.log(selectedEmployee,"teeeeeeeeeee");
+
     
 
     const selectedDesignationDept = useMemo(() => {
@@ -178,7 +199,8 @@ const [uploadedDocs, setUploadedDocs] = useState({});
             transfer_date: transferDate,
             new_department: transferRowData?.DEPT || "",
             new_designation: transferRowData?.JOB_TIT || "",
-            remarks: remarks || ""
+            remarks: remarks || "",
+            
         };
 
 
@@ -209,8 +231,16 @@ const [uploadedDocs, setUploadedDocs] = useState({});
         });
               handleClose();
               
-                await Employee()
+Recuritment()
+             
+
+
+
+
             }
+
+
+
                
             
             else {
@@ -238,14 +268,7 @@ const [uploadedDocs, setUploadedDocs] = useState({});
         }
     };
 
-
- 
-    
-
-    useEffect(() => {
-        if (!userToken?.token) return;
-
-        const Recuritment = async () => {
+ const Recuritment = async () => {
             try {
                 const response = await axios.get(
                     `${API_BASE_URL}/task-Assign-GtDta`,
@@ -258,13 +281,18 @@ const [uploadedDocs, setUploadedDocs] = useState({});
                     }
                 );
 
-                console.log("tttttttttaaaaaaaaaaaaa",response);
+              
                 setHrData(response.data);
                 console.log("NOTE FOR APPROVAL API DATA:", response.data);
             } catch (err) {
                 console.error("Error fetching approval data", err);
             }
         };
+ 
+    
+
+    useEffect(() => {
+        if (!userToken?.token) return;
         Recuritment();
     }, [userToken?.token]);
 
@@ -272,17 +300,17 @@ const [uploadedDocs, setUploadedDocs] = useState({});
         if (Array.isArray(HrData?.TaskAssignmentData)) {
          
 
-            const filtered = HrData.TaskAssignmentData
-                .filter(row => {
-                    return row.actionStatus == null;
-                })
-                .map((row, index) => ({
-                    ...row,
-                    id: row.case_id || `row_${index}`,
-                }));
+        const filtered = (HrData?.TaskAssignmentData || [])
+    .filter(row => row.actionStatus == null && row.transfer == null)
+    .map((row, index) => ({
+        ...row,
+        id: row.case_id || `row_${index}`,
+    }));
 
-            setData(filtered);
-            setFilteredData(filtered);
+setData(filtered);
+setFilteredData(filtered);
+
+            
         } else {
             setData([]);
             setFilteredData([]);
@@ -294,57 +322,42 @@ const [uploadedDocs, setUploadedDocs] = useState({});
         if (!userToken.token) navigate('/');
     }, [navigate, userToken?.token]);
 
-    const handleSearch = (e) => {
-        const searchValue = e.target.value;
-        setSearchText(searchValue);
-        setPaginationModel(prev => ({ ...prev, page: 0 }));
-        if (!searchValue) {
-            setFilteredData(data);
-            return;
-        }
-        const filtered = data.filter(row => {
-            const search = searchValue.toLowerCase();
-            return (
-                (row.CASEID && row.CASEID.toLowerCase().includes(search)) ||
-                (row.PROCESSNAME && row.PROCESSNAME.toLowerCase().includes(search)) ||
-                (row.RAISER && row.RAISER.toLowerCase().includes(search)) ||
-                (row.RAISER_DATE && row.RAISER_DATE.toLowerCase().includes(search)) ||
-                (row.CURRENT_USER && row.CURRENT_USER.toLowerCase().includes(search)) ||
-                (row.ACTION_STATUS && row.ACTION_STATUS.toLowerCase().includes(search)) ||
-                (row.PLANT && row.PLANT.toLowerCase().includes(search)) ||
-                (row.DEPT && row.DEPT.toLowerCase().includes(search)) ||
-                (row.MANPOWER_DESG && row.MANPOWER_DESG.toLowerCase().includes(search))
-            );
-        });
-        setFilteredData(filtered);
-    };
-
-    const handleEmailChange = (caseId, email) => {
-        setEmailInputs(prev => ({
-            ...prev,
-            [caseId]: email
-        }));
-    };
+   
 
 
 
-    const handleFileSelect = (caseId, file) => {
-    if (!file) return;
-    
-    // Validate file size (e.g., max 5MB)
-    if (file.size > 1 * 1024 * 1024) {
-        Swal.fire({
-            icon: 'error',
-            title: 'File Too Large',
-            text: 'File size must be less than 1MB',
-        });
-        return;
-    }
 
-    setDocumentUploads(prev => ({
-        ...prev,
-        [caseId]: file
-    }));
+
+const handleFileSelect = (caseId, file) => {
+  if (!file) return;
+
+  // ❌ Only PDF check
+  if (file.type !== "application/pdf") {
+    Swal.fire({
+      icon: "error",
+      title: "Invalid File",
+      text: "Only PDF files are allowed",
+      confirmButtonColor: "#2563eb",
+    });
+    return;
+  }
+
+  // ❌ File size check
+  if (file.size > 1 * 1024 * 1024) {
+    Swal.fire({
+      icon: "error",
+      title: "File Too Large",
+      text: "File size must be less than 1MB",
+      confirmButtonColor: "#2563eb",
+    });
+    return;
+  }
+
+  // ✅ If valid
+  setDocumentUploads(prev => ({
+    ...prev,
+    [caseId]: file
+  }));
 };
 
 
@@ -719,6 +732,8 @@ const Hr = HrData?.TaskAssignmentData || [];
 
 const hasTypePlant = Hr.some(row => row.TYPE_PLANT);
 const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
+const history = Hr.some(row => row.CUR_REV_ID != null);
+
 
 
 
@@ -727,7 +742,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
             field: 'SNO',
             headerName: 'S.NO',
             flex: 0.5,
-            minWidth: 70,
+            minWidth: 50,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
@@ -741,7 +756,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
             field: 'CHILD_CASEID',
             headerName: 'Case ID',
             flex: 1,
-            minWidth: 120,
+            minWidth: 100,
             renderCell: (params) => (
                 <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
                     {params.value}
@@ -754,6 +769,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
         field: 'TYPE_PLANT',
         headerName: 'Type Plant',
         flex: 1.2,
+        minWidth:80,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -768,6 +784,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
         field: 'RECRUIT_CYCLE',
         headerName: 'Emp Level',
         flex: 1.2,
+          minWidth:120,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -778,9 +795,9 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
 
         {
             field: 'CUR_REV_ID',
-            headerName: 'REVID',
+            headerName: 'Rev ID',
             flex: 1,
-            minWidth: 110,
+            minWidth: 60,
             renderCell: (params) => (
                 <Box sx={{ color: '#374151' }}>
                     {params.value || "00"} 
@@ -803,9 +820,9 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
         },
         {
             field: 'RAISER_DATE',
-            headerName: 'Raiser Date',
+            headerName: 'Raiser Dt',
             flex: 1,
-            minWidth: 110,
+            minWidth: 90,
             renderCell: (params) => (
                 <Box sx={{ color: '#6b7280' }}>
                     {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
@@ -816,7 +833,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
             field: 'PLANT',
             headerName: 'Plant',
             flex: 1.2,
-            minWidth: 140,
+            minWidth: 160,
             renderCell: (params) => (
                 <Box sx={{ color: '#374151' }}>
                     {params.value}
@@ -825,9 +842,9 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
         },
         {
           field: 'DEPT',
-          headerName: 'Department',
+          headerName: 'Dept',
           flex: 1,
-          minWidth: 120,
+          minWidth: 140,
           renderCell: (params) => {
             const groupCode = params.row.GROUP_CODE;
             const dept = params.value;
@@ -841,9 +858,9 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
         },
          {
          field: 'MANPOWER_DESG',
-         headerName: 'Designation',
+         headerName: 'Desig/Position',
          flex: 1.2,
-         minWidth: 130,
+         minWidth: 160,
          renderCell: (params) => {
            const subCode = params.row.SUB_CODE;
            const value = params.value || 'N/A';
@@ -855,7 +872,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
                  padding: '2px 8px',
                  borderRadius: '6px',
                  fontSize: '12px',
-                 fontWeight: 600,
+              
                }}
              >
                {subCode ? `${subCode} - ${value}` : value}
@@ -867,7 +884,7 @@ const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
 
          {
   field: 'DOCUMENT_UPLOAD',
-  headerName: 'Document',
+  headerName: 'Inter Evalulation Form',
   flex: 1,
   minWidth: 200,
   sortable: false,
@@ -887,8 +904,10 @@ const isUploaded = uploadedDocs[caseId];
           id={`file-${caseId}`}
           style={{ display: 'none' }}
           onChange={(e) => handleFileSelect(caseId, e.target.files[0])}
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+         accept=".pdf,.jpg,.jpeg,.png"
         />
+
+        
 
         {/* Choose File Button */}
         <label htmlFor={`file-${caseId}`} style={{ flex: 1 }}>
@@ -933,7 +952,7 @@ const isUploaded = uploadedDocs[caseId];
   <Button
     size="small"
     variant="contained"
-    disabled={isUploading || isUploaded}  // disable after saved
+    disabled={isUploading || isUploaded}
     onClick={() => handleDocumentUpload(caseId)}
     sx={{
       minWidth: '58px',
@@ -943,7 +962,7 @@ const isUploaded = uploadedDocs[caseId];
       borderRadius: '6px',
       fontWeight: 600,
       background: isUploaded
-        ? '#16a34a'                                          // green when saved
+        ? '#16a34a'                                    
         : isUploading
           ? '#bdbdbd'
           : 'linear-gradient(135deg, #1e40af, #2563eb)',    // blue normally
@@ -969,44 +988,44 @@ const isUploaded = uploadedDocs[caseId];
 },
 },
 
- {
-      field: 'HISTORY',
-      headerName: 'History',
-      flex: 0.8,
-      minWidth: 150,
-      renderCell: (params) => {
+...(history ? [{
+    field: 'HISTORY',
+    headerName: 'History',
+    flex: 0.8,
+    minWidth: 150,
+   renderCell: (params) => {
 
-        // If status is null or undefined → don't show button
-        if (params.row.status == null) {
-          return null;
-        }
+  // Hide button if status is null OR CUR_REV_ID is null
+  if (params.row.status == null || params.row.CUR_REV_ID == null) {
+    return null;
+  }
 
-        return (
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{
-              background: '#1848d8',
-              color: 'white',
-              fontSize: '11px',
-              padding: '3px 30px',
-              borderRadius: '4px',
-              textTransform: 'capitalize',
-              fontWeight: 600,
-              minWidth: 'auto',
-              boxShadow: 'none',
-              '&:hover': {
-                background: '#052c96',
-                boxShadow: 'none',
-              },
-            }}
-            onClick={() => handleHistoryClick(params.row.CHILD_CASEID)}
-          >
-            History
-          </Button>
-        );
-      },
-    },
+  return (
+    <Button
+      variant="outlined"
+      size="small"
+      sx={{
+        background: '#1848d8',
+        color: 'white',
+        fontSize: '11px',
+        padding: '3px 30px',
+        borderRadius: '4px',
+        textTransform: 'capitalize',
+        fontWeight: 600,
+        minWidth: 'auto',
+        boxShadow: 'none',
+        '&:hover': {
+          background: '#052c96',
+          boxShadow: 'none',
+        },
+      }}
+      onClick={() => handleHistoryClick(params.row.CHILD_CASEID)}
+    >
+      History
+    </Button>
+  );
+}
+  }] : []),
 
 
         {
@@ -1150,14 +1169,7 @@ const isUploaded = uploadedDocs[caseId];
             margin: "0 auto",
             padding: "12px",
         }}>
-            <Paper sx={{
-                width: '100%',
-                padding: 2,
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                border: '1px solid #e2e8f0',
-            }}>
+           
                 <Box sx={{
                     width: "100%",
                     borderRadius: "10px",
@@ -1246,7 +1258,7 @@ columnVisibilityModel={{
   }}
 />
                 </Box>
-            </Paper>
+          
 
             {/* Manpower Modal */}
             <Modal open={manpowerOpen} onClose={handleCloseModal}>
@@ -1372,7 +1384,7 @@ columnVisibilityModel={{
         sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#f8fafc', borderRadius: '8px', fontSize: '12px', height: '30px',width: '120px', '& fieldset': { borderColor: '#e2e8f0' } } }} />
     </Grid>
     <Grid item xs={6}>
-      <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#475569', mb: 0.5 }}>Plant</Typography>
+      <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#475569', mb: 0.5 }}>To Plant</Typography>
       <TextField fullWidth size="small" value={transferRowData?.PLANT || 'N/A'} InputProps={{ readOnly: true }}
         sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#f8fafc', borderRadius: '8px', fontSize: '12px', height: '30px',width: '320px', '& fieldset': { borderColor: '#e2e8f0' } } }} />
     </Grid>
@@ -1508,7 +1520,7 @@ columnVisibilityModel={{
             fontWeight: 600, 
             color: '#475569', 
             mb: 0.2  // REDUCE: from mb: 0.5 to mb: 0.2
-          }}>Plant</Typography>
+          }}> From Plant</Typography>
           
           {/* REDUCE HERE: Decrease TextField height */}
           <TextField 
@@ -1671,6 +1683,7 @@ columnVisibilityModel={{
     designation: selectedEmployee?.DESIGNATION || '',
     fromProject: transferRowData?.SITE_LOC || '',
     toProject: transferRowData?.PLANT || '',
+    selectedToProject:selectedEmployee?.SITE_LOC || '',
     remarks: remarks || '', // Add remarks to the letter data
     effectiveDate: transferDate ? new Date(transferDate).toLocaleDateString('en-IN', { 
       day: '2-digit', 

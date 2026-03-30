@@ -1,4 +1,4 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -31,225 +31,209 @@ import PreviewPage from "./RecruitmentProcess/previewPage.jsx";
 import VerifyPreviewPage from "./RecruitmentProcess/VerifyPreviewPage.jsx";
 import Reports from "./Components/Reports.jsx";
 
-
-
-
 export const MyContext = createContext();
+
+// Move Layout outside of App component to prevent recreation
+const Layout = ({ children, isSidebarOpen }) => (
+  <section className="main">
+    <Header />
+    <div className="contentMain flex">
+      <div
+        className={`sidebarWapper ${
+          isSidebarOpen ? "w-[18%]" : "w-[90px]"
+        } transition-all`}
+      >
+        <Sidebar />
+      </div>
+      <div
+        className={`contentRight py-4 px-4 ${
+          isSidebarOpen ? "w-[82%]" : "w-[calc(100%-90px)]"
+        } transition-all`}
+      >
+        {children}
+      </div>
+    </div>
+  </section>
+);
+
+// Create wrapper components to pass isSidebarOpen
+const HrInboxWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><HrInbox /></Layout>;
+};
+
+const ReportsWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><Reports /></Layout>;
+};
+
+const OnboardingWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><Onboarding /></Layout>;
+};
+
+const HODInboxWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><HODInbox /></Layout>;
+};
+
+const AssignedTasksWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><AssignedTasks /></Layout>;
+};
+
+const CandidateFormsWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><CandidateForms /></Layout>;
+};
+
+const CandidateStackupWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><CandidateStackup /></Layout>;
+};
+
+const CandidateApprovalWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return <Layout isSidebarOpen={isSidebarOpen}><CandidateApproval /></Layout>;
+};
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const contextValues = { isSidebarOpen, setIsSidebarOpen };
+  const contextValues = useMemo(() => ({ isSidebarOpen, setIsSidebarOpen }), [isSidebarOpen]);
 
-  const queryClient = new QueryClient();
+  const queryClient = useMemo(() => new QueryClient(), []);
 
-  // 🔹 Common Layout Wrapper
-  const Layout = ({ children }) => (
-    <section className="main">
-      <Header />
-      <div className="contentMain flex">
-        <div
-          className={`sidebarWapper ${
-            isSidebarOpen ? "w-[18%]" : "w-[90px]"
-          } transition-all`}
-        >
-          <Sidebar />
-        </div>
-        <div
-          className={`contentRight py-4 px-4 ${
-            isSidebarOpen ? "w-[82%]" : "w-[calc(100%-90px)]"
-          } transition-all`}
-        >
-          {children}
-        </div>
-      </div>
-    </section>
-  );
-
-  const router = createBrowserRouter(
+  const router = useMemo(() => createBrowserRouter(
     [
-  
       { path: "/", element: <Login /> },
-
-  
       {
         element: <ProtectRoute />,
         children: [
-       
           {
             element: <RoleRoute allowedRoles={["HR"]} />,
             children: [
-              { path: "/HrInbox", element: <Layout><HrInbox /></Layout> },
-            { path: "/Reports", element: <Layout><Reports /></Layout> },
-              { path: "/OnBoarding", element: <Layout><Onboarding /></Layout> }
-              
+              { path: "/HrInbox", element: <HrInboxWrapper /> },
+              { path: "/Reports", element: <ReportsWrapper /> },
+              { path: "/OnBoarding", element: <OnboardingWrapper /> }
             ]
           },
-
-          // 🟢 HOD Routes
           {
             element: <RoleRoute allowedRoles={["HOD"]} />,
             children: [
-              { path: "/PendingMRFS", element: <Layout><HODInbox /></Layout> },
-              { path: "/AssignedTasks", element: <Layout><AssignedTasks /></Layout> },
-              
-              // { path: "/RecruitmentProcess", element: <Layout><Recruitments /></Layout> }
+              { path: "/PendingMRFS", element: <HODInboxWrapper /> },
+              { path: "/AssignedTasks", element: <AssignedTasksWrapper /> },
             ]
           },
-
-          // 🟢 EVC / DIRECTOR Routes
-          // {
-          //   element: <RoleRoute allowedRoles={["EVC", "DIRECTOR"]} />,
-          //   children: [
-          //     { path: "/RecruitmentProcess", element: <Layout><Recruitments /></Layout> },
-          //     {
-          //       path: "/RecruitmentForm/:case_Id",
-          //       element: (
-          //         <section className="main">
-          //           <div className="contentMain flex">
-          //             <div className="contentRight py-4 px-4 w-[100%]">
-          //               <RecruitmentForm />
-          //             </div>
-          //           </div>
-          //         </section>
-          //       )
-          //     }
-          //   ]
-          // },
-
           {
-  path: "/RecruitmentForm/:case_Id",
-  element: (
-    <section className="main">
-      <div className="contentMain flex">
-        <div className="contentRight py-4 px-4 w-[100%]">
-          <RecruitmentForm />
-        </div>
-      </div>
-    </section>
-  )
-},
-
-
-
-// Accessible to any logged-in user
-{
-  path: "/RecruitmentProcess",
-  element: (
-    <section className='main'>
-      <Header />
-      <div className='contentMain flex'>
-        <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
-          <Sidebar/>
-        </div>
-        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-          <Recruitments />
-        </div>
-      </div>
-    </section>
-  )
-},
-
-
-{
-  path: "/History",
-  element: (
-    <section className='main'>
-      <Header />
-      <div className='contentMain flex'>
-        <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
-          <Sidebar/>
-        </div>
-        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-          <History />
-        </div>
-      </div>
-    </section>
-  )
-},
-
-
-{
-  path: "/HODHistory",
-  element: (
-    <section className='main'>
-      <Header />
-      <div className='contentMain flex'>
-        <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
-          <Sidebar/>
-        </div>
-        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-          <HODHistory />
-        </div>
-      </div>
-    </section>
-  )
-},
-
-{
-  path: '/SidebarRoutes',
-  exact: true,
-  element: (
-    <section className='main'>
-              <Header/> 
-              <div className='contentMain flex'>
-                <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
-                  <Sidebar/>
+            path: "/RecruitmentForm/:case_Id",
+            element: (
+              <section className="main">
+                <div className="contentMain flex">
+                  <div className="contentRight py-4 px-4 w-[100%]">
+                    <RecruitmentForm />
+                  </div>
                 </div>
-                <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-                  <SidebarRoutes />
+              </section>
+            )
+          },
+          {
+            path: "/RecruitmentProcess",
+            element: (
+              <section className='main'>
+                <Header />
+                <div className='contentMain flex'>
+                  <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+                    <Sidebar/>
+                  </div>
+                  <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                    <Recruitments />
+                  </div>
                 </div>
-              </div>
-            </section>
-   
-  )
-},
-
-
-
-
-
-          // 🟢 Common Routes (HR + HOD)
-     {
-  children: [
-    { path: "/CandidateForms", element: <Layout><CandidateForms /></Layout> },
-    { path: "/CandidateStackup", element: <Layout><CandidateStackup /></Layout> },
-    { path: "/CandidateApproval", element: <Layout><CandidateApproval /></Layout> }
-  ]
-}
-
+              </section>
+            )
+          },
+          {
+            path: "/History",
+            element: (
+              <section className='main'>
+                <Header />
+                <div className='contentMain flex'>
+                  <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+                    <Sidebar/>
+                  </div>
+                  <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                    <History />
+                  </div>
+                </div>
+              </section>
+            )
+          },
+          {
+            path: "/HODHistory",
+            element: (
+              <section className='main'>
+                <Header />
+                <div className='contentMain flex'>
+                  <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+                    <Sidebar/>
+                  </div>
+                  <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                    <HODHistory />
+                  </div>
+                </div>
+              </section>
+            )
+          },
+          {
+            path: '/SidebarRoutes',
+            exact: true,
+            element: (
+              <section className='main'>
+                <Header/> 
+                <div className='contentMain flex'>
+                  <div className={`sidebarWapper ${isSidebarOpen === true ? 'w-[18%]' : 'w-[90px]'} transition-all`}>
+                    <Sidebar/>
+                  </div>
+                  <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                    <SidebarRoutes />
+                  </div>
+                </div>
+              </section>
+            )
+          },
+          {
+            children: [
+              { path: "/CandidateForms", element: <CandidateFormsWrapper /> },
+              { path: "/CandidateStackup", element: <CandidateStackupWrapper /> },
+              { path: "/CandidateApproval", element: <CandidateApprovalWrapper /> }
+            ]
+          }
         ]
       },
-
-
       {
-  path: "/PreviewPage",
-  element: (
-    <section className='main'>
-     
-      <div className='contentMain flex'>
-        
-        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-          <PreviewPage />
-        </div>
-      </div>
-    </section>
-  )
-},
- {
-  path: "/VerifyPreviewPage",
-  element: (
-    <section className='main'>
-     
-      <div className='contentMain flex'>
-        
-        <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
-          <VerifyPreviewPage />
-        </div>
-      </div>
-    </section>
-  )
-},
-   
+        path: "/PreviewPage",
+        element: (
+          <section className='main'>
+            <div className='contentMain flex'>
+              <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                <PreviewPage />
+              </div>
+            </div>
+          </section>
+        )
+      },
+      {
+        path: "/VerifyPreviewPage",
+        element: (
+          <section className='main'>
+            <div className='contentMain flex'>
+              <div className={`contentRight py-4 px-4 ${isSidebarOpen ? 'w-[82%]' : 'w-[calc(100%-90px)]'} transition-all`}>
+                <VerifyPreviewPage />
+              </div>
+            </div>
+          </section>
+        )
+      },
       {
         path: "*",
         element: (
@@ -262,7 +246,7 @@ export default function App() {
     {
       basename: "/react/hrmprocess"
     }
-  );
+  ), [isSidebarOpen]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -164,6 +164,8 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
     STARTDATE:  item.STARTDATE,
 
+        address_status  : item?.address_status,
+
   // Address - Permanent
   HNO: item.HNO || 'N/A',
   CITY: item.CITY || 'N/A',
@@ -344,7 +346,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       field: 'SNO',
       headerName: 'S.NO',
       flex: 0.5,
-minWidth: 70,
+minWidth: 50,
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 600, color: '#374151' }}>
@@ -356,7 +358,7 @@ minWidth: 70,
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
-      minWidth: 130,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#1f2937', fontWeight: 500 }}>
           {params.value}
@@ -369,6 +371,7 @@ minWidth: 70,
             field: 'TYPE_PLANT',
             headerName: 'Type Plant',
             flex: 1.2,
+            minWidth:80,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
                 {params.value}
@@ -383,6 +386,7 @@ minWidth: 70,
             field: 'RECRUIT_CYCLE',
             headerName: 'Emp Level',
             flex: 1.2,
+            minWidth:100,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
                 {params.value}
@@ -393,9 +397,9 @@ minWidth: 70,
 
 {
   field: 'REVID',  // Change from 'CUR_REV_ID' to 'REVID'
-  headerName: 'REVID',
+  headerName: 'Rev ID',
   flex: 1,
-  minWidth: 110,
+  minWidth: 60,
   renderCell: (params) => (
     <Box sx={{ color: '#374151' }}>
       {params.value || "00"}  
@@ -427,7 +431,7 @@ minWidth: 70,
 
 {
   field: 'DEPT',
-  headerName: 'Department',
+  headerName: 'Dept',
   flex: 1,
   minWidth: 120,
   renderCell: (params) => {
@@ -444,7 +448,7 @@ minWidth: 70,
 
   {
   field: 'MANPOWER_DESG',
-  headerName: 'M.Designation',
+  headerName: 'Desig/Position',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
@@ -458,7 +462,7 @@ minWidth: 70,
           padding: '2px 8px',
           borderRadius: '6px',
           fontSize: '12px',
-          fontWeight: 600,
+      
         }}
       >
         {subCode ? `${subCode} - ${value}` : value}
@@ -471,7 +475,7 @@ minWidth: 70,
       field: 'PHONE_NUMBER',
       headerName: 'Phone',
       flex:0.8,
-    minWidth: 120,
+    minWidth: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 500 }}>
           {formatNumber(params.value)}
@@ -481,8 +485,8 @@ minWidth: 70,
 
     {
       field: 'SSC_MARKS',
-      headerName: 'SSC %',
-      width: 80,
+      headerName: 'SSC%',
+      width: 60,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 600, fontSize: '12px' }}>
           {params.value}
@@ -491,8 +495,8 @@ minWidth: 70,
     },
     {
       field: 'INTER_MARKS',
-      headerName: 'Inter %',
-      width: 80,
+      headerName: 'Inter%',
+      width: 60,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 600, fontSize: '12px' }}>
           {params.value}
@@ -501,7 +505,7 @@ minWidth: 70,
     },
     {
       field: 'BTECH_MARKS',
-      headerName: 'BTech/Degree %',
+      headerName: 'BTech/Degree%',
       width: 130,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 600, fontSize: '12px' }}>
@@ -511,8 +515,8 @@ minWidth: 70,
     },
       {
       field: 'PG_MARKS',
-      headerName: 'PG %',
-      width: 80,
+      headerName: 'PG%',
+      width: 60,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 600, fontSize: '12px' }}>
           {params.value}
@@ -522,7 +526,7 @@ minWidth: 70,
     {
       field: 'CURRENT_CTC',
       headerName: 'Curr CTC',
-      width: 100,
+      width: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>
           ₹{formatNumber(params.value)}L
@@ -532,7 +536,7 @@ minWidth: 70,
     {
       field: 'EXP_CTC',
       headerName: 'Exp CTC',
-      width: 100,
+      width: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#dc2626', fontWeight: 600, fontSize: '12px' }}>
           ₹{formatNumber(params.value)}L
@@ -543,7 +547,7 @@ minWidth: 70,
     {
       field: 'submitted_date',
       headerName: 'Submitted',
-      width: 110,
+      width: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#6b7280',  fontSize: '11px' }}>
           {formatDate(params.value)}
@@ -597,14 +601,7 @@ minWidth: 70,
       
       }}
     >
-      <Paper sx={{
-        width: '100%',
-        padding: 2,
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        border: '1px solid #e2e8f0',
-      }}>
+  
         
        
 
@@ -633,8 +630,8 @@ minWidth: 70,
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
               pageSizeOptions={[5, 10, 20, 50]}
-              rowHeight={50}
-              columnHeaderHeight={50}
+              rowHeight={40}
+              columnHeaderHeight={40}
 
 
 
@@ -668,7 +665,7 @@ minWidth: 70,
             />
           </Box>
         )}
-      </Paper>
+      
       
       <VerificationDetailsModal
         open={modalOpen}

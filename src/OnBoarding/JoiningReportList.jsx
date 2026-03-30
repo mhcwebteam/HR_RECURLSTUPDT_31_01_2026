@@ -318,37 +318,7 @@ const date_only = joiningDates
     </Box>
   ),
 },
-    {
-      field: 'doc_upload',
-      headerName: 'Doc Upload',
-      flex: 0.8,
-      minWidth: 100,
-      sortable: false,
-      renderCell: (params) => (
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<DescriptionIcon />}
-          onClick={() => handleDocUploadClick(params.row)}
-          sx={{
-            fontSize: '10px',
-            padding: '4px 10px',
-            borderRadius: '8px',
-            textTransform: 'capitalize',
-            backgroundColor: '#10b981',
-            fontWeight: 600,
-            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
-            '&:hover': {
-              backgroundColor: '#059669',
-              boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          View
-        </Button>
-      ),
-    },
+  
 
    {
       field: 'history',
@@ -381,6 +351,39 @@ const date_only = joiningDates
             View
           </Button>
         </Box>
+      ),
+    },
+
+
+      {
+      field: 'doc_upload',
+      headerName: 'Doc Upload',
+      flex: 0.8,
+      minWidth: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<DescriptionIcon />}
+          onClick={() => handleDocUploadClick(params.row)}
+          sx={{
+            fontSize: '10px',
+            padding: '4px 10px',
+            borderRadius: '8px',
+            textTransform: 'capitalize',
+            backgroundColor: '#10b981',
+            fontWeight: 600,
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+            '&:hover': {
+              backgroundColor: '#059669',
+              boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
+              transform: 'translateY(-1px)',
+            },
+          }}
+        >
+          View
+        </Button>
       ),
     },
 

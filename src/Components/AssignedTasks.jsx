@@ -115,7 +115,7 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     if (status === 'In Progress') return 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-300';
     return 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300';
   };
-
+const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
       <div className="w-full px-1 py-0.1">
@@ -218,16 +218,16 @@ const [isModalOpen, setIsModalOpen] = useState(false);
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 border-b-2 border-gray-300">
                       {[
-                        { key: 'sno', label: 'S.No', width: 'w-12' },
-                        { key: 'Action', label: 'Action', width: 'w-12' },
-                        { key: 'caseId', label: 'Case ID', width: 'w-32' },
-                        { key: 'plant', label: 'Plant', width: 'w-32' },
-                         { key: 'department', label: 'Department', width: 'w-32' },
-                        // { key: 'designation', label: 'Designation', width: 'w-32' },
-                        { key: 'assignedBy', label: 'Assigned By', width: 'w-32' },
-                        { key: 'assignedTo', label: 'Assigned To', width: 'w-32' },
-                        { key: 'status', label: 'Status', width: 'w-28' },
-                        { key: 'assignedDate', label: 'Assigned Date', width: 'w-32' },
+                        { key: 'sno', label: 'S.No', width: 'w-5' },
+                        { key: 'Action', label: 'Action', width: 'w-8' },
+                        { key: 'caseId', label: 'Case ID', width: 'w-20' },
+                        { key: 'plant', label: 'Plant', width: 'w-56' },
+                         { key: 'department', label: 'Dept', width: 'w-25' },
+                       { key: 'designation', label: 'Desig/Position', width: 'w-40' },
+                        { key: 'assignedBy', label: 'Assigned By', width: 'w-30' },
+                        { key: 'assignedTo', label: 'Assigned To', width: 'w-30' },
+                        { key: 'status', label: 'Status', width: 'w-30' },
+                        { key: 'assignedDate', label: 'Assigned Date', width: 'w-30' },
                       ].map((col) => (
                         <th
                           key={col.key}
@@ -244,15 +244,15 @@ const [isModalOpen, setIsModalOpen] = useState(false);
                         key={row.task_assignment_id}
                         className="hover:bg-gradient-to-r hover:from-blue-50 hover:via-indigo-50 hover:to-blue-50 transition-all duration-200 group hover:shadow-md"
                       >
-                        <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+                        <td className={tdStyle}>
                           {currentPage * pageSize + index + 1}
                         </td>
 
 
-                         <td className="px-3 py-2 text-xs text-gray-600 font-medium">
+                         <td className={tdStyle}>
   <button
     onClick={() => handleViewClick(row.case_id)} 
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 
+    className="inline-flex items-center gap-1.5 px-3 py-1 
                rounded-lg text-xs font-semibold 
                transition-all duration-200 shadow-sm 
                hover:shadow-md hover:scale-105 cursor-pointer
@@ -265,37 +265,41 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     View
   </button>
 </td>
-                        <td className="px-3 py-2">
+                       <td className={tdStyle}>
                           <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
                             {row.case_id || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
+                       <td className={tdStyle}>
                           <span className="text-xs font-bold text-gray-900">
                             {row.PLANT || ''}
                           </span>
                         </td>
-                         <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900">
-                            {row.DEPT || ''}
-                          </span>
+                       <td className={tdStyle}>
+                         <span>
+    {row.GROUP_CODE 
+      ? `${row.GROUP_CODE} - ${row.DEPT || ''}` 
+      : (row.DEPT || '')}
+  </span>
                         </td>
-                        {/* <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900">
-                            {row.designation || 'N/A'}
-                          </span>
-                        </td> */}
-                        <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900">
+                 <td className={tdStyle}>
+  <span >
+    {row.SUB_CODE 
+      ? `${row.SUB_CODE} - ${row.MANPOWER_DESG || 'N/A'}`
+      : (row.MANPOWER_DESG || 'N/A')}
+  </span>
+</td>
+                        <td className={tdStyle}>
+                          <span>
                             {row.assigned_by || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs font-bold text-gray-900">
+                       <td className={tdStyle}>
+                          <span>
                             {row.assigned_to || ''}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
+                         <td className={tdStyle}>
                           <button
                             className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getStatusStyle(row.status)}`}
                           >
@@ -418,25 +422,30 @@ const StatCard = ({ title, value, icon, color }) => {
   const colors = colorClasses[color] || colorClasses.blue;
 
   return (
-    <div className={`bg-gradient-to-br ${colors.bgGradient} rounded-xl p-2 border-2 ${colors.border} ${colors.hoverBorder} shadow-md hover:shadow-xl ${colors.hoverShadow} transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer group`}>
-      {/* Title - First Row */}
-      <p className={`text-xs font-bold ${colors.text} mb-1`}>{title}</p>
+   <div
+  className={`bg-gradient-to-br ${colors.bgGradient} rounded-xl p-2 border-2 ${colors.border} ${colors.hoverBorder} shadow-md hover:shadow-xl ${colors.hoverShadow} transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer group`}
+>
+  <div className="flex items-center justify-between gap-2">
+    
+    {/* Title */}
+    <p className={`text-xs font-bold ${colors.text} flex-1`}>
+      {title}
+    </p>
 
-      {/* Count and Icon - Second Row */}
-      <div className="flex items-center justify-between gap-2">
-        <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1 shadow-sm flex-1 text-center`}>
-          <p className={`text-base font-bold ${colors.text}`}>
-            {value}
-          </p>
-        </div>
-        <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1.5 shadow-sm`}>
-          <div className={colors.text}>{icon}</div>
-        </div>
-      </div>
-
-
-      
+    {/* Value */}
+    <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg px-30 py-1 shadow-sm`}>
+      <p className={`text-sm font-bold ${colors.text}`}>
+        {value}
+      </p>
     </div>
+
+    {/* Icon */}
+    <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1.5 shadow-sm`}>
+      <div className={colors.text}>{icon}</div>
+    </div>
+
+  </div>
+</div>
   );
 };
 

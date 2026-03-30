@@ -248,7 +248,7 @@ useEffect(() => {
     return value.toString();
   };
 
-
+console.log("fgfff",ofrList);
 
    const hasTypePlant = ofrList?.some(row => row.TYPE_PLANT);
 
@@ -284,6 +284,7 @@ useEffect(() => {
                     ? [{
                         field: 'TYPE_PLANT',
                         headerName: 'Type Plant',
+                          minWidth: 100,
                         flex: 1.2,
                         renderCell: (params) => (
                           <Box sx={{ color: '#374151' }}>
@@ -298,6 +299,8 @@ useEffect(() => {
                     ? [{
                         field: 'RECRUIT_CYCLE',
                         headerName: 'Emp Level',
+
+                             minWidth: 100,
                         flex: 1.2,
                         renderCell: (params) => (
                           <Box sx={{ color: '#374151' }}>
@@ -341,17 +344,7 @@ useEffect(() => {
         </Box>
       ),
     },
-    // {
-    //   field: 'ADDRESS',
-    //   headerName: 'ADDRESS',
-    //   flex: 1.2,
-    //   minWidth: 150,
-    //   renderCell: (params) => (
-    //     <Box sx={{ color: '#374151', fontSize: '12px' }}>
-    //       {params.value}
-    //     </Box>
-    //   ),
-    // },
+
     {
       field: 'PHONE_NUMBER',
       headerName: 'Phone Number',
@@ -363,17 +356,7 @@ useEffect(() => {
         </Box>
       ),
     },
-    // {
-    //   field: 'DESIGNATION',
-    //   headerName: 'Designation',
-    //   flex: 1,
-    //   minWidth: 130,
-    //   renderCell: (params) => (
-    //     <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-    //       {params.value}
-    //     </Box>
-    //   ),
-    // },
+
 
         {
                field: 'DEPT',
@@ -626,14 +609,7 @@ useEffect(() => {
       margin: "0 auto",
       padding: "12px",
     }}>
-      <Paper sx={{
-        width: '100%',
-        padding: 2,
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        border: '1px solid #e2e8f0',
-      }}>
+   
         
       
 
@@ -689,7 +665,7 @@ useEffect(() => {
             }}
           />
         </Box>
-      </Paper>
+     
 
       <OfferLetterModal
         open={offerLetterOpen}

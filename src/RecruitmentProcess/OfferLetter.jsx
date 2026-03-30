@@ -40,6 +40,12 @@ import { ContextData } from '../Context/ContextData';
 import {API_BASE_URL} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
 import { Info, UndoDot } from 'lucide-react';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
+
 
 const OfferLetter = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,7 +104,7 @@ const OfferLetter = () => {
     if (!result.isConfirmed) {
       return;
     }
-//  setSubmitting(prev => ({ ...prev, [row.CHILD_CASEID]: true }));
+
 
 
 
@@ -149,22 +155,9 @@ const OfferLetter = () => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   
  
-  const handleOfferLterEmail=async(rowData)=>
+  const handleOfferLterEmail=async(rowData) =>
 
   {
     try
@@ -270,24 +263,38 @@ const fetchOfrData = async () => {
     });
     const list = ofrdata.data.evcVerifiedData || [];
 
-    console.log("lissssssssssssssss",list);
+      const filtered = list.filter(
+      (item) =>
+        item.HR == "Approved" &&
+        item.DIRECTOR == "Approved" &&
+        item.EVC == "Approved"
+    );
 
-  
-    setOfferLetterData(list);
+    setOfferLetterData(filtered);
 
-    // ✅ Pre-fill joining dates from API response
-    const prefilled = {};
+   
+   const prefilled = {};
     list.forEach((item) => {
       const rawDate = item.JOINING_DATE || item.joiningDate || item.JOIN_DATE || item.DOJ;
       if (rawDate) {
         try {
-          const formatted = new Date(rawDate).toISOString().split('T')[0];
-          prefilled[item.CHILD_CASEID] = formatted;
+          const date = new Date(rawDate);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const formatted = `${day}-${month}-${year}`;
+            prefilled[item.CHILD_CASEID] = formatted;
+          } else {
+            // If the date is already in DD-MM-YYYY format, keep it as is
+            prefilled[item.CHILD_CASEID] = rawDate;
+          }
         } catch (e) {
           prefilled[item.CHILD_CASEID] = rawDate;
         }
       }
     });
+
     setJoiningDates(prefilled);
 
   } catch (err) {
@@ -453,7 +460,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
       field: 'SNO',
       headerName: 'S.NO',
       flex: 0.5,
-      minWidth: 70,
+      minWidth: 50,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -466,7 +473,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
-      minWidth: 130,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
           {params.value}
@@ -480,6 +487,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
                     field: 'TYPE_PLANT',
                     headerName: 'Type Plant',
                     flex: 1.2,
+                    minWidth: 100,
                     renderCell: (params) => (
                       <Box sx={{ color: '#374151' }}>
                         {params.value}
@@ -494,6 +502,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
                     field: 'RECRUIT_CYCLE',
                     headerName: 'Emp Level',
                     flex: 1.2,
+                    minWidth: 100,
                     renderCell: (params) => (
                       <Box sx={{ color: '#374151' }}>
                         {params.value}
@@ -543,9 +552,9 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
 
     {
       field: 'PHONE_NUMBER',
-      headerName: 'Phone Number',
+      headerName: 'Phone No',
       flex: 0.9,
-      minWidth: 120,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontWeight: 500 }}>
           {formatNumber(params.value)}
@@ -619,7 +628,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
-      width: 110,
+      width: 100,
       renderCell: (params) => {
         const formattedValue = params.value
           ? Number(params.value).toLocaleString('en-IN')
@@ -634,7 +643,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     {
       field: 'EXP_CTC',
       headerName: 'Expected CTC',
-      width: 120,
+      width: 100,
       renderCell: (params) => {
         const formattedValue = params.value
           ? Number(params.value).toLocaleString('en-IN')
@@ -649,7 +658,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     {
       field: 'OFFER_CTC',
       headerName: 'Offer CTC',
-      width: 110,
+      width: 100,
       renderCell: (params) => {
         const formattedValue = params.value
           ? Number(params.value).toLocaleString('en-IN')
@@ -670,7 +679,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     {
       field: 'DIRECTOR',
       headerName: 'DIRECTOR',
-      width: 110,
+      width: 100,
       renderCell: (params) => getStatusChip(params.value),
     },
     {
@@ -686,37 +695,186 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
       minWidth: 120,
       renderCell: (params) => getStatusChip(params.value),
     },
+
     {
-      field: 'Date of Joining',
-      headerName: 'Date of Joining',
-      flex: 1.3,
-      minWidth: 170,
-      renderCell: (params) => (
-        <TextField
-          size="small"
-          type="date"
-          placeholder="Enter Date"
-          value={joiningDates[params.row.CHILD_CASEID] || ''}
-          onChange={(e) => handleJoiningDateChange(params.row.CHILD_CASEID, e.target.value)}
-          sx={{
-            width: '100%',
-            '& .MuiOutlinedInput-root': {
-              fontSize: '12px',
-              height: '32px',
-              '& fieldset': {
-                borderColor: '#d1d5db',
-              },
-              '&:hover fieldset': {
-                borderColor: '#667eea',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#667eea',
+  field: 'Date of Joining',
+  headerName: 'Date of Joining',
+  flex: 1.1,
+  minWidth: 140,
+  renderCell: (params) => (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <DatePicker
+        format="DD-MM-YYYY"
+        reduceAnimations
+
+        value={
+          joiningDates[params.row.CHILD_CASEID]
+            ? dayjs(joiningDates[params.row.CHILD_CASEID], 'DD-MM-YYYY', true)
+            : null
+        }
+
+        // ✅ ONLY update state when valid (no lag)
+        onChange={(newValue) => {
+          if (!newValue) {
+            handleJoiningDateChange(params.row.CHILD_CASEID, '');
+            return;
+          }
+
+          if (newValue.isValid()) {
+            handleJoiningDateChange(
+              params.row.CHILD_CASEID,
+              newValue.format('DD-MM-YYYY')
+            );
+          }
+        }}
+
+        // ❌ IMPORTANT: do nothing here to avoid lag
+        onInputChange={() => {}}
+
+        slotProps={{
+          // ✅ Action buttons
+          actionBar: {
+            actions: ['clear', 'today'],
+            sx: {
+              '& button': {
+                fontSize: '10px',
+                padding: '2px 6px',
               },
             },
-          }}
-        />
-      ),
-    },
+          },
+
+          // ✅ POPPER (compact + no gap + aligned)
+          popper: {
+            sx: {
+              '& .MuiPaper-root': {
+                padding: '2px',
+              },
+
+              '& .MuiPickersLayout-root': {
+                height: 'auto',
+              },
+              '& .MuiPickersLayout-contentWrapper': {
+                height: 'auto',
+              },
+
+              '& .MuiDateCalendar-root': {
+                width: '220px',
+                height: '220px',
+                margin: 0,
+              },
+
+              '& .MuiDayCalendar-header': {
+                display: 'flex',
+                justifyContent: 'space-between',
+              },
+
+              '& .MuiDayCalendar-weekContainer': {
+                display: 'flex',
+                justifyContent: 'space-between',
+                margin: 0,
+              },
+
+              '& .MuiDayCalendar-monthContainer': {
+                margin: 0,
+              },
+
+              '& .MuiPickersLayout-actionBar': {
+                marginTop: '2px',
+                padding: '2px 4px',
+              },
+            },
+          },
+
+          // ✅ SMALL DAY CELLS
+          day: {
+            sx: {
+              width: 24,
+              height: 24,
+              fontSize: '10px',
+              margin: '1px',
+            },
+          },
+
+          // ✅ HEADER
+          calendarHeader: {
+            sx: {
+              minHeight: '30px',
+              '& .MuiTypography-root': {
+                fontSize: '12px',
+              },
+              '& .MuiIconButton-root': {
+                padding: '4px',
+              },
+            },
+          },
+
+          // ✅ INPUT FIELD
+          textField: {
+            size: 'small',
+            fullWidth: true,
+            InputProps: {
+              sx: {
+                height: 28,
+                fontSize: '10px',
+                padding: '0 6px',
+              },
+            },
+            inputProps: {
+              placeholder: 'DD-MM-YYYY',
+              style: {
+                padding: '4px 6px',
+                fontSize: '10px',
+              },
+            },
+            sx: {
+              '& .MuiOutlinedInput-root': {
+                height: 28,
+                fontSize: '10px',
+              },
+              '& .MuiInputBase-input': {
+                padding: '4px 6px',
+              },
+              '& .MuiSvgIcon-root': {
+                fontSize: '16px',
+              },
+            },
+          },
+        }}
+      />
+    </LocalizationProvider>
+  ),
+},
+    // {
+    //   field: 'Date of Joining',
+    //   headerName: 'Date of Joining',
+    //   flex: 1.3,
+    //   minWidth: 170,
+    //   renderCell: (params) => (
+    //     <TextField
+    //       size="small"
+    //       type="date"
+    //       placeholder="Enter Date"
+    //       value={joiningDates[params.row.CHILD_CASEID] || ''}
+    //       onChange={(e) => handleJoiningDateChange(params.row.CHILD_CASEID, e.target.value)}
+    //       sx={{
+    //         width: '100%',
+    //         '& .MuiOutlinedInput-root': {
+    //           fontSize: '12px',
+    //           height: '32px',
+    //           '& fieldset': {
+    //             borderColor: '#d1d5db',
+    //           },
+    //           '&:hover fieldset': {
+    //             borderColor: '#667eea',
+    //           },
+    //           '&.Mui-focused fieldset': {
+    //             borderColor: '#667eea',
+    //           },
+    //         },
+    //       }}
+    //     />
+    //   ),
+    // },
     {
       field: 'View',
       headerName: 'View Offer',
@@ -1041,14 +1199,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
       margin: "0 auto",
       padding: "12px",
     }}>
-      <Paper sx={{
-        width: '100%',
-        padding: 2,
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        border: '1px solid #e2e8f0',
-      }}>
+
         
         
 
@@ -1116,7 +1267,7 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
             }}
           />
         </Box>
-      </Paper>
+    
 
       <OfferLetterModal
         open={offerLetterOpen}

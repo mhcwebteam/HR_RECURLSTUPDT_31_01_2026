@@ -7,7 +7,8 @@ import {
   FileCheck, Hash, Home, BookOpen, Award, Globe, Users, CreditCard, 
   Shield, FileSignature, Building, DollarSign, AlertCircle, Heart,
   ThumbsUp, ThumbsDown, MessageCircle, UserCheck, PenTool, Map, Flag,
-  CreditCard as CreditCardIcon, Book, PhoneCall, Info
+  CreditCard as CreditCardIcon, Book, PhoneCall, Info,
+  Edit
 } from 'lucide-react';
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
@@ -23,7 +24,7 @@ const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh
   const [approvedDocs, setApprovedDocs] = useState({});
   const [rejectedDocs, setRejectedDocs] = useState({});
   const [loading, setLoading] = useState(false);
-  const [sameAsPermanent, setSameAsPermanent] = useState(data?.DESIG === 'YES');
+  const [sameAsPermanent, setSameAsPermanent] = useState(data?.address_status == 'YES');
 const navigate = useNavigate();
   // Section collapse states
   const [openSections, setOpenSections] = useState({
@@ -35,7 +36,7 @@ const navigate = useNavigate();
   console.log("Verification Data:", data);
 
   useEffect(() => {
-    setSameAsPermanent(data?.DESIG === 'YES');
+    setSameAsPermanent(data?.address_status == 'YES');
     
     // Initialize approved/rejected docs from existing statuses
     const initialApproved = {};
@@ -248,6 +249,91 @@ payslips_DocId: 'PAY_Status',
     }
   };
 
+
+
+  const handleEditClick = async () => {
+  
+  if (!remarks || remarks.trim() === "") {
+    return Swal.fire({
+      icon: "warning",
+      title: "Remarks Required",
+      text: "Please enter remarks to click on edit btn.",
+    });
+  }
+
+ 
+  const result = await Swal.fire({
+    title: "Edit Verification?",
+    text: "Are you sure you want to update this verification Details?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#2563eb",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, Edit",
+    cancelButtonText: "Cancel"
+  });
+
+ 
+  if (!result.isConfirmed) return;
+
+
+ 
+   // ✅ LOADING POPUP
+   Swal.fire({
+     title: "Processing...",
+     text: "Updating the recruitment form, please wait...",
+     allowOutsideClick: false,
+     allowEscapeKey: false,
+     didOpen: () => {
+       Swal.showLoading();
+     }
+   });
+
+  try {
+    const payload = {
+      child_caseId: data?.CHILD_CASEID,
+      email: data?.EMAIL,
+      Status_Edit: "Edit"
+    };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/emp-email`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    console.log("Success:", response.data);
+
+  
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Edit request sent successfully!",
+      timer: 2000,
+      showConfirmButton: false
+    });
+if (refersh) await refersh();
+        setRemarks('');
+        onClose();
+  } catch (error) {
+    console.error("Error:", error);
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text:
+        error.response?.data?.message ||
+        "Failed to process edit request.",
+    });
+  }
+};
+
   const handleSubmit = async () => {
     const hasApproved = Object.values(approvedDocs).some(status => status === true);
     
@@ -272,6 +358,8 @@ payslips_DocId: 'PAY_Status',
     });
 
     if (!result.isConfirmed) return;
+
+
 
     setLoading(true);
     try {
@@ -941,15 +1029,19 @@ payslips_DocId: 'PAY_Status',
                       </div>
 
                       {/* Same as Permanent Radio */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Same as Permanent Address?</span>
-                        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <input type="radio" checked={sameAsPermanent === true} disabled /> Yes
-                        </label>
-                        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <input type="radio" checked={sameAsPermanent === false} disabled /> No
-                        </label>
-                      </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', marginBottom: '12px' }}>
+  <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>
+    Same as Permanent Address?
+  </span>
+
+  <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+    <input type="radio" checked={sameAsPermanent} readOnly /> Yes
+  </label>
+
+  <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+    <input type="radio" checked={!sameAsPermanent} readOnly /> No
+  </label>
+</div>
 
                       {/* Present Address */}
                       {!sameAsPermanent && (
@@ -1496,31 +1588,56 @@ payslips_DocId: 'PAY_Status',
           </div>
 
           {/* Footer Actions */}
-          <div className="bg-white px-6 py-4 flex justify-end gap-3 border-t">
-            <button onClick={onClose} className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">
-              Cancel
-            </button>
-            <button
-  onClick={() => {
-    localStorage.setItem('VerifyPreviewPage', JSON.stringify({ data, sameAsPermanent }));
-    navigate('/VerifyPreviewPage');
-  }}
-  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+      <div className="bg-white px-6 py-4 flex justify-between items-center border-t">
+  {/* Left side buttons */}
+  <div className="flex gap-3">
+    <button 
+      onClick={onClose} 
+      className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50"
+    >
+      Cancel
+    </button>
+
+
+    <button
+  onClick={handleEditClick}
+  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition"
 >
-  <Eye className="w-4 h-4" />
-  Preview
+  <Edit className="w-4 h-4" />
+  Edit
 </button>
-            <button onClick={handleReject} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 flex items-center gap-2">
-              <XCircle size={16} /> Reject
-            </button>
-            <button 
-              onClick={handleSubmit} 
-              disabled={loading}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
-            >
-              <CheckCircle size={16} /> {loading ? 'Submitting...' : 'Verify & Submit'}
-            </button>
-          </div>
+
+
+    <button
+      onClick={() => {
+        localStorage.setItem('VerifyPreviewPage', JSON.stringify({ data, sameAsPermanent }));
+        navigate('/VerifyPreviewPage');
+      }}
+      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+    >
+      <Eye className="w-4 h-4" />
+      Preview
+    </button>
+
+    <button 
+      onClick={handleReject} 
+      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 flex items-center gap-2"
+    >
+      <XCircle size={16} /> Reject
+    </button>
+  </div>
+
+  {/* Right side button */}
+  <div>
+    <button 
+      onClick={handleSubmit} 
+      disabled={loading}
+      className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
+    >
+      <CheckCircle size={16} /> {loading ? 'Submitting...' : 'Verify & Submit'}
+    </button>
+  </div>
+</div>
         </div>
       </div>
 

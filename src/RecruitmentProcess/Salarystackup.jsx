@@ -172,22 +172,6 @@ useEffect(() => {
       )
     }));
 
-    // Here you would normally call an API to persist the offer CTC
-    // For example:
-    // try {
-    //   await axios.post(`${API_BASE_URL}/update-offer-ctc`, { child_caseid: row.CHILD_CASEID, offerCtc: typedValue }, { headers });
-    //   setSnackbar({ open: true, message: 'Offer CTC saved', severity: 'success' });
-    // } catch (error) {
-    //   setSnackbar({ open: true, message: 'Save failed', severity: 'error' });
-    // } finally {
-    //   setSavingOfferCtc(prev => ({ ...prev, [rowId]: false }));
-    // }
-
-    // Simulate success
-    // setTimeout(() => {
-    //   setSavingOfferCtc(prev => ({ ...prev, [rowId]: false }));
-    //   setSnackbar({ open: true, message: `Offer CTC ₹${Number(typedValue).toLocaleString('en-IN')} saved!`, severity: 'success' });
-    // }, 500);
   };
 
   // Send email
@@ -319,6 +303,8 @@ useEffect(() => {
   // Status chip helper
   const getStatusChip = (status) => {
     const statusValue = status?.toLowerCase();
+
+    console.log(statusValue,"yrrrrrrrrrrrrrrrrrrrrrr");
     const config = {
       verified: { color: '#10b981' },
       pending: { color: '#f59e0b' },
@@ -359,8 +345,12 @@ useEffect(() => {
  
 
       const hasTypePlant = stackupData?.salaryStackUpGetData?.some(row => row.TYPE_PLANT);
- console.log("ttttttttttttttttt", hasTypePlant)
+
   const recCycle = stackupData?.salaryStackUpGetData?.some(row => row.RECRUIT_CYCLE);
+
+  const CandExpCTC = stackupData?.salaryStackUpGetData?.some(row => row.CAND_EXP_CTC);
+
+  
 
 
  
@@ -369,14 +359,15 @@ useEffect(() => {
 
   // Columns definition
   const columns = useMemo(() => [
-    { field: 'SNO', headerName: 'S.NO', flex: 0.5, minWidth: 70, renderCell: (params) => <Box sx={{ fontWeight: 600, color: '#374151' }}>{params.value}</Box> },
-    { field: 'CHILD_CASEID', headerName: 'Case ID', flex: 1, minWidth: 130, renderCell: (params) => <Box sx={{ fontWeight: 500, color: '#1f2937' }}>{params.value}</Box> },
+    { field: 'SNO', headerName: 'S.NO', flex: 0.5, minWidth: 50, renderCell: (params) => <Box sx={{ fontWeight: 600, color: '#374151' }}>{params.value}</Box> },
+    { field: 'CHILD_CASEID', headerName: 'Case ID', flex: 1, minWidth: 100, renderCell: (params) => <Box sx={{ fontWeight: 500, color: '#1f2937' }}>{params.value}</Box> },
 
        ...(hasTypePlant
         ? [{
             field: 'TYPE_PLANT',
             headerName: 'Type Plant',
             flex: 1.2,
+            minWidth:80,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
                 {params.value}
@@ -390,6 +381,7 @@ useEffect(() => {
         ? [{
             field: 'RECRUIT_CYCLE',
             headerName: 'Emp Level',
+              minWidth:100,
             flex: 1.2,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
@@ -401,9 +393,9 @@ useEffect(() => {
 
          {
                     field: 'CUR_REV_ID',
-                    headerName: 'REVID',
+                    headerName: 'Rev ID',
                     flex: 1,
-                    minWidth: 110,
+                    minWidth: 60,
                     renderCell: (params) => (
                         <Box sx={{ color: '#374151' }}>
                              {params.value || "00"} 
@@ -414,12 +406,12 @@ useEffect(() => {
     { field: 'PLANT', headerName: 'Plant Name', flex: 1.2, minWidth: 160, renderCell: (params) => <Box sx={{ color: '#374151' }}>{params.value}</Box> },
     { field: 'NAME', headerName: 'Name', flex: 1, minWidth: 140, renderCell: (params) => <Box sx={{ fontWeight: 600, color: '#1f2937' }}>{params.value}</Box> },
     { field: 'EMAIL', headerName: 'Email', flex: 1.5, minWidth: 200, renderCell: (params) => <Box sx={{ color: '#374151', fontSize: '12px' }}>{params.value}</Box> },
-    { field: 'PHONE_NUMBER', headerName: 'Phone Number', flex: 0.9, minWidth: 120, renderCell: (params) => <Box sx={{ color: '#374151', fontWeight: 500 }}>{formatNumber(params.value)}</Box> },
+    { field: 'PHONE_NUMBER', headerName: 'Phone No', flex: 0.9, minWidth: 90, renderCell: (params) => <Box sx={{ color: '#374151', fontWeight: 500 }}>{formatNumber(params.value)}</Box> },
 {
   field: 'DEPT',
-  headerName: 'Department',
+  headerName: 'Dept',
   flex: 1,
-  minWidth: 120,
+  minWidth: 100,
   renderCell: (params) => {
     const groupCode = params.row.GROUP_CODE;
     const dept = params.value;
@@ -434,7 +426,7 @@ useEffect(() => {
 
   {
   field: 'MANPOWER_DESG',
-  headerName: 'M.Designation',
+  headerName: 'Desig/Position',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
@@ -542,7 +534,7 @@ useEffect(() => {
     {
       field: 'CURRENT_CTC',
       headerName: 'Current CTC',
-      width: 110,
+      width: 100,
       renderCell: (params) => {
         const val = params.value ? Number(params.value).toLocaleString('en-IN') : '0';
         return <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>₹{val}</Box>;
@@ -551,12 +543,30 @@ useEffect(() => {
     {
       field: 'EXP_CTC',
       headerName: 'Expected CTC',
-      width: 120,
+      width: 100,
       renderCell: (params) => {
         const val = params.value ? Number(params.value).toLocaleString('en-IN') : '0';
         return <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>₹{val}</Box>;
       },
     },
+
+
+          ...(CandExpCTC
+        ? [{
+            field: 'CAND_EXP_CTC',
+            headerName: 'Cand Expected CTC',
+ width: 120,
+      renderCell: (params) => {
+        const val = params.value ? Number(params.value).toLocaleString('en-IN') : '0';
+        return <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>₹{val}</Box>;
+      },
+          }]
+        : []),
+
+
+
+
+
     {
       field: 'OFFER_CTC',
       headerName: 'Offer CTC',
@@ -612,7 +622,7 @@ useEffect(() => {
   field:'PERCENTOF_HIKE',
   headerName: 'Hike %',
   flex: 0.9,
-  minWidth: 120,
+  minWidth: 80,
   renderCell: (params) => {
     const rowId = params.row.id;
     const currentCtc = Number(params.row.CURRENT_CTC || 0);
@@ -651,7 +661,7 @@ useEffect(() => {
     {
       field: 'create',
       headerName: 'Create',
-      width: 80,
+      width: 60,
       sortable: false,
       renderCell: (params) => {
         const rowId = params.row.id;
@@ -914,8 +924,8 @@ useEffect(() => {
           </Box>
           <Box>
             <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Candidate Exp Salary</Typography>
-            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.CandidSalaryModify ? '#111827' : '#c4c4c4', fontStyle: data?.CandidSalaryModify ? 'normal' : 'italic' }}>
-              {data?.CandidSalaryModify || ''}
+            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.CAND_EXP_CTC ? '#111827' : '#c4c4c4', fontStyle: data?.CAND_EXP_CTC ? 'normal' : 'italic' }}>
+              {data?.CAND_EXP_CTC || ''}
             </Typography>
           </Box>
         </Box>
@@ -1033,7 +1043,6 @@ useEffect(() => {
 
   return (
     <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: "12px" }}>
-      <Paper sx={{ width: '100%', padding: 2, borderRadius: '12px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
      
 
         <Box sx={{ width: "100%", borderRadius: "10px", overflow: "hidden", border: "1px solid #dfe5f1ff", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",  }}>
@@ -1096,7 +1105,7 @@ columnVisibilityModel={{
             }}
           />
         </Box>
-      </Paper>
+      
 
       <SalaryStackDetailsModal
         open={modalOpen}

@@ -13,8 +13,7 @@ import { API_BASE_URL } from '../Config/Config';
 
 function ManPowerView({ caseId, onClose }) {
 
-  console.log(caseId,"tyyyyyyyyyyyyyyyyyy");
-
+ 
   const navigate = useNavigate();
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
   const [attempted, setAttempted] = useState(false);
@@ -51,6 +50,7 @@ function ManPowerView({ caseId, onClose }) {
           headers: { Authorization: `Bearer ${userToken.token}` },
         });
         if (response.data) {
+          console.log("ressssssssssssssssss",response.data);
           setFormData(prev => ({ ...prev, ...response.data, caseid: response.data.CHILD_CASEID }));
           if (response.data.CUR_TASK) setCurrentTask(response.data.CUR_TASK);
         }
@@ -313,13 +313,21 @@ function ManPowerView({ caseId, onClose }) {
                             <th className="px-2 py-1 text-left text-xs font-semibold text-gray-700">Req By Date</th>
                           </tr>
                         </thead>
-                        <tbody>
-                          <tr className="border border-gray-200">
-                            <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">{formData.SNO}</td>
-                            <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">{formData.JOB_TIT}</td>
-                            <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">{formData.REQ_BY_DT}</td>
-                          </tr>
-                        </tbody>
+                         <tbody>
+  {[formData].map((job, index) => (
+    <tr key={index} className="border border-gray-200">
+      <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">
+        {index + 1}
+      </td>
+      <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">
+        {job.JOB_TIT}
+      </td>
+      <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">
+        {job.REQ_BY_DT}
+      </td>
+    </tr>
+  ))}
+</tbody>
                       </table>
                     </div>
                   </motion.div>

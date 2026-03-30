@@ -184,101 +184,113 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,
     );
   };
 
-  const handlePreviewPDF = () => {
-    try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 15;
+ const handlePreviewPDF = () => {
+  try {
+    const pw = 150; // ← increased from 210 to 230 to fit right-side values
+    const ph = 170;
 
-      // Header with gradient effect
-      doc.setFillColor(2, 84, 161);
-      doc.rect(0, 0, pageWidth, 25, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SALARY BREAKUP DOCUMENT', pageWidth / 2, 12, { align: 'center' });
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, pageWidth / 2, 20, { align: 'center' });
-      
-      yPos = 32;
+    const doc = new jsPDF({ unit:'mm', format:[pw, ph] });
+    let y = 0, ri = 0;
 
-      // Employee Information Section
-      doc.setTextColor(0, 0, 0);
-      doc.setFillColor(241, 245, 249);
-      doc.rect(10, yPos, pageWidth - 20, 7, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('EMPLOYEE INFORMATION', 15, yPos + 5);
+    // Header
+    doc.setFillColor(2,84,161); doc.rect(0, 0, pw, 20, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13); doc.setFont('helvetica','bold');   doc.text('MY HOME GROUP', pw/2, 7, {align:'center'});
+    doc.setFontSize(8);  doc.setFont('helvetica','normal'); doc.text('SALARY BREAKUP DOCUMENT', pw/2, 13, {align:'center'});
+   y = 20;
 
-      yPos += 12;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+    // Employee Info
+    const infoRows = [
+      ['NAME',                  data?.FIRST_NAME || data?.NAME || 'N/A'],
+      ['JOB TITLE',             data?.DEPT  || 'N/A'],
+      ['LOCATION',              data?.PLANT || 'N/A'],
+      ['FIXED COST TO COMPANY', `Rs. ${salary.totalCTC.a.toLocaleString('en-IN')}`],
+      ['VARIABLE PAY',          '-'],
+      ['TOTAL COST TO COMPANY', `Rs. ${salary.totalCTC.a.toLocaleString('en-IN')}`],
+    ];
+    doc.setDrawColor(200,200,200);
+    infoRows.forEach(([label, value], i) => {
+      const ry = y + i * 5;
+      doc.setFillColor(...(i===5?[235,245,255]:i%2===0?[249,250,251]:[255,255,255]));
+      doc.rect(10, ry, pw-20, 5, 'F'); doc.rect(10, ry, pw-20, 5, 'S');
+      doc.setFontSize(7); doc.setFont('helvetica','bold');   doc.setTextColor(80,80,80); doc.text(label, 14, ry+3.4);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(i===3?5:i===5?37:30, i===3?150:i===5?99:30, i===3?80:i===5?235:30);
+      doc.text(value, pw-14, ry+3.4, {align:'right'});
+    });
+    y += infoRows.length * 5 + 4;
 
-      const employeeInfo = [
-        ['Name:', data?.NAME || data?.FIRST_NAME || 'N/A', 'Case ID:', data?.CHILD_CASEID || 'N/A'],
-        ['Job Title:', data?.DEPT || 'N/A', 'Phone:', data?.PHONE_NUMBER || 'N/A'],
-        ['Location:', data?.PLANT || 'N/A', 'Current CTC:', `₹ ${(parseFloat(data?.CURRENT_CTC || 0)).toLocaleString('en-IN')}`]
-      ];
+    // column positions — fixed
+    const colM  = pw - 75;  // Monthly center
+    const colA  = pw - 14;  // Annual right edge
 
-      employeeInfo.forEach((row) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[0], 15, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text(row[1], 45, yPos);
+    // Helpers
+    const secHead = (title) => {
+      doc.setFillColor(50,60,70); doc.rect(10, y, pw-20, 5, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text(title,          14,    y+3.4);
+      doc.text('MONTHLY (Rs.)', colM, y+3.4, {align:'center'});
+      doc.text('ANNUAL (Rs.)',  colA, y+3.4, {align:'right'});
+      y += 5;
+    };
 
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[2], 110, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text(row[3], 140, yPos);
+    const row = (label, m, a, {isBold=false,isTotal=false,isHighlight=false,isDisabled=false,isFixed=false}={}) => {
+      doc.setFillColor(...(isHighlight?[235,245,255]:isTotal?[248,250,252]:ri%2===0?[255,255,255]:[250,250,250])); ri++;
+      doc.rect(10, y, pw-20, 5, 'F'); doc.setDrawColor(220,220,220); doc.rect(10, y, pw-20, 5, 'S');
+      doc.setFont('helvetica',isBold?'bold':'normal'); doc.setFontSize(7);
+      doc.setTextColor(...(isDisabled?[150,150,150]:[50,50,50]));
+      doc.text(label+(isFixed?' [Fixed]':''), 14, y+3.4);
+      doc.text(isDisabled?'-':`Rs. ${Math.round(m||0).toLocaleString('en-IN')}`, colM, y+3.4, {align:'center'});
+      doc.text(isDisabled?'-':`Rs. ${Math.round(a||0).toLocaleString('en-IN')}`, colA, y+3.4, {align:'right'});
+      y += 5;
+    };
 
-        yPos += 6;
-      });
+    // Column header
+    doc.setFillColor(30,41,59); doc.rect(10, y, pw-20, 5, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+    doc.text('COMPENSATION DETAILS', 14,   y+3.4);
+    doc.text('MONTHLY (Rs.)',        colM,  y+3.4, {align:'center'});
+    doc.text('ANNUAL (Rs.)',         colA,  y+3.4, {align:'right'});
+    y += 5;
 
-      yPos += 5;
+    // Sections
+    const s = salary;
+    secHead('I. COMPENSATION COMPONENTS');
+    row('Basic Salary',        s.basic.m,      s.basic.a);
+    row('HRA',                 s.hra.m,        s.hra.a);
+    row('Conveyance',          s.conveyance.m, s.conveyance.a, {isFixed:true});
+    row('Education Allowance', s.education.m,  s.education.a,  {isFixed:true});
+    row('Special Allowance',   s.special.m,    s.special.a);
+    row('GROSS SALARY',        s.gross.m,      s.gross.a,      {isBold:true,isTotal:true});
 
-      // Salary Summary Section
-      doc.setFillColor(254, 243, 199);
-      doc.rect(10, yPos, pageWidth - 20, 7, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(146, 64, 14);
-      doc.text('SALARY SUMMARY', 15, yPos + 5);
+    secHead('II. OTHER BENEFITS');
+    row('Bonus',                     s.bonus.m,      s.bonus.a);
+    row('Employer PF Contribution',  s.employerPF.m, s.employerPF.a);
+    row('Employer ESI Contribution', 0, 0, {isDisabled:true});
 
-      yPos += 12;
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(8);
+    secHead('III. DEDUCTIONS');
+    row('Employee PF Contribution',  s.employeePF.m,      s.employeePF.a);
+    row('Employee ESI Contribution', 0, 0, {isDisabled:true});
+    row('Professional Tax',          s.pt.m,              s.pt.a);
+    row('TOTAL DEDUCTIONS',          s.totalDeductions.m, s.totalDeductions.a, {isBold:true,isTotal:true});
 
-      const salarySummary = [
-        ['Offer CTC (Annual):', `₹ ${salary.totalCTC.a.toLocaleString('en-IN')}`],
-        ['Gross Salary (Monthly):', `₹ ${salary.gross.m.toLocaleString('en-IN')}`],
-        ['Total Deductions (Monthly):', `₹ ${salary.totalDeductions.m.toLocaleString('en-IN')}`],
-        ['Net Salary (Monthly):', `₹ ${salary.netSalary.m.toLocaleString('en-IN')}`],
-        ['Net Salary (Annual):', `₹ ${salary.netSalary.a.toLocaleString('en-IN')}`]
-      ];
+    row('NET SALARY (Gross - Deductions)', s.netSalary.m, s.netSalary.a, {isBold:true,isHighlight:true});
+    row('FIXED COST TO COMPANY',           s.totalCTC.m,  s.totalCTC.a,  {isBold:true,isTotal:true});
 
-      salarySummary.forEach((row) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[0], 15, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text(row[1], pageWidth - 15, yPos, { align: 'right' });
-        yPos += 5;
-      });
+    // Terms — no gap
+   
+    // Footer flush
+    const finalH = Math.ceil(y) + 7;
+    doc.setFillColor(2,84,161); doc.rect(0, finalH-7, pw, 7, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('MY HOME GROUP — Confidential Document', pw/2, finalH-2.5, {align:'center'});
 
-      // Open PDF
-      window.open(doc.output('bloburl'), '_blank');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to generate PDF preview',
-      });
-    }
-  };
+    window.open(doc.output('bloburl'), '_blank');
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    Swal.fire({icon:'error', title:'Error', text:'Failed to generate PDF preview'});
+  }
+};
 
  const handleSubmit = async () => {
     const result = await Swal.fire({
@@ -369,8 +381,12 @@ const matchedPersonal = Array.isArray(personalData)
 const getFileName = (path) => {
   if (!path) return "No File";
 
-  const file = path.split("/").pop(); // get last part
-  return file.replace(/^verification_\d+_/, ""); // remove prefix
+  const file = path.split("/").pop();
+  const cleanName = file.replace(/^verification_\d+_/, "");
+
+  return cleanName.length > 20
+    ? cleanName.substring(0, 20) + "..."
+    : cleanName;
 };
 
     
@@ -412,12 +428,19 @@ const getFileName = (path) => {
           value={`${hikePercentage}%`} 
           valueColor={parseFloat(hikePercentage) > 0 ? 'text-emerald-700 font-bold' : 'text-red-600 font-bold'} 
         />
-       <DetailRow label="Joining Duration" value={matchedPersonal?.experienceData?.[0]?.noticePeriod || 'N/A'} />
+<DetailRow
+  label="Joining Duration"
+  value={
+    matchedPersonal?.experienceData?.[0]?.noticePeriod
+      ? `${matchedPersonal.experienceData[0].noticePeriod} days`
+      : 'N/A'
+  }
+/>
         <DetailRow label="Offered Designation" value={data?.DESIG || 'N/A'} />
 
         {/* HR Evaluation File */}
         <div className="flex justify-between items-center px-3 py-2 hover:bg-gray-50 transition-colors">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">HR Evaluation File</span>
+          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">HR Evaluation File</span>
           {matchedPersonal?.hrEvaluationFile ? (
             <button
               onClick={() => handleFileOpen(matchedPersonal?.hrEvaluationFile)}
@@ -445,30 +468,15 @@ const getFileName = (path) => {
   </div>
 );
 
-  const StatusCard = ({ title, status, bgColor, icon }) => {
-    const isApproved = status === 'Approved';
-    return (
-      <div className={`border rounded-lg p-3 ${bgColor} hover:shadow-md transition-all duration-200`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full ${isApproved ? 'bg-green-100' : 'bg-gray-100'} flex items-center justify-center text-lg`}>
-              {icon}
-            </div>
-            <span className="text-sm font-semibold text-gray-800">{title}</span>
-          </div>
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isApproved 
-              ? 'bg-green-100 text-green-700 border-green-300' 
-              : 'bg-yellow-100 text-yellow-700 border-yellow-300'
-          }`}>
-            <span>{isApproved ? '✓' : '⏳'}</span>
-            <span>{status || 'Pending'}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
+  const getCurrentApprovalStep = () => {
+  if (data?.HR !== 'Approved') return 'HR';
+  if (data?.DIRECTOR !== 'Approved') return 'DIRECTOR';
+  if (data?.EVC !== 'Approved') return 'EVC';
+  return null;
+};
+
+const currentStep = getCurrentApprovalStep();
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col" style={{ height: '650px' }}>
@@ -545,33 +553,51 @@ const getFileName = (path) => {
 <div className="flex flex-col justify-center px-4 py-3 " style={{ width: '60%' }}>
   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Approval Status</p>
   <div className="flex gap-2">
-    {[
-      { title: 'HOD',      status: data?.HR,       border: 'border-blue-200',   bg: 'bg-blue-50'   },
-      { title: 'DIRECTOR', status: data?.DIRECTOR, border: 'border-purple-200', bg: 'bg-purple-50' },
-      { title: 'EVC',      status: data?.EVC,      border: 'border-orange-200', bg: 'bg-orange-50' },
-    ].map(({ title, status, border, bg }) => (
-      <div key={title} className={`flex-1 border ${border} ${bg} rounded-lg px-3 py-2 flex items-center gap-2`}>
-        
-        {/* Left - Icon + Title stacked */}
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-base">👤</span>
-          <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wide">{title}</p>
-        </div>
+  {[
+  { key: 'HR', title: 'HOD', border: 'border-blue-200', bg: 'bg-blue-50' },
+  { key: 'DIRECTOR', title: 'DIRECTOR', border: 'border-purple-200', bg: 'bg-purple-50' },
+  { key: 'EVC', title: 'EVC', border: 'border-orange-200', bg: 'bg-orange-50' },
+].map(({ key, title, border, bg }) => {
 
-        {/* Divider */}
-        <div className="w-px self-stretch bg-gray-300 mx-1" />
+  let statusType = '';
 
-        {/* Right - Status badge */}
-        <span className={`flex-1 text-center px-1.5 py-1.5 rounded-full text-[9px] font-semibold border ${
-          status === 'Approved'
-            ? 'bg-green-100 text-green-700 border-green-300'
-            : 'bg-yellow-100 text-yellow-700 border-yellow-300'
-        }`}>
-          {status === 'Approved' ? '✓ Approved' : '⏳ Pending'}
-        </span>
+  if (data?.[key] == 'Approved') {
+    statusType = 'approved';
+  } else if (currentStep == key) {
+    statusType = 'wip';
+  } else {
+    statusType = 'pending';
+  }
 
+  return (
+    <div key={key} className={`flex-1 border ${border} ${bg} rounded-lg px-3 py-2 flex items-center gap-2`}>
+
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-base">👤</span>
+        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wide">{title}</p>
       </div>
-    ))}
+
+      <div className="w-px self-stretch bg-gray-300 mx-1" />
+
+      <span
+        className={`flex-1 text-center px-1.5 py-1.5 rounded-full text-[9px] font-semibold border ${
+          statusType === 'approved'
+            ? 'bg-green-100 text-green-700 border-green-300'
+            : statusType === 'wip'
+            ? 'bg-blue-100 text-blue-700 border-blue-300'
+            : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+        }`}
+      >
+        {statusType === 'approved'
+          ? '✓ Approved'
+          : statusType === 'wip'
+          ? '⚡ WIP'
+          : '⏳ Pending'}
+      </span>
+
+    </div>
+  );
+})}
   </div>
 </div>
 

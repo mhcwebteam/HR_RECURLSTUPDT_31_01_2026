@@ -39,7 +39,6 @@ const RecruitmentMail = () => {
   const [submitting, setSubmitting] = useState({});
 
 
-console.log(HrData,"hjr77777777777777777777777");
 
 
 useEffect(() => {
@@ -187,27 +186,21 @@ useEffect(() => {
         showConfirmButton: false,
       });
 
+  //       setFilteredData(prev =>
+  //   prev.map(row =>
+  //     row.CHILD_CASEID == caseId
+  //       ? { ...row, verifyEmail: "sent" }
+  //       : row
+  //   )
+  // );
+
+
      setEmailInputs(prev => ({
   ...prev,
   [caseId]: ''
 }));
       
-      // Clear the email input
-      // setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
-      
-      // // Remove the row from both data and filteredData
-      // setData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
-      // setFilteredData(prevData => prevData.filter(row => row.CHILD_CASEID !== caseId));
-      
-      // // Optional: Update HrData to mark as sent
-      // setHrData(prevHrData => ({
-      //   ...prevHrData,
-      //   TaskAssignmentData: prevHrData.TaskAssignmentData?.map(row => 
-      //     row.CHILD_CASEID === caseId 
-      //       ? { ...row, verifyEmail: 'sent' } 
-      //       : row
-      //   )
-      // }));
+  
     }
   } catch (error) {
     console.error('Email send error:', error);
@@ -270,7 +263,7 @@ useEffect(() => {
       field: 'SNO',
       headerName: 'S.NO',
       flex: 0.5,
-      minWidth: 70,
+      minWidth: 50,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -284,7 +277,7 @@ useEffect(() => {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
-      minWidth: 120,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
           {params.value}
@@ -298,6 +291,7 @@ useEffect(() => {
         field: 'TYPE_PLANT',
         headerName: 'Type Plant',
         flex: 1.2,
+            minWidth: 80,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -312,6 +306,7 @@ useEffect(() => {
         field: 'RECRUIT_CYCLE',
         headerName: 'Emp Level',
         flex: 1.2,
+            minWidth: 120,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -327,9 +322,9 @@ useEffect(() => {
 
         {
                 field: 'CUR_REV_ID',
-                headerName: 'REVID',
+                headerName: 'Rev ID',
                 flex: 1,
-                minWidth: 110,
+                minWidth: 60,
                 renderCell: (params) => (
                     <Box sx={{ color: '#374151' }}>
                        {params.value || "00"} 
@@ -343,7 +338,7 @@ useEffect(() => {
       field: 'PLANT',
       headerName: 'Plant',
       flex: 1.2,
-      minWidth: 140,
+      minWidth: 200,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
@@ -352,9 +347,9 @@ useEffect(() => {
     },
 {
   field: 'DEPT',
-  headerName: 'Department',
+  headerName: 'Dept',
   flex: 1,
-  minWidth: 120,
+  minWidth: 140,
   renderCell: (params) => {
     const groupCode = params.row.GROUP_CODE;
     const dept = params.value;
@@ -369,7 +364,7 @@ useEffect(() => {
 
   {
   field: 'MANPOWER_DESG',
-  headerName: 'Designation',
+  headerName: 'Desig/Position',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
@@ -397,7 +392,7 @@ useEffect(() => {
       field: 'RAISER',
       headerName: 'Raiser',
       flex: 1,
-      minWidth: 110,
+      minWidth: 90,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
@@ -406,9 +401,9 @@ useEffect(() => {
     },
     {
       field: 'RAISER_DATE',
-      headerName: 'Raiser Date',
+      headerName: 'Raiser Dt',
       flex: 1,
-      minWidth: 110,
+      minWidth: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#6b7280' }}>
           {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
@@ -420,7 +415,7 @@ useEffect(() => {
       field: 'ACTION_STATUS',
       headerName: 'Status',
       flex: 0.8,
-      minWidth: 100,
+      minWidth: 90,
       renderCell: (params) => (
         <Button
           variant="contained"
@@ -445,35 +440,36 @@ useEffect(() => {
         </Button>
       ),
     },
-       {
-      field: 'StatusTrack',
-      headerName: 'C.StatusTrack',
-      flex: 0.8,
-      minWidth: 100,
-           renderCell: (params) => (
-        <Button
-          variant="contained"
-          size="small"
-          sx={{
-            background: '#522952',
-            color: 'white',
-            fontSize: '11px',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            textTransform: 'capitalize',
-            fontWeight: 600,
-            minWidth: 'auto',
-            boxShadow: 'none',
-            '&:hover': {
-              background: '#059669',
-              boxShadow: 'none',
-            },
-          }}
-        >
-          Pending
-        </Button>
-      ),
-    },
+    {
+  field: 'verifyEmail',
+  headerName: 'Mail Status',
+  flex: 0.8,
+  minWidth: 120,
+  renderCell: (params) => {
+    const status = params.row.verifyEmail;
+
+
+    return (
+      <Button
+        variant="contained"
+        size="small"
+        sx={{
+          background: status == "sent" ? '#10b981' : '#522952',
+          color: 'white',
+          fontSize: '11px',
+          padding: '3px 10px',
+          borderRadius: '4px',
+          textTransform: 'capitalize',
+          fontWeight: 600,
+          minWidth: 'auto',
+          boxShadow: 'none',
+        }}
+      >
+        {status ? 'Email Sent' : 'Pending'}
+      </Button>
+    );
+  },
+},
     {
       field: 'USER_EMAIL',
       headerName: 'User Email',
@@ -616,67 +612,8 @@ useEffect(() => {
       margin: "0 auto",
       padding: "12px",
     }}>
-      <Paper sx={{
-        width: '100%',
-        padding: 2,
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        border: '1px solid #e2e8f0',
-      }}>
-        {/* Compact Search bar */}
-        {/* <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ flex: 1, maxWidth: '400px' }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search shortlisted candidates..."
-              value={searchText}
-              onChange={handleSearch}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#667eea', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  height: '38px',
-                  fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
-                }
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
-                },
-              }}
-            />
-          </Box>
-          <Typography variant="body2" sx={{
-            color: '#64748b',
-            minWidth: 'fit-content',
-            fontWeight: 500,
-            fontSize: '13px'
-          }}>
-            {filteredData.length} shortlisted candidates
-          </Typography>
-        </Box> */}
+     
+      
 
         <Box sx={{
           width: "100%",
@@ -692,10 +629,10 @@ useEffect(() => {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
-       rowHeight={50}
+       rowHeight={40}
        loading={loading}
 
-            columnHeaderHeight={44}
+            columnHeaderHeight={40}
 
              slots={{
     loadingOverlay: () => (
@@ -755,7 +692,7 @@ useEffect(() => {
             }}
           />
         </Box>
-      </Paper>
+     
 
       {/* Manpower Modal */}
       <Modal open={manpowerOpen} onClose={handleCloseModal}>

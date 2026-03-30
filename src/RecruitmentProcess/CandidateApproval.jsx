@@ -11,6 +11,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../Config/Config.jsx';
 
 import CandidateApprovalFileModal from './CandidateApprovalFileModal.jsx';
+import { Receipt } from 'lucide-react';
 
 import {
 
@@ -89,7 +90,9 @@ const CandidateApproval = () => {
 
   const [selectedFileUrl, setSelectedFileUrl] = useState(null);
 
-
+const [salaryHtml, setSalaryHtml] = useState("");
+const [showSalaryModal, setShowSalaryModal] = useState(false);
+const [salaryLoading, setSalaryLoading] = useState(false);
 
 
   
@@ -407,7 +410,25 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
   };
 
-
+    const handleViewSalary = async (row) => {
+    setSalaryLoading(row.CHILD_CASEID);
+    try {
+      const response = await axios.get(
+     `${API_BASE_URL}/get-cand-aprvl?type=salary_html&case_id=${row.CHILD_CASEID}`,
+        { headers: { Authorization: `Bearer ${token?.token}` } }
+      );
+      if (response.data?.success) {
+        setSalaryHtml(response.data.html);
+        setShowSalaryModal(true);
+      } else {
+        Swal.fire("Error", response.data?.message || "Failed to load", "error");
+      }
+    } catch (err) {
+      Swal.fire("Error", "Something went wrong", "error");
+    } finally {
+      setSalaryLoading(false);
+    }
+  };
 
   const handleViewDetails = (user) => {
 
@@ -485,7 +506,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
       flex: 0.5,
 
-      minWidth: 70,
+      minWidth: 50,
 
       sortable: false,
 
@@ -511,7 +532,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
       flex: 1,
 
-      minWidth: 130,
+      minWidth: 100,
 
       renderCell: (params) => (
 
@@ -530,6 +551,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
             field: 'TYPE_PLANT',
             headerName: 'Type Plant',
             flex: 1.2,
+             minWidth: 80,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
                 {params.value}
@@ -544,6 +566,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
             field: 'RECRUIT_CYCLE',
             headerName: 'Emp Level',
             flex: 1.2,
+             minWidth: 100,
             renderCell: (params) => (
               <Box sx={{ color: '#374151' }}>
                 {params.value}
@@ -556,9 +579,9 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
             {
                     field: 'REVID',
-                  headerName: 'REVID',
+                  headerName: 'Rev ID',
                     flex: 1,
-                    minWidth: 110,
+                    minWidth: 60,
                     renderCell: (params) => (
                         <Box sx={{ color: '#374151' }}>
                              {params.value || "00"} 
@@ -657,7 +680,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
  {
   field: 'MANPOWER_DESG',
-  headerName: 'M.Designation',
+  headerName: 'Desig/Position',
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
@@ -686,7 +709,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
   {
   field: 'DESIG',
-  headerName: 'Designation',
+  headerName: 'Offer Designation',
   flex: 1.2,
   minWidth: 130,
   
@@ -781,7 +804,55 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
       ),
 
     },
+{
+  field: 'SALARY',
+  headerName: 'Sal. Breakup',
+  width: 130,
+  sortable: false,
+  renderCell: (params) => (
+    <Tooltip title="View Salary Slip">
+      <IconButton
+        onClick={() => handleViewSalary(params.row)}
+        disabled={salaryLoading === params.row.CHILD_CASEID}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
 
+          backgroundColor: '#16a34a',
+          color: '#fff',
+
+          borderRadius: '8px',   // 🔥 more curve (pill shape)
+          height: '26px',         // ✅ small height
+          px: 1.2,                // less horizontal padding
+
+          boxShadow: 'none',      // cleaner look
+          transition: 'all 0.2s ease',
+
+          '&:hover': {
+            backgroundColor: '#15803d',
+          },
+
+          '&:disabled': {
+            backgroundColor: '#bbf7d0',
+            color: '#065f46'
+          }
+        }}
+      >
+        {salaryLoading === params.row.CHILD_CASEID ? (
+          <CircularProgress size={12} sx={{ color: '#fff' }} />
+        ) : (
+          <>
+            
+            <span style={{ fontSize: '11px', fontWeight: 500 }}>
+              📂 View
+            </span>
+          </>
+        )}
+      </IconButton>
+    </Tooltip>
+  ),
+},
     {
 
       field: 'ACTIONS',
@@ -901,21 +972,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
     }}>
 
-      <Paper sx={{
 
-        width: '100%',
-
-        padding: 2,
-
-        borderRadius: '12px',
-
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-
-        border: '1px solid #e2e8f0',
-
-      }}>
 
 
 
@@ -1021,7 +1078,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
         </Box>
 
-      </Paper>
+      
 
 
 
@@ -1051,7 +1108,30 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
          
       />
-
+     {showSalaryModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '12px',
+            width: '100%', maxWidth: '920px',
+            maxHeight: '90vh', overflow: 'auto', position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowSalaryModal(false)}
+              style={{
+                position: 'sticky', top: '10px', float: 'right',
+                marginRight: '10px', background: '#ef4444', color: '#fff',
+                border: 'none', borderRadius: '50%', width: '30px', height: '30px',
+                cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', zIndex: 1
+              }}
+            >✕</button>
+            <div dangerouslySetInnerHTML={{ __html: salaryHtml }} />
+          </div>
+        </div>
+      )}
     </Box>
 
   );

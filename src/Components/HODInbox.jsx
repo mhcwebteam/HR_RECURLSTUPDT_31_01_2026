@@ -32,17 +32,21 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
 
 
   const handleSelect = async (employee) => {
-    
+     handleClose();
+
   const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#10b981',
-    cancelButtonColor: '#6b7280',
-  });
+              title: 'Confirm Transfer?',
+               text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonColor: '#1e40af',
+              cancelButtonColor: '#dc2626',
+              confirmButtonText: '✓ Yes',
+              cancelButtonText: '✕ Cancel',
+              customClass: { container: 'swal-on-top' },
+              didOpen: () => { document.querySelector('.swal-on-top').style.zIndex = 99999; },
+              allowOutsideClick: false,
+          });
 
   
   if (!result.isConfirmed) return;
@@ -244,116 +248,16 @@ const HODInbox = () => {
     }));
   };
 
-  // const handleSubmitEmail = async (caseId, rowData) => {
-  //   const email = emailInputs[caseId];
-  //   if (!email) {
-  //     Swal.fire('Error', 'Please enter email', 'error');
-  //     return;
-  //   }
-
-  //   if (!validateEmail(email)) {
-  //     Swal.fire('Error', 'Please enter a valid email address', 'error');
-  //     return;
-  //   }
-
-  //   const result = await Swal.fire({
-  //     title: 'Are you sure?',
-  //     text: `Do you want to send the onboarding form link to ${email}?`,
-  //     icon: 'warning',
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Yes, Send Email',
-  //     cancelButtonText: 'Cancel',
-  //     confirmButtonColor: '#10b981',
-  //     cancelButtonColor: '#6b7280',
-  //   });
-
-  //   if (!result.isConfirmed) {
-  //     return;
-  //   }
-
-  //   setSubmitting(prev => ({ ...prev, [caseId]: true }));
+  
 
 
-  //   const payload2 = {
-  //     email: email,
-  //     child_caseId: caseId,
-  //   }
 
-  //   try {
-  //     const response = await axios.post(
-  //       `${API_BASE_URL}/emp-email`,
-  //       payload2,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${userToken.token}`,
-  //           "Content-Type": "application/json",
-  //           Accept: "application/json",
-  //         },
-  //       }
-  //     );
-   
-
-  //     if (response.data) {
-   
-
-  //             await Swal.fire({
-  //                     icon: "success",
-  //                     text: 'Onboarding form link sent to employee email!',
-                    
-  //                     timer: 1500,
-  //                     showConfirmButton: false,
-  //                   });
-  //       setEmailInputs(prev => ({ ...prev, [caseId]: '' }));
-
-        
-  //     }
-  //   } catch (error) {
-  //     console.error('Email send error:', error);
-  //     Swal.fire('Error', 'Failed to send email', 'error');
-  //   } finally {
-  //     setSubmitting(prev => ({ ...prev, [caseId]: false }));
-  //   }
-  // };
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleOpenManpower = async (rowData, type) => {
-    setSelectedRowData(rowData);
-    setProcessAndCaseIdData({
-      processname: rowData.PROCESSNAME,
-      caseId: rowData.CHILD_CASEID,
-      type: type
-    });
-    setManPowerOpen(true);
-  };
 
   const handleCloseModal = () => {
     setManPowerOpen(false);
     setSelectedRowData(null);
   };
 
-  const statusCounts = useMemo(() => {
-    const counts = {
-      total: filteredData.length,
-      completed: 0,
-      pending: 0,
-      rejected: 0
-    };
-    filteredData.forEach(row => {
-      const status = row.ACTION_STATUS?.toLowerCase();
-      if (status === 'completed') {
-        counts.completed++;
-      } else if (status === 'pending' || status === 'to_do') {
-        counts.pending++;
-      } else if (status === 'rejected') {
-        counts.rejected++;
-      }
-    });
-    return counts;
-  }, [filteredData]);
 
   const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
 
@@ -366,7 +270,7 @@ const HODInbox = () => {
       field: 'SNO',
       headerName: 'S.NO',
       flex: 0.5,
-      minWidth: 70,
+      minWidth: 50,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -379,7 +283,7 @@ const HODInbox = () => {
       field: 'CASEID',
       headerName: 'Case ID',
       flex: 1,
-      minWidth: 120,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
           {params.value}
@@ -405,7 +309,7 @@ const HODInbox = () => {
         field: 'TYPE_PLANT',
         headerName: 'Type Plant',
         flex: 1.2,
-        minWidth: 140,
+        minWidth: 80,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -434,7 +338,7 @@ const HODInbox = () => {
       field: 'PLANT',
       headerName: 'Plant',
       flex: 1.2,
-      minWidth: 140,
+      minWidth: 180,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
@@ -502,7 +406,7 @@ const HODInbox = () => {
       field: 'RAISER_DATE',
       headerName: 'Raiser Date',
       flex: 1,
-      minWidth: 110,
+      minWidth: 80,
       renderCell: (params) => (
         <Box sx={{ color: '#6b7280' }}>
           {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
@@ -515,7 +419,7 @@ const HODInbox = () => {
       field: 'ACTION_STATUS',
       headerName: 'Status',
       flex: 0.8,
-      minWidth: 100,
+      minWidth: 80,
       renderCell: (params) => (
         <Button
           variant="contained"
@@ -688,7 +592,8 @@ const HODInbox = () => {
   );
 };
 
-export default HODInbox;
+
+export default React.memo(HODInbox);
 
 
 
