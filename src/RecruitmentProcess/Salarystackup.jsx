@@ -19,6 +19,8 @@ import { DataGrid } from '@mui/x-data-grid';
 import SalaryStackDetailsModal from './SalaryStackDetailsModal';
 import { CirclePlus, Info, UndoDot } from 'lucide-react';
 import Swal from 'sweetalert2';
+import axiosInstance from '../Config/axiosConfig.jsx';
+
 
 const Salarystackup = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,14 +45,14 @@ const Salarystackup = () => {
     return userInfo ? JSON.parse(userInfo) : null;
   });
 
-  console.log("stackupDatastackupDatastackupData",stackupData);
+ 
 
 const fetchAllData = async () => {
   if (!token?.token) return;
 
   setLoading(true);
   try {
-    const deptRes = await axios.get(`${API_BASE_URL}/employee-dept`, {
+    const deptRes = await axiosInstance.get(`${API_BASE_URL}/employee-dept`, {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -63,7 +65,7 @@ const fetchAllData = async () => {
 
     setDesig(designations);
 
-    const salaryRes = await axios.get(
+    const salaryRes = await axiosInstance.get(
       `${API_BASE_URL}/salaryStackGetData`,
       {
         headers: {
@@ -75,7 +77,7 @@ const fetchAllData = async () => {
     );
 
 
-console.log(salaryRes,"66666666666688888888888888888");
+
 
     setStackupData(salaryRes.data);
   } catch (error) {
@@ -108,8 +110,7 @@ useEffect(() => {
     
 
 
-
-    result = result.filter(item => item.cand_aprvl_status !== 'Accept');
+result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
 
     
 
@@ -200,7 +201,7 @@ useEffect(() => {
     });
 
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/cand-aprvl-email`,
         { case_id: row.CHILD_CASEID, email: row.EMAIL, name: row.NAME },
         { headers: { Accept: "application/json", Authorization: `Bearer ${token.token}` } }
@@ -260,7 +261,7 @@ useEffect(() => {
     
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
        `${API_BASE_URL}/delete-verification-case`,
         payload,
         {

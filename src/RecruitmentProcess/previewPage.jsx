@@ -1,4 +1,4 @@
-// PreviewPage.js
+
 import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -10,10 +10,12 @@ const THEMES = {
   edu:      { border: '#fcd34d', hBg: '#fffbeb', icon: '#f59e0b', title: '#92400e', div: '#fde68a' },
   exp:      { border: '#7dd3fc', hBg: '#f0f9ff', icon: '#38bdf8', title: '#075985', div: '#bae6fd' },
 };
-
 const INNER = '#e5e7eb';
 const COLS  = 7;
+
 const PCT   = `${(100 / COLS).toFixed(4)}%`;
+ 
+
 
 // ── PDF: A4 Portrait — tall pages
 const PDF_W_MM   = 210;
@@ -58,6 +60,13 @@ const PreviewPage = () => {
   const formatDate  = (d) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
   const chunkBy     = (arr, n) => { const o=[]; for(let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; };
   const padRows     = (rows) => { const o=[...rows]; while(o.length%COLS!==0) o.push(['','']); return o; };
+
+  const getPhotoSrc = () => {
+    if (!formData.PHOTO_BASE64) return null;
+    return formData.PHOTO_BASE64.startsWith('data:')
+      ? formData.PHOTO_BASE64
+      : (formData.PHOTO_BASE64.startsWith('http') ? formData.PHOTO_BASE64 : `/${formData.PHOTO_BASE64}`);
+  };
 
   /* ─── PDF: off-screen portrait clone → A4 portrait pages ─── */
   const handleDownloadPDF = async () => {
@@ -219,6 +228,7 @@ const PreviewPage = () => {
     { qual: 'PHD',           school: formData.PHD_COLLEGE_NAME,   board: formData.PHD_UNIVERSITY,    marks: formData.PHD_MARKS,   year: formData.PHD_PASSED_YEAR,    cert: formData.PHD_FILENAME },
     { qual: 'Others',        school: formData.OTHER_COLLEGE_NAME, board: formData.OTHER_UNIVERSITY,  marks: formData.OTHER_MARKS, year: formData.OTHER_PASSED_YEAR,  cert: formData.OTHER_FILENAME },
   ];
+ const photoSrc = getPhotoSrc();
 
   return (
     <>
@@ -283,8 +293,38 @@ const PreviewPage = () => {
           {/* Body */}
           <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '9px', background: '#eef2f7' }}>
 
-            <SectionCard title="Basic Information" icon="👤" theme={t.basic}>
-              <ColTable rows={basicRows} theme={t.basic} />
+               <SectionCard title="Basic Information" icon="👤" theme={t.basic}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <ColTable rows={basicRows} theme={t.basic} />
+                </div>
+                <div style={{
+                  flexShrink: 0,
+                  width: '100px',
+                  border: `1px dashed ${t.basic.border}`,
+                  borderRadius: '6px',
+                  background: t.basic.hBg,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '6px 4px',
+                }}>
+                  {photoSrc ? (
+                    <img
+                      src={photoSrc}
+                      alt="Applicant"
+                      style={{ width: '100px', height: '120px', objectFit: 'cover', borderRadius: '4px', border: `1px solid ${t.basic.border}` }}
+                    />
+                  ) : (
+                    <>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: t.basic.div, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>👤</div>
+                      <div style={{ fontSize: '7.5px', color: t.basic.icon, fontWeight: 600, textAlign: 'center' }}>No Photo</div>
+                    </>
+                  )}
+                </div>
+              </div>
             </SectionCard>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
@@ -366,3 +406,4 @@ const PreviewPage = () => {
 };
 
 export default PreviewPage;
+

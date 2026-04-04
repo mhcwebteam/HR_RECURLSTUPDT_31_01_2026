@@ -13,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -36,7 +37,7 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
 
   const result = await Swal.fire({
               title: 'Confirm Transfer?',
-               text: `Are you sure you want to assign ${employee.Emp_Name} to HR?`,
+               text: `Are you sure you want to assign ${employee.EMP_NAME} to HR?`,
               icon: 'question',
               showCancelButton: true,
               confirmButtonColor: '#1e40af',
@@ -52,12 +53,12 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
   if (!result.isConfirmed) return;
 
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/task-Assign-StoreData`,
       {
         case_id: row.CHILD_CASEID,
-        assigned_to: employee.Emp_Name,
-        legacy_id: employee.Legacy_Id,
+        assigned_to: employee.EMP_NAME,
+        legacy_id: employee.EMP_ID,
         current_task: "HR",
         status: "Pending",
       },
@@ -142,7 +143,7 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
         {hrEmployees && hrEmployees.length > 0 ? (
           hrEmployees.map((employee, index) => (
             <MenuItem 
-              key={`${employee.Emp_Name}_${index}_${row.CHILD_CASEID}`}
+              key={`${employee.EMP_NAME}_${index}_${row.CHILD_CASEID}`}
               onClick={() => handleSelect(employee)}
               sx={{
                 fontSize: '12px',
@@ -152,7 +153,7 @@ const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => 
                 }
               }}
             >
-              {employee.Emp_Name} ({employee.Legacy_Id})
+              {employee.EMP_NAME} ({employee.EMP_ID})
             </MenuItem>
           ))
         ) : (
@@ -192,7 +193,7 @@ const HODInbox = () => {
 
     const fetchHrEmployees = async () => {
       try {
-        const response = await axios.get(
+        const response = await axiosInstance.get(
           `${API_BASE_URL}/mhc-hr-list`,
           {
             headers: {
@@ -218,7 +219,7 @@ const HODInbox = () => {
 
   const onBoarding = async () => {
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `${API_BASE_URL}/hr_requisition_list`,
         {
           headers: {
@@ -407,11 +408,24 @@ const HODInbox = () => {
       headerName: 'Raiser Date',
       flex: 1,
       minWidth: 80,
-      renderCell: (params) => (
-        <Box sx={{ color: '#6b7280' }}>
-          {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
-        </Box>
-      ),
+      renderCell: (params) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+
+    const [day, month, year] = parts;
+
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  };
+
+  return (
+    <Box sx={{ color: '#6b7280' }}>
+      {formatDate(params.value)}
+    </Box>
+  );
+}
     },
    
  

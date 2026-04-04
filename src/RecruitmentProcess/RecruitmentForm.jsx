@@ -11,6 +11,8 @@ import { Upload, User, Mail, Phone, Briefcase,Eye, BookOpen, Award, Plus, Trash2
 import axios from 'axios';
 import { API_BASE_URL, API_BASE_URLss } from "../Config/Config"
 import { useNavigate, useParams } from 'react-router-dom';
+import axiosInstance from '../Config/axiosConfig.jsx'
+
 
 const RecruitmentForm = () => {
 
@@ -203,7 +205,7 @@ HIGHEST_QUA: ""
     if (!userToken?.token) return;
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/emp-verify-drftdata`, {
+      const response = await axiosInstance.get(`${API_BASE_URL}/emp-verify-drftdata`, {
         headers: { Authorization: `Bearer ${userToken.token}` },
       });
 
@@ -222,6 +224,8 @@ HIGHEST_QUA: ""
       item.Status_Edit === "Edit"  // ✅ ADD THIS LINE ONLY
     )
 );
+
+console.log("hhhhhhhhhhhhhhhhhh",draftRecords);
         // const draftRecords = response.data.data.filter(
         //   item => String(item.child_caseid || '').trim() == String(userCaseId || '').trim() &&
         //     (item.status?.toLowerCase() == "draft" || item.status?.toLowerCase() == "pending")
@@ -714,6 +718,32 @@ const handleExperienceChange = (id, field, value) => {
 
 
   const handleDraft = async () => {
+    // FIRST_NAME
+
+if (!formData.EMAIL?.trim()) {
+  Swal.fire({
+    title: "Email Required",
+    text: "Email is mandatory even for saving as draft. Please enter your email address.",
+    icon: "warning",
+    confirmButtonColor: "#3085d6",
+    confirmButtonText: "OK"
+  });
+
+  return; // ✅ STOP execution here
+}
+
+if (!formData.FIRST_NAME?.trim()) {
+  Swal.fire({
+    title: "Name Required",
+    text: "Name is mandatory even for saving as draft. Please enter your name.",
+    icon: "warning",
+    confirmButtonColor: "#3085d6",
+    confirmButtonText: "OK"
+  });
+
+  return; // ✅ STOP execution here
+}
+
     const draftResult = await Swal.fire({
       title: "Save as Draft?",
       text: "Do you want to save this form as a draft?",
@@ -795,7 +825,7 @@ experiences.forEach((exp, index) => {
     
 
 
-    const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
+    const response = await axiosInstance.post(`${API_BASE_URL}/recruitStore`, data, {
       headers: {
         Authorization: `Bearer ${userToken.token}`,
         "Content-Type": "multipart/form-data",
@@ -870,7 +900,7 @@ const removeExperience = async (id) => {
   const payload = { EMP_COMP_ID: id };
 
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/EmpExpDelete`,
       payload,
       {
@@ -1265,7 +1295,7 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
     
 
     // Send request
-    const response = await axios.post(`${API_BASE_URL}/recruitStore`, data, {
+    const response = await axiosInstance.post(`${API_BASE_URL}/recruitStore`, data, {
       headers: {
         Authorization: `Bearer ${userToken.token}`,
         "Content-Type": "multipart/form-data",
@@ -2567,6 +2597,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
           name="PHOTO"
           accept=".jpg,.jpeg,.png"
           onChange={handleFileChange}
+            onRemove={handleRemoveFile} 
           selectedFile={formData.PHOTO}
           error={showErrors ? errors.PHOTO : ""}
            onOpenFile={openFile} 
@@ -2889,7 +2920,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                       <>
                         <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange}     inputRef={(el) => registerRef('CURRENT_CTC', el)} error={showErrors ? errors.CURRENT_CTC : ''} />
                         <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange}   inputRef={(el) => registerRef('EXP_CTC', el)} error={showErrors ? errors.EXP_CTC : ''} />
-                        <InputField label={<>Total Experience <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange}    inputRef={(el) => registerRef('TOTAL_EXP', el)} error={showErrors ? errors.TOTAL_EXP : ''} />
+                        <InputField label={<>Total Experience (years) <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange}    inputRef={(el) => registerRef('TOTAL_EXP', el)} error={showErrors ? errors.TOTAL_EXP : ''} />
                       </>
                     )}
                   </div>
@@ -2996,20 +3027,32 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
           {/* Preview Button */}
           <button
             type="button"
-            onClick={() => {
-              const previewData = {
-                formData,
-                experiences,
-                sameAsPermanent
-              };
+            onClick={async () => {
+  // Convert PHOTO file to base64 if it's a File object
+  let photoBase64 = null;
+  if (formData.PHOTO instanceof File) {
+    photoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result); // base64 data URL
+      reader.readAsDataURL(formData.PHOTO);
+    });
+  } else if (typeof formData.PHOTO === 'string') {
+    photoBase64 = formData.PHOTO; // already a path/URL from server
+  }
 
-              localStorage.setItem("previewData", JSON.stringify(previewData));
+  const previewData = {
+    formData: { ...formData, PHOTO_BASE64: photoBase64 }, // ← store as base64
+    experiences,
+    sameAsPermanent,
+  };
 
-              const base = window.location.origin + "/react/hrmprocess/PreviewPage";
-              window.open(base, "_blank");
-            }}
+  localStorage.setItem("previewData", JSON.stringify(previewData));
 
+  const base = window.location.origin + "/react/hrmprocess/PreviewPage";
+  window.open(base, "_blank");
+}}
 
+             
             style={{
               display: 'flex',
               alignItems: 'center',

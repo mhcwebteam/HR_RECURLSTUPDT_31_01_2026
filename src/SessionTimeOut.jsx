@@ -1,103 +1,50 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
-const SessionTimeout = () => {
+const SessionTimeout = (timeoutMinutes = 2) => {
+  const timerRef = useRef(null);
   const navigate = useNavigate();
-  const timer = useRef(null);
-  const [showPopup, setShowPopup] = useState(false);
+
 
   const resetTimer = () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      localStorage.removeItem("userInfo");
-      setShowPopup(true);
-    }, 10 * 60 * 1000); // 10 minutes
-  };
-
-  const handleLoginRedirect = () => {
-    setShowPopup(false);
-    navigate("/");
+    if (timerRef.current) clearTimeout(timerRef.current);
+    
+    timerRef.current = setTimeout(() => {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (userInfo?.token) {
+        localStorage.removeItem('userInfo');
+        
+        Swal.fire({
+          icon: 'info',
+          title: 'Session Expired',
+          text: 'Your session has expired due to inactivity.',
+          confirmButtonText: 'Login Again',
+          allowOutsideClick: false
+        }).then(() => {
+      localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
+           navigate('/');
+        });
+      }
+    }, timeoutMinutes * 60 * 1000);
   };
 
   useEffect(() => {
-    window.onload = resetTimer;
-    window.onmousemove = resetTimer;
-    window.onkeypress = resetTimer;
-
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+    
+    resetTimer();
+    
     return () => {
-      if (timer.current) clearTimeout(timer.current);
-      window.onload = null;
-      window.onmousemove = null;
-      window.onkeypress = null;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
     };
   }, []);
-
-  if (!showPopup) return null;
-
-  return (
-    <div style={styles.overlay}>
-      <div style={styles.popup}>
-        <div style={styles.icon}>⏱️</div>
-        <h2 style={styles.title}>Session Timed Out</h2>
-        <p style={styles.message}>
-          Your session has expired due to inactivity.
-          <br />
-          Please login again to continue.
-        </p>
-        <button style={styles.button} onClick={handleLoginRedirect}>
-          Go to Login
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const styles = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 9999,
-  },
-  popup: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "32px",
-    maxWidth: "400px",
-    textAlign: "center",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-  },
-  icon: {
-    fontSize: "48px",
-    marginBottom: "16px",
-  },
-  title: {
-    margin: "0 0 16px 0",
-    fontSize: "24px",
-    color: "#333",
-  },
-  message: {
-    margin: "0 0 24px 0",
-    fontSize: "16px",
-    color: "#666",
-    lineHeight: "1.5",
-  },
-  button: {
-    backgroundColor: "#007bff",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    padding: "12px 32px",
-    fontSize: "16px",
-    cursor: "pointer",
-    fontWeight: "500",
-  },
 };
 
 export default SessionTimeout;

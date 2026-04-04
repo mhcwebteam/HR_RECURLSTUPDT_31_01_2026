@@ -57,6 +57,7 @@ import { ContextData } from '../Context/ContextData';
 
 import CandidateStackDetailsModal from './CandidateStackDetailsModal';
 import Swal from 'sweetalert2';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 
 
@@ -101,7 +102,7 @@ const [salaryLoading, setSalaryLoading] = useState(false);
 
     try {
 
-      const candidData = await axios.get(
+      const candidData = await axiosInstance.get(
 
         `${API_BASE_URL}/get-cand-aprvl`,
 
@@ -197,7 +198,7 @@ const [salaryLoading, setSalaryLoading] = useState(false);
       CHILD_CASEID: row.CHILD_CASEID,
     };
 
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/candToNoteAprvl`,
       payload,
       {
@@ -255,7 +256,7 @@ const [salaryLoading, setSalaryLoading] = useState(false);
     );
 
  
-    console.log("resulteddddddddddddddddddddd",result);
+  
 
 
 
@@ -413,7 +414,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
     const handleViewSalary = async (row) => {
     setSalaryLoading(row.CHILD_CASEID);
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
      `${API_BASE_URL}/get-cand-aprvl?type=salary_html&case_id=${row.CHILD_CASEID}`,
         { headers: { Authorization: `Bearer ${token?.token}` } }
       );
@@ -492,7 +493,7 @@ MANPOWER_DESG: item?.MANPOWER_DESG,
 
 
 
-  console.log(hasTypePlant,"666666666666666666666666666");
+
 
 
 

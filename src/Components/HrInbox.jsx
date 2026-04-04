@@ -2,13 +2,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Eye, TrendingUp, Users, FileText, ChevronLeft, ChevronRight,
-  Filter, Download, RefreshCw, Mail, ShieldCheck, DollarSign,
-  UserCheck, ClipboardCheck, FileSignature
+  Filter, Download, RefreshCw, DollarSign,
+   ClipboardCheck, FileSignature
 } from 'lucide-react';
 import { API_BASE_URL } from '../Config/Config';
 import { useNavigate } from 'react-router-dom';
 import ManPowerView from './ManPowerView';
-
+import { ClipboardList, Mail, ShieldCheck, BadgeDollarSign, UserCheck,  FileBadge, CircleCheckBig } from 'lucide-react';
 const HrInbox = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [processFilter, setProcessFilter] = useState('all');
@@ -19,8 +19,7 @@ const HrInbox = () => {
 const [isModalOpen, setIsModalOpen] = useState(false);
  const [selectedCaseId, setSelectedCaseId] = useState(null);
 
-
- 
+ console.log("gggggggggggg",hrData);
 
   const navigate = useNavigate();
 
@@ -28,8 +27,6 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
     return info?.token;
   }, []);
-
-
 
   
    const handleViewClick = (caseId) => {
@@ -41,8 +38,6 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     setIsModalOpen(false);
     setSelectedCaseId(null);
   };
-
-
 
 const hrAprvlFetchData = async () => {
   if (!token) {
@@ -110,7 +105,6 @@ const hrAprvlFetchData = async () => {
     return data;
   }, [hrData, searchTerm, processFilter]);
 
-
   
 
 const stats = useMemo(() => {
@@ -121,12 +115,10 @@ const stats = useMemo(() => {
   (i.Recruit_Process || '').toLowerCase().includes('actions')
 ).length,
 
-
     recruitmentMail: hrData.filter((i) =>
       (i.Recruit_Process || '').toLowerCase().includes('recruitment mail')
   
     ).length,
-
 
     verification: hrData.filter((i) =>
       (i.Recruit_Process || '').toLowerCase().includes('verification')
@@ -144,9 +136,12 @@ const stats = useMemo(() => {
     offerLetter: hrData.filter((i) =>
       (i.Recruit_Process || '').toLowerCase().includes('offer letter')
     ).length,
+
+   offerApproved: hrData.filter((i) =>
+  (i.Recruit_Process || '').toLowerCase().includes('offer approved')
+).length,
   };
 }, [hrData]);
-
 
  
   const paginatedRows = useMemo(() => {
@@ -154,10 +149,8 @@ const stats = useMemo(() => {
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
 
-
   const totalPages = Math.ceil(filteredRows.length / pageSize);
   const safeTotalPages = Math.max(1, totalPages);
-
 
   // Add this helper function after the getStageLabel function
  const getProcessStyle = (process) => {
@@ -166,30 +159,32 @@ const stats = useMemo(() => {
   const processLower = process.toLowerCase();
 
 
-
-
     if (processLower.includes('Actions')) {
-    return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
+    return 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-300';
   }
 
   if (processLower.includes('candidate approval')) {
-    return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
+    return 'bg-gradient-to-r from-rose-100 to-rose-50 text-rose-700 border border-rose-300';
   }
   if (processLower.includes('salary stack') || processLower.includes('salary')) {
-    return 'bg-gradient-to-r from-pink-100 to-pink-50 text-pink-700 border border-pink-300';
+    return 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300';
   }
   if (processLower.includes('verification')) {
-    return 'bg-gradient-to-r from-cyan-100 to-cyan-50 text-cyan-700 border border-cyan-300';
+    return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
   }
   // Change this line to include "hr recruitment"
   if (processLower.includes('recruitment mail')) {
-    return 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300';
-  }
-  if (processLower.includes('note for approval')) {
     return 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 border border-green-300';
   }
+  if (processLower.includes('note for approval')) {
+    return 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-300';
+  }
   if (processLower.includes('offer letter')) {
-    return 'bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-700 border border-indigo-300';
+    return 'bg-gradient-to-r from-sky-100 to-sky-50 text-sky-700 border border-sky-300';
+  }
+
+    if (processLower.includes('offer approved')) {
+    return 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-700 border border-yellow-300';
   }
 
   // Default color for other processes
@@ -199,7 +194,6 @@ const stats = useMemo(() => {
 const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
 
   const recCycle = hrData.some(row => row.RECRUIT_CYCLE);
-
 
  const tdStyle = "px-1 py-1 text-[11px] text-gray-800 font-medium";
  
@@ -226,51 +220,56 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
 
         {/* Stats Cards - Enhanced */}
 
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-3">  
-          <StatCard
-            title="Actions"
-            value={stats.Actions
-}
-            icon={<Users className="w-5 h-5" />}
-            color="blue"
-          />
-          <StatCard
-            title="Recruitment Mail"
-            value={stats.recruitmentMail}
-            icon={<Mail className="w-5 h-5" />}
-            color="purple"
-          />
-          <StatCard
-            title="Verification"
-            value={stats.verification}
-            icon={<ShieldCheck className="w-5 h-5" />}
-            color="emerald"
-          />
-          <StatCard
-            title="Salary Stackup"
-            value={stats.salaryStackup}
-            icon={<DollarSign className="w-5 h-5" />}
-            color="orange"
-          />
-          <StatCard
-            title="Candidate Aprvl"
-            value={stats.candidateApproval}
-            icon={<UserCheck className="w-5 h-5" />}
-            color="pink"
-          />
-          <StatCard
-            title="Note for Approval"
-            value={stats.noteForApproval}
-            icon={<ClipboardCheck className="w-5 h-5" />}
-            color="cyan"
-          />
-          <StatCard
-            title="Offer Letter"
-            value={stats.offerLetter}
-            icon={<FileSignature className="w-5 h-5" />}
-            color="indigo"
-          />
-        </div>
+       <div className="grid grid-cols-1 md:grid-cols-8 gap-2 mb-3">
+  <StatCard
+    title="Actions"
+    value={stats.Actions}
+    icon={<ClipboardList className="w-5 h-5" />}
+    color="blue"
+  />
+  <StatCard
+    title="Recruitment Mail"
+    value={stats.recruitmentMail}
+    icon={<Mail className="w-5 h-5" />}
+    color="green"
+  />
+  <StatCard
+    title="Verification"
+    value={stats.verification}
+    icon={<ShieldCheck className="w-5 h-5" />}
+    color="orange"
+  />
+  <StatCard
+    title="Salary Stackup"
+    value={stats.salaryStackup}
+    icon={<BadgeDollarSign className="w-5 h-5" />}
+    color="purple"
+  />
+  <StatCard
+    title="Candidate Aprvl"
+    value={stats.candidateApproval}
+    icon={<UserCheck className="w-5 h-5" />}
+    color="rose"
+  />
+  <StatCard
+    title="Note for Approval"
+    value={stats.noteForApproval}
+    icon={<FileText className="w-5 h-5" />}
+    color="emerald"
+  />
+  <StatCard
+    title="Offer Letter"
+    value={stats.offerLetter}
+    icon={<FileBadge className="w-5 h-5" />}
+    color="sky"
+  />
+  <StatCard
+    title="Offer Approved"
+    value={stats.offerApproved}
+    icon={<CircleCheckBig className="w-5 h-5" />}
+    color="yellow"
+  />
+</div>
 
         {/* Main Table Card - Enhanced */}
         <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:border-gray-300 transition-all duration-300">
@@ -304,6 +303,7 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
                     <option value="candidate approval">Candidate Approval</option>
                     <option value="note for approval">Note for Approval</option>
                     <option value="offer letter">Offer Letter</option>
+                     <option value="Offer Approved">Offer Approved</option>
                   </select>
                 </div>
 
@@ -321,7 +321,6 @@ const hasTypePlant = hrData.some(row => row.TYPE_PLANT);
     </div>
   </div>
 )}
-
 
             </div>
           </div>
@@ -595,7 +594,40 @@ const StatCard = ({ title, value, icon, color }) => {
       border: 'border-indigo-200',
       hoverBorder: 'hover:border-indigo-400',
       hoverShadow: 'hover:shadow-indigo-200/50'
-    }
+    },
+
+    green: {
+  bgGradient: 'from-green-50 via-green-100 to-green-50',
+  text: 'text-green-700',
+  iconBg: 'from-green-100 to-green-200',
+  border: 'border-green-200',
+  hoverBorder: 'hover:border-green-400',
+  hoverShadow: 'hover:shadow-green-200/50'
+},
+rose: {
+    bgGradient: 'from-rose-50 via-rose-100 to-rose-50',
+    text: 'text-rose-700',
+    iconBg: 'from-rose-100 to-rose-200',
+    border: 'border-rose-200',
+    hoverBorder: 'hover:border-rose-400',
+    hoverShadow: 'hover:shadow-rose-200/50'
+  },
+  sky: {
+    bgGradient: 'from-sky-50 via-sky-100 to-sky-50',
+    text: 'text-sky-700',
+    iconBg: 'from-sky-100 to-sky-200',
+    border: 'border-sky-200',
+    hoverBorder: 'hover:border-sky-400',
+    hoverShadow: 'hover:shadow-sky-200/50'
+  },
+  yellow: {
+    bgGradient: 'from-yellow-50 via-yellow-100 to-yellow-50',
+    text: 'text-yellow-700',
+    iconBg: 'from-yellow-100 to-yellow-200',
+    border: 'border-yellow-200',
+    hoverBorder: 'hover:border-yellow-400',
+    hoverShadow: 'hover:shadow-yellow-200/50'
+  },
   };
 
   const colors = colorClasses[color] || colorClasses.blue;
@@ -625,7 +657,6 @@ const StatCard = ({ title, value, icon, color }) => {
         </div>
       </div>
     </div>
-
 
     </>
   );

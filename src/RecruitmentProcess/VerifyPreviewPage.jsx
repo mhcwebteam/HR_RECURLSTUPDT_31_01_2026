@@ -31,6 +31,8 @@ const VerifyPreviewPage = () => {
 
   const previewData     = JSON.parse(localStorage.getItem('VerifyPreviewPage') || '{}');
   const data            = previewData.data;
+
+  console.log("dattttttttttttt",data);
   const sameAsPermanent = previewData.sameAsPermanent;
 
   useEffect(() => {
@@ -347,7 +349,9 @@ const VerifyPreviewPage = () => {
               {data?.experienceData && data.experienceData.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {data.experienceData.map((exp, idx) => {
-                    const isCurrent = exp.END_DATE === new Date().toISOString().split('T')[0];
+
+                    console.log("dfffffffffffff",exp)
+                   const isCurrent = exp.COMPANY_STAGES == "0" ? 'Current Company' : 'Previous Company';
                     const et = isCurrent
                       ? { border: '#6ee7b7', hBg: '#ecfdf5', icon: '#34d399', title: '#065f46', div: '#a7f3d0' }
                       : { border: '#bae6fd', hBg: '#f0f9ff', icon: '#7dd3fc', title: '#0c4a6e', div: '#e0f2fe' };
@@ -360,7 +364,9 @@ const VerifyPreviewPage = () => {
                       ...(isCurrent ? [
                         ['Current CTC',   data.CURRENT_CTC   ? `₹${data.CURRENT_CTC}`          : undefined],
                         ['Expected CTC',  data.EXP_CTC       ? `₹${data.EXP_CTC}`              : undefined],
-                        ['Notice Period', data.NOTICE_PERIOD  ? `${data.NOTICE_PERIOD} days`    : undefined],
+
+
+                        ['noticePeriod', exp.noticePeriod  ? `${exp.noticePeriod} days`    : undefined],
                       ] : []),
                     ].filter(([, v]) => v !== undefined));
 

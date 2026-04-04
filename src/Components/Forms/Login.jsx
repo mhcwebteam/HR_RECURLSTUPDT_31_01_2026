@@ -10,6 +10,7 @@ import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight } from "lucide-react";
 import { API_BASE_URL } from '../../Config/Config';
 import logo from "../../../src/asset/imagesmy.png";
 import hrImage from "../../../src/assets/hrimg.jpg";
+import axiosInstance from "../../Config/axiosConfig";
 
 export default function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });

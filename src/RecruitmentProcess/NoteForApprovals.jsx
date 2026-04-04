@@ -34,6 +34,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import { API_BASE_URL } from "../Config/Config";
+import axiosInstance from "../Config/axiosConfig";
 
 
 /* ===================================================== */
@@ -55,7 +56,7 @@ const NoteForApprovals = () => {
  const [ personalData,setPersonalData] = useState([]);
 
 
-  console.log("personaaaaaaaaaaaaaaa",personalData);
+
 
 
   const [token] = useState(() => {
@@ -71,7 +72,7 @@ const NoteForApprovals = () => {
  
 
   try {
-    const response = await axios.get(
+    const response = await axiosInstance.get(
       `${API_BASE_URL}/emp-verify-drftdata`,
       {
   headers: { Authorization: `Bearer ${token.token}` },
@@ -103,7 +104,7 @@ useEffect(() => {
   
 const noteFrAprvlData = async () => {
   try {
-    const res = await axios.get(
+    const res = await axiosInstance.get(
       `${API_BASE_URL}/getNt-aprvl-data`,
       {
         headers: {
@@ -165,7 +166,7 @@ const noteFrAprvlData = async () => {
     
 
 
-            const response = await axios.post(
+            const response = await axiosInstance.post(
         `${API_BASE_URL}/assign-approver`,
         payload,
         {

@@ -12,7 +12,7 @@ import { Eye } from 'lucide-react';
 
 const InfoRow = ({ label, value, valueColor = 'text-gray-700' }) => (
     <div className="flex items-center gap-2 text-xs">
-      <span className="text-gray-500 min-w-[90px] font-medium">{label}:</span>
+      <span className="text-gray-500 min-w-[70px] font-medium">{label}:</span>
       <span className={`font-semibold ${valueColor}`}>{value || 'N/A'}</span>
     </div>
   );
@@ -254,7 +254,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       const employeeInfo = [
         ['Name:', String(data?.NAME || 'N/A'), 'Case ID:', String(data.CHILD_CASEID || 'N/A')],
         ['Email:', String(data?.EMAIL || 'N/A'), 'Phone:', String(data?.PHONE_NUMBER || 'N/A')],
-        ['Job Title:', String(data?.JOB_TITLE || 'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
+        ['Job Title:', String(data?.DESIG || 'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
       ];
 
       employeeInfo.forEach((row) => {
@@ -298,7 +298,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
         doc.setFont('helvetica', 'bold');
         doc.text(row[0], 15, yPos);
         doc.setFont('helvetica', index >= 3 ? 'bold' : 'normal');
-        doc.text(row[1], pageWidth - 15, yPos, { align: 'right' });
+        doc.text(row[1], pageWidth - 35, yPos, { align: 'right' });
         yPos += 5;
       });
 
@@ -628,19 +628,19 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
             </div>
             <div className="overflow-x-auto">
          <table className="w-full table-fixed border-collapse">
-        <thead>
-  <tr className="bg-emerald-100 border-b border-emerald-200">
-    <th className="px-3 py-1.5 text-left font-bold text-xs w-[40%]">
-      Component
-    </th>
-    <th className="px-3 py-1.5 text-center font-bold text-xs w-[30%]">
-      Monthly (₹)
-    </th>
-    <th className="px-3 py-1.5 text-center font-bold text-xs w-[30%]">
-      Annual (₹)
-    </th>
-  </tr>
-</thead>
+  <thead>
+    <tr className="bg-emerald-100 border-b border-emerald-200">
+      <th className="w-1/3 px-3 py-1.5 text-left font-bold text-xs">
+        Component
+      </th>
+      <th className="w-1/3 px-3 py-1.5 text-center font-bold text-xs">
+        Monthly (₹)
+      </th>
+      <th className="w-1/3 px-3 py-1.5 text-center font-bold text-xs">
+        Annual (₹)
+      </th>
+    </tr>
+  </thead>
                 <tbody>
                   <SalaryRow label="Basic Salary" field="basic_salary" monthly={salaryComponents.basic_salary} annual={salaryComponents.basic_salary * 12} isViewMode={isViewMode} salaryComponents={salaryComponents} handleInputChange={handleInputChange} />
 <SalaryRow label="HRA" field="hra" monthly={salaryComponents.hra} annual={salaryComponents.hra * 12} isViewMode={isViewMode} salaryComponents={salaryComponents} handleInputChange={handleInputChange} />
@@ -659,12 +659,12 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
               <h3 className="text-sm font-bold text-purple-900">II. Other Benefits</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full  table-fixed">
                 <thead>
                   <tr className="bg-purple-100 border-b border-purple-200">
-                    <th className="px-5 py-1.5 text-left font-bold text-purple-900 text-xs">Component</th>
-                    <th className="px-5 py-1.5 text-center font-bold text-purple-900 text-xs">Monthly (₹)</th>
-                    <th className="px-5 py-1.5 text-center font-bold text-purple-900 text-xs">Annual (₹)</th>
+                    <th className="px-5 w-1/3 py-1.5 text-left font-bold text-purple-900 text-xs">Component</th>
+                    <th className="px-5 w-1/3 py-1.5 text-center font-bold text-purple-900 text-xs">Monthly (₹)</th>
+                    <th className="px-5  w-1/3 py-1.5 text-center font-bold text-purple-900 text-xs">Annual (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -684,12 +684,12 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
               <h3 className="text-sm font-bold text-red-900">III. Deductions</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full  table-fixed">
                 <thead>
                   <tr className="bg-red-100 border-b border-red-200">
-                    <th className="px-6 py-1.5 text-left font-bold text-red-900 text-xs">Component</th>
-                    <th className="px-6 py-1.5 text-center font-bold text-red-900 text-xs">Monthly (₹)</th>
-                    <th className="px-6 py-1.5 text-center font-bold text-red-900 text-xs">Annual (₹)</th>
+                    <th className="px-6 py-1.5 w-1/3 text-left font-bold text-red-900 text-xs">Component</th>
+                    <th className="px-6 py-1.5  w-1/3 text-center font-bold text-red-900 text-xs">Monthly (₹)</th>
+                    <th className="px-6 py-1.5 w-1/3 text-center font-bold text-red-900 text-xs">Annual (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -708,12 +708,12 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
               <h3 className="text-sm font-bold text-teal-900">IV. Net Salary</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full  table-fixed">
                 <thead>
                   <tr className="bg-teal-100 border-b border-teal-200">
-                    <th className="px-7 py-1.5 text-left font-bold text-teal-900 text-xs">Component</th>
-                    <th className="px-8 py-1.5 text-center font-bold text-teal-900 text-xs">Monthly (₹)</th>
-                    <th className="px-7 py-1.5 text-center font-bold text-teal-900 text-xs">Annual (₹)</th>
+                    <th className="px-7 py-1.5 w-1/3 text-left font-bold text-teal-900 text-xs">Component</th>
+                    <th className="px-8 py-1.5 w-1/3 text-center font-bold text-teal-900 text-xs">Monthly (₹)</th>
+                    <th className="px-7 py-1.5  w-1/3 text-center font-bold text-teal-900 text-xs">Annual (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -729,12 +729,12 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
               <h3 className="text-sm font-bold text-amber-900">V. Fixed Cost to Company</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full  table-fixed">
                 <thead>
                   <tr className="bg-amber-100 border-b border-amber-200">
-                    <th className="px-8 py-1.5 text-left font-bold text-amber-900 text-xs">Component</th>
-                    <th className="px-8 py-1.5 text-center font-bold text-amber-900 text-xs">Monthly (₹)</th>
-                    <th className="px-8 py-1.5 text-center font-bold text-amber-900 text-xs">Annual (₹)</th>
+                    <th className="px-8 py-1.5 w-1/3 text-left font-bold text-amber-900 text-xs">Component</th>
+                    <th className="px-8 py-1.5 w-1/3 text-center font-bold text-amber-900 text-xs">Monthly (₹)</th>
+                    <th className="px-8 py-1.5 w-1/3 text-center font-bold text-amber-900 text-xs">Annual (₹)</th>
                   </tr>
                 </thead>
                 <tbody>

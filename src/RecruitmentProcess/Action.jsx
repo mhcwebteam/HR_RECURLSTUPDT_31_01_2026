@@ -21,6 +21,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TransferLetterModal from './TransferLetterModal .jsx';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
+import axiosInstance from '../Config/axiosConfig.jsx'
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -61,6 +62,8 @@ const [documentUploads, setDocumentUploads] = useState({});
 const [uploadingDoc, setUploadingDoc] = useState({});
 
 const [uploadedDocs, setUploadedDocs] = useState({}); 
+
+
 const [fileError, setFileError] = useState("");
 
 
@@ -83,7 +86,7 @@ const [fileError, setFileError] = useState("");
 
     const handleHistory = async () => {
 
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                     `${API_BASE_URL}/empTrsferGetDt`,
                     {
                         headers: {
@@ -99,7 +102,7 @@ const [fileError, setFileError] = useState("");
 
     const Employee = async () => {
         try {
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                 `${API_BASE_URL}/employee-data`,
                 {
                     headers: {
@@ -127,7 +130,7 @@ const [fileError, setFileError] = useState("");
 
     const Employee1 = async () => {
         try {
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                 `${API_BASE_URL}/employee-dept`,
                 {
                     headers: {
@@ -206,7 +209,7 @@ const [fileError, setFileError] = useState("");
 
 
         try {
-            const response = await axios.post(
+            const response = await axiosInstance.post(
                 `${API_BASE_URL}/empTrsferStr`,
                 payload,
                 {
@@ -270,7 +273,7 @@ Recuritment()
 
  const Recuritment = async () => {
             try {
-                const response = await axios.get(
+                const response = await axiosInstance.get(
                     `${API_BASE_URL}/task-Assign-GtDta`,
                     {
                         headers: {
@@ -397,7 +400,7 @@ const handleActionTypeChange = (caseId, value, rowData) => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    const response = await axios.post(
+                    const response = await axiosInstance.post(
                         `${API_BASE_URL}/actns-Frm-Recruits`,
                         payload,
                         {
@@ -481,8 +484,6 @@ const handleDocumentUpload = async (caseId) => {
 
     if (!result.isConfirmed) return;
 
-    setUploadingDoc(prev => ({ ...prev, [caseId]: true }));
-
     try {
         // Create FormData
         const formData = new FormData();
@@ -505,7 +506,7 @@ const handleDocumentUpload = async (caseId) => {
         }
 
         // Dummy API call - Replace with your actual API endpoint
-        const response = await axios.post(
+        const response = await axiosInstance.post(
             `${API_BASE_URL}/hr-Evalu-File-Updt`, // Replace with your actual endpoint
             formData,
             {
@@ -526,8 +527,9 @@ const handleDocumentUpload = async (caseId) => {
                 showConfirmButton: false,
             });
 
-
-setUploadedDocs(prev => ({ ...prev, [caseId]: true }))
+    
+const fileURL = URL.createObjectURL(file);
+setUploadedDocs(prev => ({ ...prev, [caseId]: fileURL }));
   
             // Clear the uploaded file
       
@@ -611,7 +613,7 @@ setUploadedDocs(prev => ({ ...prev, [caseId]: true }))
         }
 
         try {
-            const response = await axios.post(
+            const response = await axiosInstance.post(
                 `${API_BASE_URL}/emp-email`,
                 payload2,
                 {
@@ -679,7 +681,7 @@ setUploadedDocs(prev => ({ ...prev, [caseId]: true }))
 
       
   try {
-    const response = await axios.get(
+    const response = await axiosInstance.get(
       `${API_BASE_URL}/vrfy-Rjct-Hsty-Data/${caseId}`,
       {
         headers: {
@@ -818,17 +820,30 @@ const history = Hr.some(row => row.CUR_REV_ID != null);
                 </Box>
             ),
         },
-        {
-            field: 'RAISER_DATE',
-            headerName: 'Raiser Dt',
-            flex: 1,
-            minWidth: 90,
-            renderCell: (params) => (
-                <Box sx={{ color: '#6b7280' }}>
-                    {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
-                </Box>
-            ),
-        },
+      {
+        field: 'RAISER_DATE',
+        headerName: 'Raiser Dt',
+        flex: 1,
+        minWidth: 80,
+       renderCell: (params) => {
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+  
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return '';
+  
+      const [day, month, year] = parts;
+  
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    };
+  
+    return (
+      <Box sx={{ color: '#6b7280' }}>
+        {formatDate(params.value)}
+      </Box>
+    );
+  }
+      },
         {
             field: 'PLANT',
             headerName: 'Plant',
@@ -882,109 +897,137 @@ const history = Hr.some(row => row.CUR_REV_ID != null);
        },
 
 
-         {
+   {
   field: 'DOCUMENT_UPLOAD',
-  headerName: 'Inter Evalulation Form',
-  flex: 1,
+  headerName: 'Interview Evalulation Form',
+  flex: 1.5,
   minWidth: 200,
   sortable: false,
   filterable: false,
   renderCell: (params) => {
-    const caseId = params.row.CHILD_CASEID;
-    const selectedFile = documentUploads[caseId];
-    const isUploading = uploadingDoc[caseId];
-const isUploaded = uploadedDocs[caseId];
+  const caseId = params.row.CHILD_CASEID;
+  const selectedFile = documentUploads[caseId];
+  const isUploading = uploadingDoc[caseId];
+  const savedFileURL = uploadedDocs[caseId]; // now a URL string, not boolean
 
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, width: '100%' }}>
-        
-        {/* Hidden File Input */}
-        <input
-          type="file"
-          id={`file-${caseId}`}
-          style={{ display: 'none' }}
-          onChange={(e) => handleFileSelect(caseId, e.target.files[0])}
-         accept=".pdf,.jpg,.jpeg,.png"
-        />
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, width: '100%' }}>
 
-        
+      <input
+        type="file"
+        id={`file-${caseId}`}
+        style={{ display: 'none' }}
+        onChange={(e) => handleFileSelect(caseId, e.target.files[0])}
+        accept=".pdf,.jpg,.jpeg,.png"
+      />
 
-        {/* Choose File Button */}
-        <label htmlFor={`file-${caseId}`} style={{ flex: 1 }}>
-          <Button
-            component="span"
-            variant="outlined"
-            size="small"
-            startIcon={
-              <span style={{ fontSize: '13px' }}>
-                {selectedFile ? '📎' : '📁'}
-              </span>
-            }
-            sx={{
-              width: '100%',
-              fontSize: '11px',
-              padding: '4px 8px',
-              textTransform: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              backgroundColor: selectedFile ? '#f0fdf4' : '#f8faff',
-              borderColor: selectedFile ? '#22c55e' : '#93c5fd',
-              color: selectedFile ? '#15803d' : '#1e2022d8',
-              // boxShadow: selectedFile
-              //   ? '0 1px 4px rgba(34,197,94,0.15)'
-              //   : '0 1px 4px rgba(59,130,246,0.10)',
-              '&:hover': {
-                backgroundColor: selectedFile ? '#dcfce7' : '#eff6ff',
-                borderColor: selectedFile ? '#16a34a' : '#60a5fa',
-              },
-            }}
-          >
-            {selectedFile
-              ? selectedFile.name.length > 12
-                ? selectedFile.name.substring(0, 12) + '...'
-                : selectedFile.name
-              : 'Choose File'}
-          </Button>
-        </label>
-
-        {/* Save Button */}
-       {selectedFile && (
-  <Button
-    size="small"
-    variant="contained"
-    disabled={isUploading || isUploaded}
-    onClick={() => handleDocumentUpload(caseId)}
-    sx={{
-      minWidth: '58px',
-      fontSize: '11px',
-      padding: '4px 10px',
-      textTransform: 'none',
-      borderRadius: '6px',
-      fontWeight: 600,
-      background: isUploaded
-        ? '#16a34a'                                    
-        : isUploading
-          ? '#bdbdbd'
-          : 'linear-gradient(135deg, #1e40af, #2563eb)',    // blue normally
-      boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
-      '&:disabled': {
-        background: isUploaded ? '#16a34a' : '#e5e7eb',     // keep green when saved
-        color: 'white',
-      },
-    }}
-  >
-    {isUploading ? (
-      <CircularProgress size={13} sx={{ color: 'white' }} />
-    ) : isUploaded ? (
-      '✅ Saved'
-    ) : (
-      '💾 Save'
-    )}
-  </Button>
+    {/* 👁️ Eye Icon — appears after file is saved */}
+{savedFileURL && typeof savedFileURL === 'string' && (
+  <Tooltip title="View Document" arrow>
+    <IconButton
+      size="small"
+      onClick={() => window.open(savedFileURL, '_blank')}
+      sx={{
+        width: 18,
+        height: 28,
+        borderRadius: '6px',
+        bgcolor: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#0a772a',
+        flexShrink: 0,
+        padding: 0,
+        '&:hover': {
+          bgcolor: '#dbeafe',
+          borderColor: '#60a5fa',
+        },
+      }}
+    >
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </IconButton>
+  </Tooltip>
 )}
+      {/* Choose File Button */}
+      <label htmlFor={`file-${caseId}`} style={{ flex: 1 }}>
+        <Button
+          component="span"
+          variant="outlined"
+          size="small"
+          startIcon={<span style={{ fontSize: '10px' }}>{selectedFile ? '📎' : '📁'}</span>}
+          sx={{
+            width: '100%',
+            fontSize: '11px',
+            padding: '4px 8px',
+            textTransform: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            backgroundColor: selectedFile ? '#f0fdf4' : '#f8faff',
+            borderColor: selectedFile ? '#22c55e' : '#93c5fd',
+            color: selectedFile ? '#15803d' : '#1e2022d8',
+            '&:hover': {
+              backgroundColor: selectedFile ? '#dcfce7' : '#eff6ff',
+              borderColor: selectedFile ? '#16a34a' : '#60a5fa',
+            },
+          }}
+        >
+          {selectedFile
+            ? selectedFile.name.length > 12
+              ? selectedFile.name.substring(0, 12) + '...'
+              : selectedFile.name
+            : 'Choose File'}
+        </Button>
+      </label>
 
-      </Box>
-    );
+      {/* Save Button */}
+      {selectedFile && (
+        <Button
+          size="small"
+          variant="contained"
+          disabled={isUploading || !!savedFileURL}
+          onClick={() => handleDocumentUpload(caseId)}
+          sx={{
+            minWidth: '45px',
+            fontSize: '9px',
+            padding: '4px 10px',
+            textTransform: 'none',
+            borderRadius: '6px',
+            fontWeight: 600,
+            background: savedFileURL
+              ? '#16a34a'
+              : isUploading
+                ? '#bdbdbd'
+                : 'linear-gradient(135deg, #1e40af, #2563eb)',
+            boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
+            '&:disabled': {
+              background: savedFileURL ? '#16a34a' : '#e5e7eb',
+              color: 'white',
+            },
+          }}
+        >
+          {isUploading ? (
+            <CircularProgress size={13} sx={{ color: 'white' }} />
+          ) : savedFileURL ? (
+            '✅ Saved'
+          ) : (
+            '💾 Save'
+          )}
+        </Button>
+      )}
+
+
+    </Box>
+  );
 },
 },
 

@@ -33,6 +33,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { ContextData } from '../Context/ContextData';
 import {API_BASE_URL, API_BASE_URLss} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 const OfferApproved = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +48,7 @@ const OfferApproved = () => {
   const [ofrList,setOfferLetterData]=useState([]);
 
 
-  console.log(ofrList,"666666666666666666645555555555555555555");
+
 
 
 
@@ -55,6 +56,11 @@ const OfferApproved = () => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     return userInfo ? userInfo : null;
   });
+
+
+
+
+
 
   const handleJoiningDateChange = (caseId, date) => {
 
@@ -88,7 +94,7 @@ const OfferApproved = () => {
           CHILD_CASEID: rowData.CHILD_CASEID,
        
         }
-      const ofrMailSend = await axios.post(`${API_BASE_URL}/move-To-OnBoard`,payload,
+      const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/move-To-OnBoard`,payload,
         {
         headers:
         {
@@ -130,7 +136,7 @@ const OfferApproved = () => {
 
  const fetchOfrData = async () => {
   try {
-    const response = await axios.get(
+    const response = await axiosInstance.get(
       `${API_BASE_URL}/ofr-aprvl-issue-lst`,
       {
         headers: {
@@ -233,15 +239,19 @@ useEffect(() => {
     console.log('Status updated:', updateData);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString || dateString === 'N/A') return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return isNaN(date.getTime()) ? dateString : date.toLocaleDateString('en-GB');
-    } catch {
-      return dateString;
-    }
-  };
+
+  const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+
+  let [day, month, year] = dateStr.split('-');
+
+  // ✅ Ensure 2-digit format
+  day = day.padStart(2, '0');
+  month = month.padStart(2, '0');
+
+  return new Date(`${year}-${month}-${day}`);
+};
+
 
   const formatNumber = (value) => {
     if (!value || value === 'N/A') return 'N/A';
@@ -499,21 +509,7 @@ console.log("fgfff",ofrList);
   headerName: 'Date of Joining',
   flex: 1.3,
   minWidth: 170,
-  renderCell: (params) => {
-    if (!params.value) return 'N/A';
-
-    const date = new Date(params.value);
-
-    const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(
-      date.getMonth() + 1
-    ).padStart(2, '0')}-${date.getFullYear()}`;
-
-    return (
-      <Box sx={{ color: '#374151', fontWeight: 500, fontSize: '12px' }}>
-        {formattedDate}
-      </Box>
-    );
-  },
+  renderCell: (params) => params.value,
 }
 
 ,

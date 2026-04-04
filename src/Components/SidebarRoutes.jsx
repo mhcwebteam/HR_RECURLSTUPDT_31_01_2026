@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import { BadgeCheck, CheckCircle } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "../Config/Config";
+import axiosInstance from "../Config/axiosConfig";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -169,7 +170,7 @@ const SidebarRoutes = () => {
     const getData = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                 `${API_BASE_URL}/getSideBarData`,
                 {
                     headers: {
@@ -290,7 +291,7 @@ const SidebarRoutes = () => {
 
             console.log("Sending Payload:", payload);
 
-            const response = await axios.post(
+            const response = await axiosInstance.post(
                 `${API_BASE_URL}/side-Route-Store`,
                 payload,
                 {

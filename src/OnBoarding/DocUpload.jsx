@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import jsPDF from 'jspdf';
 import axios from 'axios';
+import axiosInstance from '../Config/axiosConfig';
 
 const DocUpload = ({ rowData, onClose }) => {
 
@@ -637,7 +638,7 @@ const DocUpload = ({ rowData, onClose }) => {
 
       console.log('Approving document with payload:', payload);
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/verify-Doc-Status`,
         payload,
         {

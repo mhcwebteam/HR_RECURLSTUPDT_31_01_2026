@@ -44,6 +44,7 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import axiosInstance from '../Config/axiosConfig.jsx';
 dayjs.extend(customParseFormat);
 
 
@@ -68,8 +69,11 @@ const OfferLetter = () => {
     return userInfo ? userInfo : null;
   });
 
-  const handleJoiningDateChange = (caseId, date) => {
 
+
+
+  const handleJoiningDateChange = (caseId, date) => {
+  
     setJoiningDates(prev => ({
       ...prev,
       [caseId]: date
@@ -115,7 +119,7 @@ const OfferLetter = () => {
     
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
        `${API_BASE_URL}/delete-verification-case`,
         payload,
         {
@@ -210,7 +214,7 @@ const OfferLetter = () => {
         }
 
         
-      const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
+      const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
         {
         headers:
         {
@@ -255,7 +259,7 @@ const OfferLetter = () => {
 
 const fetchOfrData = async () => {
   try {
-    const ofrdata = await axios.get(`${API_BASE_URL}/offer-issue-list`, {
+    const ofrdata = await axiosInstance.get(`${API_BASE_URL}/offer-issue-list`, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${token.token}`,
@@ -324,7 +328,7 @@ useEffect(() => {
        joiningDate: date_only,
     };
 
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/join-Date-updt`,
       payload,
       {
@@ -433,15 +437,17 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     console.log('Status updated:', updateData);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString || dateString === 'N/A') return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return isNaN(date.getTime()) ? dateString : date.toLocaleDateString('en-GB');
-    } catch {
-      return dateString;
-    }
-  };
+const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+
+  let [day, month, year] = dateStr.split('-');
+
+  // ✅ Ensure 2-digit format
+  day = day.padStart(2, '0');
+  month = month.padStart(2, '0');
+
+  return new Date(`${year}-${month}-${day}`);
+};
 
   const formatNumber = (value) => {
     if (!value || value === 'N/A') return 'N/A';
@@ -844,59 +850,39 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     </LocalizationProvider>
   ),
 },
-    // {
-    //   field: 'Date of Joining',
-    //   headerName: 'Date of Joining',
-    //   flex: 1.3,
-    //   minWidth: 170,
-    //   renderCell: (params) => (
-    //     <TextField
-    //       size="small"
-    //       type="date"
-    //       placeholder="Enter Date"
-    //       value={joiningDates[params.row.CHILD_CASEID] || ''}
-    //       onChange={(e) => handleJoiningDateChange(params.row.CHILD_CASEID, e.target.value)}
-    //       sx={{
-    //         width: '100%',
-    //         '& .MuiOutlinedInput-root': {
-    //           fontSize: '12px',
-    //           height: '32px',
-    //           '& fieldset': {
-    //             borderColor: '#d1d5db',
-    //           },
-    //           '&:hover fieldset': {
-    //             borderColor: '#667eea',
-    //           },
-    //           '&.Mui-focused fieldset': {
-    //             borderColor: '#667eea',
-    //           },
-    //         },
-    //       }}
-    //     />
-    //   ),
-    // },
+   
     {
       field: 'View',
       headerName: 'View Offer',
       width: 100,
       sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="View Offer Letter">
-          <IconButton
-            size="small"
-            onClick={() => handleViewOfferLetter(params.row)}
-            sx={{
-              color: '#3b82f6',
-              padding: '4px', 
-              '&:hover': {
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              },
-            }}
-          >
-            <Visibility fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
+
+renderCell: (params) => {
+  const caseId = params.row.CHILD_CASEID;
+  const hasDate = joiningDates?.[caseId];
+
+  console.log(hasDate, "frrrrrrrrrrrrrrr");
+
+  if (!hasDate) return null;
+
+  return (   // ✅ THIS WAS MISSING
+    <Tooltip title="View Offer Letter">
+      <IconButton
+        size="small"
+        onClick={() => handleViewOfferLetter(params.row)}
+        sx={{
+          color: '#3b82f6',
+          padding: '4px',
+          '&:hover': {
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          },
+        }}
+      >
+        <Visibility fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+}
     },
 
         {
@@ -1062,6 +1048,8 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
 
 
       const RejectedDetailsDialog = ({ open, onClose, data }) => {
+
+        console.log("gggggggggggg",data);
     if (!data) return null;
     
     return (
@@ -1146,7 +1134,14 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
           <Box>
             <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Joining Date</Typography>
             <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.joiningDate ? '#111827' : '#c4c4c4', fontStyle: data?.joiningDate ? 'normal' : 'italic' }}>
-              {data?.joiningDate ? new Date(data.joiningDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+
+              {data?.joiningDate
+  ? formatDate(data.joiningDate).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  : 'Not set'}
             </Typography>
           </Box>
         </Box>
@@ -1157,9 +1152,22 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
           </Box>
           <Box>
             <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Requested Join Date</Typography>
-            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.Candid_Reqstd_Join_date ? '#111827' : '#c4c4c4', fontStyle: data?.Candid_Reqstd_Join_date ? 'normal' : 'italic' }}>
-              {data?.Candid_Reqstd_Join_date ? new Date(data.Candid_Reqstd_Join_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
-            </Typography>
+        <Typography
+  sx={{
+    fontSize: '13px',
+    fontWeight: 500,
+    color: data?.Candid_Reqstd_Join_date ? '#111827' : '#c4c4c4',
+    fontStyle: data?.Candid_Reqstd_Join_date ? 'normal' : 'italic'
+  }}
+>
+  {data?.Candid_Reqstd_Join_date
+    ? formatDate(data.Candid_Reqstd_Join_date)?.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      })
+    : 'Not set'}
+</Typography>
           </Box>
         </Box>
       </Box>

@@ -2,24 +2,24 @@
 
 
 
+
 import { Outlet, Navigate } from "react-router-dom";
 import SessionTimeout from "../SessionTimeOut";
 
 const ProtectRoute = () => {
-  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
 
-  if (!userInfo || !userInfo.token) {
-    // save intended URL (for email deep link)
+  // ❌ DO NOT run before token check
+
+  if (!userInfo?.token) {
     localStorage.setItem("redirectAfterLogin", window.location.pathname);
     return <Navigate to="/" replace />;
   }
 
-  return (
-    <>
-      <SessionTimeout />
-      <Outlet />
-    </>
-  );
+  // ✅ Run ONLY when token exists
+SessionTimeout(2);
+
+  return <Outlet />;
 };
 
 export default ProtectRoute;

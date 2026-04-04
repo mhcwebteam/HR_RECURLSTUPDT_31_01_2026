@@ -13,6 +13,9 @@ import {
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../Config/axiosConfig';
+
+
 const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh }) => {
 
   console.log("dataaaaaaaaaaaaaaaaa",data);
@@ -33,7 +36,20 @@ const navigate = useNavigate();
     experience: false
   });
 
-  console.log("Verification Data:", data);
+  
+
+  const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+
+  let [day, month, year] = dateStr.split('-');
+
+  // ✅ Ensure 2-digit format
+  day = day.padStart(2, '0');
+  month = month.padStart(2, '0');
+
+  return new Date(`${year}-${month}-${day}`);
+};
+
 
   useEffect(() => {
     setSameAsPermanent(data?.address_status == 'YES');
@@ -149,7 +165,7 @@ payslips_DocId: 'PAY_Status',
         return newState;
       });
 
-      await axios.post(`${API_BASE_URL}/verify-Doc-Status`, payload, {
+      await axiosInstance.post(`${API_BASE_URL}/verify-Doc-Status`, payload, {
         headers: {
           Authorization: `Bearer ${userToken.token}`,
           'Content-Type': 'application/json',
@@ -209,7 +225,7 @@ payslips_DocId: 'PAY_Status',
         RevisionTrackStatus: "Verification",
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/delete-verification-case`,
         payload,
         {
@@ -296,7 +312,7 @@ payslips_DocId: 'PAY_Status',
       Status_Edit: "Edit"
     };
 
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/emp-email`,
       payload,
       {
@@ -368,7 +384,7 @@ if (refersh) await refersh();
         remarks,
       };
       
-      const response = await axios.post(`${API_BASE_URL}/verify-update`, payload, {
+      const response = await axiosInstance.post(`${API_BASE_URL}/verify-update`, payload, {
         headers: {
           Authorization: `Bearer ${userToken.token}`,
           'Content-Type': 'application/json',
@@ -866,11 +882,12 @@ if (refersh) await refersh();
                       />
 
                       {/* Row 3: Contact Info */}
-                      <FieldWithApprove 
+                      {/* <FieldWithApprove 
                         label="Email *" 
                         value={data?.EMAIL} 
                         icon={Mail}
-                      />
+                        
+                      /> */}
                       
                       <FieldWithApprove 
                         label="Phone Number *" 
@@ -1473,7 +1490,7 @@ if (refersh) await refersh();
           />
           <FieldWithApprove
             label="To Date"
-            value={isCurrentCompany ? "Present" : exp.END_DATE}
+            value={exp.END_DATE}
             icon={Calendar}
           />
 

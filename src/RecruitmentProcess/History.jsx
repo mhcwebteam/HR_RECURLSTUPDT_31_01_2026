@@ -13,6 +13,7 @@ import {
   Hash, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw, Inbox, MapPin, Briefcase, Download,
   ChevronDown, Search, X,
 } from 'lucide-react';
+import axiosInstance from '../Config/axiosConfig';
 
 const avatarColors = [
   ['#a78bfa', '#c4b5fd'], ['#818cf8', '#a5b4fc'], ['#7dd3fc', '#93c5fd'], ['#86efac', '#bbf7d0'],
@@ -163,7 +164,7 @@ export default function History() {
   // Fetch employee dropdown data
   const FilterEmployee = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/get-Emps-Trns-DrpDwn`, {
+      const res = await axiosInstance.get(`${API_BASE_URL}/get-Emps-Trns-DrpDwn`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token?.token}` }
       });
       setEmployeData(res.data);
@@ -191,7 +192,7 @@ export default function History() {
         url += `?${params.toString()}`;
       }
 
-      const res = await axios.get(url, {
+      const res = await axiosInstance.get(url, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",

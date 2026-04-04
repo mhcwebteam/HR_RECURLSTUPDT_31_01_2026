@@ -24,6 +24,7 @@ import { ContextData } from '../Context/ContextData';
 import VerificationDetailsModal from './VerificationDetailsModal';
 import axios from 'axios';
 import { API_BASE_URL } from '../Config/Config';
+import axiosInstance from '../Config/axiosConfig.jsx'
 import Swal from 'sweetalert2';
 
 const Verification = () => 
@@ -46,7 +47,7 @@ const [personalData, setPersonalData] = useState([]);
   if (!userToken?.token) return;
 
   try {
-    const response = await axios.get(
+    const response = await axiosInstance.get(
       `${API_BASE_URL}/emp-verify-data`,
       {
         headers: { Authorization: `Bearer ${userToken.token}` },
@@ -82,12 +83,13 @@ useEffect(() => {
   {
     if (!personalData || personalData.length === 0) return [];
     let result = [...personalData];
-    console.log("resrrrrrrrrrrrrrrrrrrrrrr",result);
+    
 
 
 
     result = result.filter(item => item.verification_status !== "1");
 
+    console.log(result,"terssssssssssss");
 
     if (searchTerm) {
       result = result.filter(user =>

@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
 
 import ManPowerView from '../Components/ManPowerView.jsx';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -48,7 +49,7 @@ useEffect(() => {
     try {
 
       
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `${API_BASE_URL}/task-Assign-GtDta`,
         {
           headers: {
@@ -165,7 +166,7 @@ useEffect(() => {
   }
 
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/emp-email`,
       payload2,
       {
@@ -186,13 +187,7 @@ useEffect(() => {
         showConfirmButton: false,
       });
 
-  //       setFilteredData(prev =>
-  //   prev.map(row =>
-  //     row.CHILD_CASEID == caseId
-  //       ? { ...row, verifyEmail: "sent" }
-  //       : row
-  //   )
-  // );
+
 
 
      setEmailInputs(prev => ({
@@ -404,11 +399,24 @@ useEffect(() => {
       headerName: 'Raiser Dt',
       flex: 1,
       minWidth: 80,
-      renderCell: (params) => (
-        <Box sx={{ color: '#6b7280' }}>
-          {params.value ? new Date(params.value).toLocaleDateString('en-GB') : ''}
-        </Box>
-      ),
+     renderCell: (params) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+
+    const [day, month, year] = parts;
+
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  };
+
+  return (
+    <Box sx={{ color: '#6b7280' }}>
+      {formatDate(params.value)}
+    </Box>
+  );
+}
     },
     
     {
@@ -446,7 +454,7 @@ useEffect(() => {
   flex: 0.8,
   minWidth: 120,
   renderCell: (params) => {
-    const status = params.row.verifyEmail;
+    const status = params.row.StatusTrack;
 
 
     return (
@@ -454,7 +462,7 @@ useEffect(() => {
         variant="contained"
         size="small"
         sx={{
-          background: status == "sent" ? '#10b981' : '#522952',
+          background: status == "WIP" ? '#10b981' : '#522952',
           color: 'white',
           fontSize: '11px',
           padding: '3px 10px',

@@ -9,6 +9,8 @@ import Swal from "sweetalert2";
 import { FileCheck, CheckCircle, Eye } from "lucide-react";
 import { API_BASE_URL } from "../Config/Config";
 import axios from "axios";
+import axiosInstance from "../Config/axiosConfig";
+import { useNavigate } from "react-router-dom";
 
 const CandidateApproval = ({ caseId }) => {
   const [status, setStatus] = useState("");
@@ -19,24 +21,20 @@ const CandidateApproval = ({ caseId }) => {
   const [offerLetterData, setOfferLetterData] = useState({});
   const [fileSizeError, setFileSizeError] = useState("");
 
-  const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
+ const userToken = JSON.parse(localStorage.getItem("userInfo")) || {};
 
+ const navigate = useNavigate();
+
+ 
   const MAX_FILE_SIZE = 1 * 1024 * 1024;
   const ALLOWED_FILE_TYPE = "application/pdf";
 
 
- 
-
-  console.log(offerLetterData?.joiningDate,"offedrrrrrrrrrrrrrrrrrrrrrr");
-// candidOfrLtrSigned
-
-
-  // ✅ Readonly when ofrLetterStatus === "Accept"
   const isReadOnly = offerLetterData?.ofrLetterStatus === "Accept";
 
   const fetchOfrData = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/emp-verify-drftdata`, {
+      const response = await axiosInstance.get(`${API_BASE_URL}/emp-verify-drftdata`, {
         headers: { Authorization: `Bearer ${userToken.token}` },
       });
 
@@ -90,7 +88,6 @@ const CandidateApproval = ({ caseId }) => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
 
-    console.log(selectedFile,"t555555555555555555555555555");
     setFileSizeError("");
     setErrors({});
     if (selectedFile) {
@@ -116,6 +113,21 @@ const CandidateApproval = ({ caseId }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+
+  const formatDate = (date) => {
+  if (!date) return "";
+
+  // Handle DD-MM-YYYY
+  if (date.includes("-") && date.split("-")[0].length === 2) {
+    const [day, month, year] = date.split("-");
+    return `${year}-${month}-${day}`;
+  }
+
+  const d = new Date(date);
+  return isNaN(d) ? "" : d.toISOString().split("T")[0];
+};
+
+
   const handleSubmit = async () => {
     if (isReadOnly) return;
     if (!validate()) return;
@@ -138,7 +150,7 @@ const CandidateApproval = ({ caseId }) => {
     if (status === "Modify") formData.append("Candid_Reqstd_Join_date", modifyDate);
 
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/candOfrStatusUpdt`,
         formData,
         {
@@ -167,33 +179,39 @@ const CandidateApproval = ({ caseId }) => {
         setFileSizeError("");
         fetchOfrData(); 
 
-         try {
-        await fetch(`${API_BASE_URL}/logout`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${userToken.token}`,
-            },
-            body: JSON.stringify({}),
-        });
-    } catch (err) {
-        console.error("Logout error:", err);
-    } finally {
-        localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
-        window.location.href = '/';
-    }
 
-        
-        
-        
-        // ✅ Refresh → auto goes readonly
+   try {
+         const LogoutResponse = await fetch(`${API_BASE_URL}/logout`, {
+             method: "POST",
+             headers: {
+               "Content-Type": "application/json",
+               Accept: "application/json",
+               Authorization: `Bearer ${userToken.token}`,
+             },
+             body: JSON.stringify({}),
+           });
+     
+           localStorage.setItem('userInfo', JSON.stringify({ Emp_Id: "", employee: "", token: "" }));
+           navigate('/');
+     
+           if (!LogoutResponse.ok) throw new Error("Server is Not Responding Error 500");
+         } catch (error) {
+           console.error("Logout Failed 401");
+         }
       } else {
-        Swal.fire("Error!", data?.message || "Something went wrong", "error");
+        Swal.fire("Error", res.data?.message || "API failed", "error");
       }
-    } catch (error) {
-      console.error(error);
-      Swal.fire("Oops...", "Something went wrong!", "error");
+    } catch (err) {
+      if (err.response?.status === 413) {
+        Swal.fire({
+          icon: "error",
+          title: "File Too Large",
+          text: "Please upload a file smaller than 1MB",
+          confirmButtonColor: '#a855f7'
+        });
+      } else {
+        Swal.fire("Error", err.response?.data?.message || err.message || "API failed", "error");
+      }
     }
   };
 
@@ -392,11 +410,7 @@ const CandidateApproval = ({ caseId }) => {
           </label>
           <input
             type="date"
-          value={
-    offerLetterData?.joiningDate
-      ? new Date(offerLetterData.joiningDate).toISOString().split("T")[0]
-      : ""
-  }
+value={formatDate(offerLetterData?.joiningDate)}
             readOnly
             style={{
               width: '100%',

@@ -11,6 +11,7 @@ import CandidateApproval from './CandidateApproval';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../Config/Config';
+import axiosInstance from '../Config/axiosConfig';
 
 const CandidateForms = () => {
     // const { case_Id } = useParams(); 
@@ -27,7 +28,7 @@ const CandidateForms = () => {
 
         try {
             // Use the correct endpoint that returns ALL records (draft + submit)
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                 `${API_BASE_URL}/emp-verify-drftdata`, // Changed from emp-verify-drftdata
                 {
                     headers: { Authorization: `Bearer ${userToken.token}` },
@@ -93,7 +94,7 @@ const CandidateForms = () => {
 
     const AllStages = async () => {
         try {
-            const response = await axios.get(
+            const response = await axiosInstance.get(
                 `${API_BASE_URL}/candGetStages`,
                 {
                     headers: {

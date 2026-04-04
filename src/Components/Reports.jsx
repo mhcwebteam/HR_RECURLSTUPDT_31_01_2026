@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../Config/Config';
 import Swal from 'sweetalert2';
+import axiosInstance from '../Config/axiosConfig';
 
 const stageConfig = {
   'offer letter':       { label: 'Offer Letter',       bg: '#f2e5b2', color: '#92400e', icon: '📄' },
@@ -46,7 +47,7 @@ const Reports = () => {
   const loadRejected = async () => {
     try {
       setLoading(true);
-      const r = await axios.get(`${API_BASE_URL}/vrfy-Rjct-Hsty-Data`, {
+      const r = await axiosInstance.get(`${API_BASE_URL}/vrfy-Rjct-Hsty-Data`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setData(r?.data?.verifyHistoryData || []);

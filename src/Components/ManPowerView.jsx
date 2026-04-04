@@ -10,6 +10,7 @@ import { ArrowLeftIcon, BriefcaseIcon, CalendarCheck, CalendarCheck2, CalendarIc
 import { AcademicCapIcon, BuildingOfficeIcon, DocumentTextIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config';
+import axiosInstance from "../Config/axiosConfig";
 
 function ManPowerView({ caseId, onClose }) {
 
@@ -21,10 +22,10 @@ function ManPowerView({ caseId, onClose }) {
   const [currentTask, setCurrentTask] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    plant: "", caseid: "", rdate: "", requestor: "", rmail_id: "", department: "",
+    plant: "", caseid: "", rdate: "", requestor: "", rmail_id: "", department: "", EVC_DATE:"",
     jobtype: "", recruitmentcycle: "", Position: "", qualf: "", exyear: "",
     hiringfor: "", reportingto: "", req_pers: "", tecskill: "", soft_skill: "",
-    jdesc: "", uremarks: "", remarks: "", approve: "", hodremarks: "",
+    jdesc: "", uremarks: "", remarks: "", approve: "", hodremarks: "", Replacing_Emp:""
   });
   const [showPopup, setShowPopup] = useState(true);
   const [modalType, setModalType] = useState("");
@@ -32,10 +33,11 @@ function ManPowerView({ caseId, onClose }) {
 
   useEffect(() => {
     const uid = userToken.Emp_Id;
-    axios.get(`http://192.168.8.91:8084/inactive/phpapi/get_empdetails.php?uid=${uid}`)
+    axiosInstance.get(`http://192.168.8.91:8084/inactive/phpapi/get_empdetails.php?uid=${uid}`)
       .then((res) => {
         if (res.data.status === "success") {
           const user = res.data.user;
+        
           setDeptDesign({ empDept: user.dept, empDesignation: user.designation });
         }
       })
@@ -46,7 +48,7 @@ function ManPowerView({ caseId, onClose }) {
     const fetchFormData = async () => {
       if (!caseId || !userToken.token) return;
       try {
-        const response = await axios.get(`${API_BASE_URL}/manpower-data/${caseId}`, {
+        const response = await axiosInstance.get(`${API_BASE_URL}/manpower-data/${caseId}`, {
           headers: { Authorization: `Bearer ${userToken.token}` },
         });
         if (response.data) {
@@ -60,6 +62,18 @@ function ManPowerView({ caseId, onClose }) {
     };
     fetchFormData();
   }, [caseId, userToken.token]);
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -84,7 +98,7 @@ function ManPowerView({ caseId, onClose }) {
 
     const requiredFields = [remarksFieldKey, 'approve'];
     const isReadOnly = [
-      'plant', 'caseid', 'rdate', 'requestor', 'rmail_id', 'department',
+      'plant', 'caseid', 'rdate', 'requestor', 'rmail_id', 'department','EVC_DATE',
       'jobtype', 'recruitmentcycle', 'Position', 'qualf', 'exyear',
       'hiringfor', 'reportingto', 'req_pers', 'tecskill', 'soft_skill',
       'jdesc', 'uremarks', 'hodremarks'
@@ -98,21 +112,25 @@ function ManPowerView({ caseId, onClose }) {
     return `${baseClass} border-gray-200`;
   };
 
-  const CustomDateField = () => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-0.5 flex items-center gap-1">
-        <CalendarIcon className="w-3 h-3" />
-        Date <span className="text-red-500">*</span>
-      </label>
-      <input
-        type="text"
-        name="rdate"
-        value={formData.rdate || new Date().toLocaleDateString()}
-        readOnly
-        className={getFieldClass("rdate")}
-      />
-    </div>
-  );
+const CustomDateField = () => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-700 mb-0.5 flex items-center gap-1">
+      <CalendarIcon className="w-3 h-3" />
+      Date <span className="text-red-500">*</span>
+    </label>
+    <input
+      type="text"
+      name="EVC_DATE"
+    value={
+  formData.EVC_DATE
+    ? formatDate(formData.EVC_DATE)
+    : formatDate(new Date())
+}
+      readOnly
+      className={getFieldClass("EVC_DATE")}
+    />
+  </div>
+);
 
   return (
     <>
@@ -181,11 +199,11 @@ function ManPowerView({ caseId, onClose }) {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Department</label>
-                      <input type="text" name="requestor" value={deptdesigndata.empDept} readOnly className={getFieldClass("requestor")} />
+                      <input type="text" name="requestor" value={formData.RAISER_DEPT} readOnly className={getFieldClass("requestor")} />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Designation</label>
-                      <input type="text" name="rmail_id" value={deptdesigndata.empDesignation} readOnly className={getFieldClass("rmail_id")} />
+                      <input type="text" name="rmail_id" value={formData.RAISER_DESG} readOnly className={getFieldClass("rmail_id")} />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Requestor Email</label>
@@ -240,6 +258,19 @@ function ManPowerView({ caseId, onClose }) {
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Hiring For</label>
                       <input type="text" name="hiringfor" value={formData.RECRUIT_FOR} readOnly className={getFieldClass("hiringfor")} />
                     </div>
+                    {formData.RECRUIT_FOR == "Replacement" && (
+  <div>
+    <label className="block text-xs font-semibold text-gray-700 mb-0.5">
+      Replacing Employee
+    </label>
+    <input
+      type="text"
+      value={formData.Replacing_Emp || ''}
+      readOnly
+      className={getFieldClass("replacing_emp")}
+    />
+  </div>
+)}
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Reporting To</label>
                       <input type="text" name="reportingto" value={formData.REPORTING} readOnly className={getFieldClass("reportingto")} />
@@ -323,7 +354,7 @@ function ManPowerView({ caseId, onClose }) {
         {job.JOB_TIT}
       </td>
       <td className="px-2 py-1 text-xs text-gray-900 border-b border-r border-gray-200">
-        {job.REQ_BY_DT}
+        {formatDate(job.REQ_BY_DT)}
       </td>
     </tr>
   ))}

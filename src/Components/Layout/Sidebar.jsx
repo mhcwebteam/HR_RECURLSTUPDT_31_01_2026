@@ -12,6 +12,8 @@ const Sidebar = () => {
   const { isSidebarOpen, setIsSidebarOpen } = useContext(MyContext);
   const location = useLocation();
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
+
+  console.log(userToken,"tyyyyyyyyyyy");
   const navigate = useNavigate();
 
   const isEmployee = userToken?.Emp_Category === "Employee";
@@ -103,7 +105,7 @@ const Sidebar = () => {
           if (item.path === "/PendingMRFS" || item.path === '/AssignedTasks' || item.path === '/HODHistory') {
             return userToken.Emp_Category === "HOD";
           }
-          if (userToken?.Emp_Category === "Employee") {
+          if (userToken?.Emp_Category === "New Employee") {
             const restrictedPaths = [
               "/OnBoarding",
               "/HrInbox",

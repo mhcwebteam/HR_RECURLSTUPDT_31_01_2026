@@ -8,6 +8,7 @@ import {
   Hash, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw, Inbox, MapPin, Briefcase, Download,
   ChevronDown, Search, X,
 } from 'lucide-react';
+import axiosInstance from './Config/axiosConfig';
 
 const avatarColors = [
   ['#a78bfa', '#c4b5fd'], ['#818cf8', '#a5b4fc'], ['#7dd3fc', '#93c5fd'], ['#86efac', '#bbf7d0'],
@@ -153,7 +154,7 @@ export default function HODHistory() {
   // Fetch HR list
   const fetchHrNames = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/hod/hr-names`, {
+      const res = await axiosInstance.get(`${API_BASE_URL}/hod/hr-names`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token?.token}` }
       });
 
@@ -169,7 +170,7 @@ export default function HODHistory() {
   // Fetch case IDs for selected HR
   const fetchCaseIds = async (hrName) => {
     try {
-      const res = await axios.post(`${API_BASE_URL}/hod/case-ids`,
+      const res = await axiosInstance.post(`${API_BASE_URL}/hod/case-ids`,
         { assigned_to: hrName },
         { headers: { Accept: 'application/json', Authorization: `Bearer ${token?.token}` } }
       );
@@ -190,7 +191,7 @@ export default function HODHistory() {
       if (caseId) params.append('caseId', caseId);
       const url = `${API_BASE_URL}/hod-Undr-Hrs-GetData${params.toString() ? `?${params.toString()}` : ''}`;
 
-      const res = await axios.get(url, {
+      const res = await axiosInstance.get(url, {
         headers: { Authorization: `Bearer ${token?.token}` }
       });
 
