@@ -12,8 +12,7 @@ const Sidebar = () => {
   const { isSidebarOpen, setIsSidebarOpen } = useContext(MyContext);
   const location = useLocation();
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
-
-  console.log(userToken,"tyyyyyyyyyyy");
+ const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const navigate = useNavigate();
 
   const isEmployee = userToken?.Emp_Category === "Employee";
@@ -25,19 +24,33 @@ const Sidebar = () => {
     }
   }, [isEmployee, setIsSidebarOpen]);
 
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-close sidebar on mobile when resizing down
+      if (mobile) setIsSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setIsSidebarOpen]);
+
+    const handleMouseEnter = () => {
+    if (!isEmployee && !isMobile) setIsSidebarOpen(true);
+  };
+  const handleMouseLeave = () => {
+    if (!isEmployee && !isMobile) setIsSidebarOpen(false);
+  };
+
   const handleBack = () => {
     navigate('/dashboard');
   };
 
-  const handleMouseEnter = () => {
-    if (!isEmployee) setIsSidebarOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    if (!isEmployee) setIsSidebarOpen(false);
-  };
 
 
+  const handleMobileToggle = () => setIsSidebarOpen(prev => !prev);
+  
  const menuItems = [
     { path: '/HrInbox', icon: Inbox, label: "HR Inbox", gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
     { path: '/PendingMRFS', icon: Clock, label: 'PendingMRFS', gradient: 'from-pink-400 to-rose-400', hoverGradient: 'from-pink-500 to-rose-500' },
@@ -53,16 +66,55 @@ const Sidebar = () => {
 
   ];
   return (
-    <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`fixed left-0 top-0 h-full shadow-2xl
-        ${isSidebarOpen ? 'w-[280px]' : 'w-[100px]'} 
-        transition-all duration-300 ease-in-out overflow-hidden z-50`}
-      style={{
-        background: 'linear-gradient(180deg, #49225B 0%, #3a1a48 50%, #2d1338 100%)'
-      }}
-    >
+<>
+     {isMobile && (
+        <button
+          onClick={handleMobileToggle}
+          style={{
+            position: 'fixed',
+            top: '12px',
+            left: isSidebarOpen ? '248px' : '12px',
+            zIndex: 100,
+            width: '36px',
+            height: '36px',
+            borderRadius: '10px',
+            border: 'none',
+            background: 'linear-gradient(135deg, #49225B, #3a1a48)',
+            color: 'white',
+            fontSize: '18px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(73,34,91,0.5)',
+            transition: 'left 0.3s ease',
+          }}
+        >
+          {isSidebarOpen ? '✕' : '☰'}
+        </button>
+      )}
+
+      {/* ✅ MOBILE OVERLAY — dark backdrop when sidebar open on mobile */}
+      {isMobile && isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 48,
+            backdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+<div
+  onMouseEnter={handleMouseEnter}
+  onMouseLeave={handleMouseLeave}
+  className={`fixed left-0 top-0 h-full shadow-2xl
+    ${isSidebarOpen ? 'w-[280px]' : 'w-[60px] sm:w-[100px]'} 
+    transition-all duration-300 ease-in-out overflow-hidden z-50`}
+  style={{ background: 'linear-gradient(180deg, #49225B 0%, #594163 50%, #2d1338 100%)' }}
+>
       {/* Header */}
       <div
         className='h-[80px] flex items-center px-4 border-b border-purple-400/20 cursor-pointer group relative overflow-hidden'
@@ -212,6 +264,7 @@ const Sidebar = () => {
         .animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
       `}</style>
     </div>
+    </>
   );
 };
 

@@ -44,19 +44,46 @@ const Reports = () => {
   const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
 
   // ── Fetch rejected history ──
-  const loadRejected = async () => {
-    try {
-      setLoading(true);
-      const r = await axiosInstance.get(`${API_BASE_URL}/vrfy-Rjct-Hsty-Data`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setData(r?.data?.verifyHistoryData || []);
-    } catch {
-      Swal.fire({ icon:'error', title:'Error', text:'Failed to fetch records' });
-    } finally {
-      setLoading(false);
+const loadRejected = async () => {
+  try {
+    setLoading(true);
+
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    const empName = userInfo?.employee;
+    const token = userInfo?.token;
+    const caseId = null;
+
+    console.log("empName:", empName);
+    console.log("token:", token);
+   
+    if (!empName || !token) {
+      throw new Error("Missing empName or token");
     }
-  };
+
+    const r = await axios.get(
+     `${API_BASE_URL}/vrfy-Rjct-Hsty-Data/${caseId}/${empName}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("API SUCCESS:", r);
+
+    setData(r?.data?.verifyHistoryData || []);
+  } catch (err) {
+    console.error("ERROR:", err);
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: err?.response?.data?.message || err.message || 'Failed to fetch records'
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── Fetch current stage (hr-Aprvl-Data) ──
   const hrAprvlFetchData = async () => {
@@ -73,10 +100,15 @@ const Reports = () => {
     }
   };
 
+
+  useEffect(() => {
+    loadRejected();
+  },[])
+
   useEffect(() => {
     if (token) {
-      loadRejected();
-      hrAprvlFetchData();
+  
+    hrAprvlFetchData();
     }
   }, [token]);
 

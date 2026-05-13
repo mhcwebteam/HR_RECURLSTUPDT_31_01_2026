@@ -14,11 +14,13 @@ import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../Config/axiosConfig';
+import dayjs from 'dayjs';
+import { generateVerificationPDF } from '../../src/RecruitmentProcess/utils/generateVerificationPDF'
 
 
 const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh }) => {
 
-  console.log("dataaaaaaaaaaaaaaaaa",data);
+ 
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
   const [remarks, setRemarks] = useState('');
   const [viewingDoc, setViewingDoc] = useState(null);
@@ -223,6 +225,7 @@ payslips_DocId: 'PAY_Status',
         CHILD_CASEID: data?.CHILD_CASEID,
         remarks,
         RevisionTrackStatus: "Verification",
+      deletecase: "01"
       };
 
       const response = await axiosInstance.post(
@@ -350,71 +353,176 @@ if (refersh) await refersh();
   }
 };
 
-  const handleSubmit = async () => {
-    const hasApproved = Object.values(approvedDocs).some(status => status === true);
-    
-    if (!hasApproved) {
-      return Swal.fire({
-        title: "Approval Required",
-        text: "Please approve at least one document before submitting!",
-        icon: "warning",
-        confirmButtonColor: "#3085d6",
-      });
-    }
+  // const handleSubmit = async () => {
 
-    const result = await Swal.fire({
-      title: "Submit Verification?",
-      text: "Are you sure you want to submit this verification?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#10b981",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, Submit",
-      cancelButtonText: "Cancel"
+  //        const pdfBlob = await generateVerificationPDF(data, sameAsPermanent);
+  //   console.log(pdfBlob,"pdddddddddddddd")
+  //   // Create FormData to send PDF
+  //   const formData = new FormData();
+  //   formData.append('verification_pdf', pdfBlob, `verification_${data?.CHILD_CASEID}_${Date.now()}.pdf`);
+  //   const hasApproved = Object.values(approvedDocs).some(status => status === true);
+    
+  //   if (!hasApproved) {
+  //     return Swal.fire({
+  //       title: "Approval Required",
+  //       text: "Please approve at least one document before submitting!",
+  //       icon: "warning",
+  //       confirmButtonColor: "#3085d6",
+  //     });
+  //   }
+
+
+
+  //   const result = await Swal.fire({
+  //     title: "Submit Verification?",
+  //     text: "Are you sure you want to submit this verification?",
+  //     icon: "question",
+  //     showCancelButton: true,
+  //     confirmButtonColor: "#10b981",
+  //     cancelButtonColor: "#6b7280",
+  //     confirmButtonText: "Yes, Submit",
+  //     cancelButtonText: "Cancel"
+  //   });
+
+  //   if (!result.isConfirmed) return;
+
+
+
+  //   setLoading(true);
+  //   try {
+  //     const payload = {
+  //       child_caseId: data?.CHILD_CASEID,
+  //       remarks,
+  //       fileData: pdfBlob,
+  //     };
+      
+  //     const response ="" 
+  //     await axiosInstance.post(`${API_BASE_URL}/verify-update`, payload, {
+  //       headers: {
+  //         Authorization: `Bearer ${userToken.token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     }
+    
+  //   );
+
+  //     if (response.data) {
+  //       await Swal.fire({
+  //         icon: 'success',
+  //         title: 'Success!',
+  //         text: 'Verification submitted successfully!',
+  //         timer: 1500,
+  //         showConfirmButton: false,
+  //       });
+
+  //       if (refersh) await refersh();
+  //       setRemarks('');
+  //       onClose();
+  //     }
+  //   } catch (error) {
+  //     console.error('Error submitting form:', error);
+  //     Swal.fire({
+  //       title: 'Error!',
+  //       text: 'Failed to submit verification. Please try again.',
+  //       icon: 'error',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+const handleSubmit = async () => {
+  const hasApproved = Object.values(approvedDocs).some(status => status === true);
+  
+  if (!hasApproved) {
+    return Swal.fire({
+      title: "Approval Required",
+      text: "Please approve at least one document before submitting!",
+      icon: "warning",
+      confirmButtonColor: "#3085d6",
+    });
+  }
+
+  const result = await Swal.fire({
+    title: "Submit Verification?",
+    text: "Are you sure you want to submit this verification?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#10b981",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, Submit",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!result.isConfirmed) return;
+
+  setLoading(true);
+  
+  Swal.fire({
+    title: 'Loading...',
+    text: 'Please wait',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    console.log("Data passed to PDF:", data);
+    console.log("sameAsPermanent:", sameAsPermanent);
+    
+    // Generate PDF blob
+    const pdfBlob = await generateVerificationPDF(data, sameAsPermanent);
+    
+    console.log("PDF Blob size:", pdfBlob?.size);
+    console.log("PDF Blob type:", pdfBlob?.type);
+    
+    // Check if blob is valid
+    if (!pdfBlob || pdfBlob.size === 0) {
+      throw new Error("Generated PDF is empty");
+    }
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('fileData', pdfBlob, `verification_${data?.CHILD_CASEID}_${Date.now()}.pdf`);
+    formData.append('child_caseId', data?.CHILD_CASEID);
+    formData.append('remarks', remarks);
+    formData.append('document_type', 'candidatefile');
+    
+    // Send to backend
+    const response = await axiosInstance.post(`${API_BASE_URL}/verify-update`, formData, {
+      headers: {
+        Authorization: `Bearer ${userToken.token}`,
+        'Content-Type': 'multipart/form-data',
+      },
     });
 
-    if (!result.isConfirmed) return;
+    Swal.close();
 
-
-
-    setLoading(true);
-    try {
-      const payload = {
-        child_caseId: data?.CHILD_CASEID,
-        remarks,
-      };
-      
-      const response = await axiosInstance.post(`${API_BASE_URL}/verify-update`, payload, {
-        headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          'Content-Type': 'application/json',
-        },
+    if (response.data) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Verification submitted successfully!',
+        timer: 1500,
+        showConfirmButton: false,
       });
 
-      if (response.data) {
-        await Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: 'Verification submitted successfully!',
-          timer: 1500,
-          showConfirmButton: false,
-        });
-
-        if (refersh) await refersh();
-        setRemarks('');
-        onClose();
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to submit verification. Please try again.',
-        icon: 'error',
-      });
-    } finally {
-      setLoading(false);
+      if (refersh) await refersh();
+      setRemarks('');
+      onClose();
     }
-  };
+  } catch (error) {
+    console.error('Error:', error);
+    Swal.close();
+    Swal.fire({
+      title: 'Error!',
+      text: error.message || 'Failed to submit verification. Please try again.',
+      icon: 'error',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const DocumentViewer = ({ url, name, onClose }) => {
     if (!url) return null;
@@ -1297,8 +1405,8 @@ if (refersh) await refersh();
                             <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PG_MARKS}</td>
                             <td style={{ padding: '6px' }}>{data?.PG_PASSED_YEAR}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>
-                              {data?.documents?.Pg_certi && (
-                                <button onClick={() => handleViewDocument(data.documents.Pg_certi, 'PG Certificate')}
+                              {data?.documents?.PG_FILENAME && (
+                                <button onClick={() => handleViewDocument(data.documents.PG_FILENAME, 'PG Certificate')}
                                   style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                                   <Eye size={14} />
                                 </button>
@@ -1306,7 +1414,7 @@ if (refersh) await refersh();
                             </td>
                             <td style={{ padding: '6px' }}>
                               {data?.documents?.pg_DocId && !approvedDocs[data.documents.pg_DocId] && (
-                                <button onClick={() => handleApprove(data.documents.pg_DocId, 'PG Certificate', data.documents.Pg_certi)}
+                                <button onClick={() => handleApprove(data.documents.pg_DocId, 'PG Certificate', data.documents.PG_FILENAME)}
                                   style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
                                   Approve
                                 </button>
@@ -1485,12 +1593,12 @@ if (refersh) await refersh();
           />
           <FieldWithApprove
             label="From Date"
-            value={exp.START_DATE}
+         value={exp.START_DATE ? dayjs(exp.START_DATE).format("DD/MM/YYYY") : "N/A"}
             icon={Calendar}
           />
           <FieldWithApprove
             label="To Date"
-            value={exp.END_DATE}
+             value={exp.END_DATE ? dayjs(exp.END_DATE).format("DD/MM/YYYY") : "N/A"}
             icon={Calendar}
           />
 

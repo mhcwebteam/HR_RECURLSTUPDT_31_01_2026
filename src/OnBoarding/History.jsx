@@ -416,7 +416,7 @@ const History = ({ open, onClose, data, onStatusChange }) => {
     { title: '10th Certificate', path: localData?.documents?.['10th_certi'], marks: localData?.SSC_MARKS, documentId: 'tenth_cert', docStatus: localData?.documents?.Tenth_Status, Verification_Id: localData?.Verification_Id },
     { title: 'Intermediate Certificate', path: localData?.documents?.Inter_certi, marks: localData?.INTER_MARKS, documentId: 'inter_cert', docStatus: localData?.documents?.Inter_Status, Verification_Id: localData?.Verification_Id },
     { title: 'B.Tech/Degree Certificate', path: localData?.documents?.Gradu_certi, marks: localData?.BTECH_MARKS, documentId: 'grad_cert', docStatus: localData?.documents?.Grad_Status, Verification_Id: localData?.Verification_Id },
-    { title: 'PG Certificate', path: localData?.documents?.Pg_certi, marks: localData?.PG_MARKS, documentId: 'pg_cert', docStatus: localData?.documents?.Pg_Status, Verification_Id: localData?.Verification_Id },
+    { title: 'PG Certificate', path: localData?.documents?.PG_FILENAME, marks: localData?.PG_MARKS, documentId: 'pg_cert', docStatus: localData?.documents?.Pg_Status, Verification_Id: localData?.Verification_Id },
   ];
 
   const identityDocuments = [

@@ -257,7 +257,8 @@ result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
 
     const payload = {
         CHILD_CASEID: row?.CHILD_CASEID,
-        RevisionTrackStatus: "Salary Stack Up"
+        RevisionTrackStatus: "Salary Stack Up",
+           deletecase: "01"
     
       };
 
@@ -691,6 +692,10 @@ result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
   sortable: false,
   filterable: false,
   renderCell: (params) => {
+
+            const status = params.row?.cand_aprvl_status?.trim().toLowerCase();
+
+ if (!["reject", "modify"].includes(status)) return null;
     return (
       <Button
         variant="contained"
@@ -731,7 +736,10 @@ result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
 
       renderCell: (params) => {
 
-        // const isSubmitting = submitting[params.row.CASEID] || false;
+      const status = params.row.cand_aprvl_status?.trim().toLowerCase();
+
+    if (status !== "reject") return null;
+
 
         return (
 
@@ -1053,17 +1061,17 @@ result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
             getRowId={(row) => row.verification_id}
 
             
-columnVisibilityModel={{
-  ACTIONTAB: filteredData?.some((row) => {
-    const status = row.cand_aprvl_status?.trim().toLowerCase();
-    return status === "reject";
-  }) || false,
+// columnVisibilityModel={{
+//   ACTIONTAB: filteredData?.some((row) => {
+//     const status = row.cand_aprvl_status?.trim().toLowerCase();
+//     return status === "reject";
+//   }) || false,
 
-  History: filteredData?.some((row) => {
-    const status = row.cand_aprvl_status?.trim().toLowerCase();
-    return status == "reject" || status == "modify";
-  }) || false,
-}}
+//   History: filteredData?.some((row) => {
+//     const status = row.cand_aprvl_status?.trim().toLowerCase();
+//     return status == "reject" || status == "modify";
+//   }) || false,
+// }}
 
 
 

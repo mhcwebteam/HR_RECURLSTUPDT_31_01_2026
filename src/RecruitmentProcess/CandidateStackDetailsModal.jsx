@@ -309,7 +309,8 @@ const CandidateStackDetailsModal = ({ open, onClose, data, onStatusChange, note,
     const payload = {
       caseId: data.CHILD_CASEID,
       remarks: remarks,
-      category: token?.Emp_Category
+      category: token?.Emp_Category,
+    employee:token?.employee
     };
 
     try {

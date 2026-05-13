@@ -187,7 +187,13 @@ useEffect(() => {
         showConfirmButton: false,
       });
 
-
+  setFilteredData(prev =>
+    prev.map(row =>
+      row.CHILD_CASEID === caseId
+        ? { ...row, StatusTrack: "WIP", verifyEmail: "sent" }
+        : row
+    )
+  )
 
 
      setEmailInputs(prev => ({

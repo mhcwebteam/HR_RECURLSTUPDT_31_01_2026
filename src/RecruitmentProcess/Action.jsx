@@ -732,11 +732,15 @@ setUploadedDocs(prev => ({ ...prev, [caseId]: fileURL }));
 
 const Hr = HrData?.TaskAssignmentData || [];
 
+console.log("hrrrrrrrrrrrrrrrr",Hr);
+
 const hasTypePlant = Hr.some(row => row.TYPE_PLANT);
 const recCycle = Hr.some(row => row.RECRUIT_CYCLE);
 const history = Hr.some(row => row.CUR_REV_ID != null);
 
 
+
+console.log("historyhistoryhistoryhistory",history);
 
 
     const columns = [
@@ -1031,11 +1035,14 @@ const history = Hr.some(row => row.CUR_REV_ID != null);
 },
 },
 
-...(history ? [{
+{
+
+
+
     field: 'HISTORY',
     headerName: 'History',
     flex: 0.8,
-    minWidth: 150,
+    minWidth: 200,
    renderCell: (params) => {
 
   // Hide button if status is null OR CUR_REV_ID is null
@@ -1068,7 +1075,7 @@ const history = Hr.some(row => row.CUR_REV_ID != null);
     </Button>
   );
 }
-  }] : []),
+},
 
 
         {
@@ -1231,16 +1238,16 @@ const history = Hr.some(row => row.CUR_REV_ID != null);
   loading={loading}
   columnHeaderHeight={44}
 
-columnVisibilityModel={{
-  HISTORY: filteredData?.some(
-    (row) => row.status?.trim().toLowerCase() == "reject"
-  ) || false,
+// columnVisibilityModel={{
+//   HISTORY: filteredData?.some(
+//     (row) => row.status?.trim().toLowerCase() == "reject"
+//   ) || false,
 
-   REVID: filteredData?.some(
-      (row) => row.status?.trim().toLowerCase() == "reject"
-    ) || false
+//    REVID: filteredData?.some(
+//       (row) => row.status?.trim().toLowerCase() == "reject"
+//     ) || false
 
-}}
+// }}
 
   slots={{
     loadingOverlay: () => (

@@ -39,7 +39,7 @@ export default function Login() {
           } else if (empCategory == "HR") {
             navigate("/HrInbox", { replace: true });
           } else {
-            navigate("/user", { replace: true });
+            navigate("/", { replace: true });
           }
         } else {
           // Token expired, clear it

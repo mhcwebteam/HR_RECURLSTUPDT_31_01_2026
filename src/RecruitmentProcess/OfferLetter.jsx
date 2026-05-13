@@ -88,6 +88,9 @@ const OfferLetter = () => {
 
 
 
+
+
+
         const handleMoveNextTab = async (row) => {
 
 
@@ -115,7 +118,8 @@ const OfferLetter = () => {
 
     const payload = {
         CHILD_CASEID: row?.CHILD_CASEID,
-        RevisionTrackStatus:"Offer Letter"
+        RevisionTrackStatus:"Offer Letter",
+          deletecase: "02"
     
       };
 
@@ -210,7 +214,8 @@ const OfferLetter = () => {
         {
           CHILD_CASEID:rowData.CHILD_CASEID,
           EMAIL     :rowData.EMAIL,
-          joiningDate: date_only,
+          // joiningDate: date_only,
+          joiningDate: dayjs(date_only, "DD-MM-YYYY").format("YYYY-MM-DD")
         }
 
         
@@ -437,17 +442,21 @@ console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
     console.log('Status updated:', updateData);
   };
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return null;
-
-  let [day, month, year] = dateStr.split('-');
-
-  // ✅ Ensure 2-digit format
-  day = day.padStart(2, '0');
-  month = month.padStart(2, '0');
-
-  return new Date(`${year}-${month}-${day}`);
+  const formatDate = (dateStr) => {
+  return dayjs(dateStr, "DD-MM-YYYY").toDate();
 };
+
+// const formatDate = (dateStr) => {
+//   if (!dateStr) return null;
+
+//   let [day, month, year] = dateStr.split('-');
+
+//   // ✅ Ensure 2-digit format
+//   day = day.padStart(2, '0');
+//   month = month.padStart(2, '0');
+
+//   return new Date(`${day}-${month}-${year}`);
+// };
 
   const formatNumber = (value) => {
     if (!value || value === 'N/A') return 'N/A';
@@ -516,6 +525,19 @@ const formatDate = (dateStr) => {
                     ),
                   }]
                 : []),
+
+
+                      {
+                                    field: 'CUR_REV_ID',
+                                    headerName: 'Rev ID',
+                                    flex: 1,
+                                    minWidth: 60,
+                                    renderCell: (params) => (
+                                        <Box sx={{ color: '#374151' }}>
+                                             {params.value || "00"} 
+                                        </Box>
+                                    ),
+                                },
     {
       field: 'PLANT',
       headerName: 'Plant Name',
@@ -910,7 +932,11 @@ renderCell: (params) => {
   
         renderCell: (params) => {
   
-          // const isSubmitting = submitting[params.row.CASEID] || false;
+           const status = params.row.ofrLetterStatus?.trim().toLowerCase();
+
+    // ❌ Hide button for non-reject rows
+    if (status !== "reject") return null;
+
   
           return (
   
@@ -994,6 +1020,11 @@ renderCell: (params) => {
   sortable: false,
   filterable: false,
   renderCell: (params) => {
+              const status = params.row.ofrLetterStatus?.trim().toLowerCase();
+
+ if (!["reject", "modify"].includes(status)) return null;
+
+
     return (
       <Button
         variant="contained"
@@ -1135,13 +1166,9 @@ renderCell: (params) => {
             <Typography sx={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.55px', color: '#9ca3af', mb: '2px' }}>Joining Date</Typography>
             <Typography sx={{ fontSize: '13px', fontWeight: 500, color: data?.joiningDate ? '#111827' : '#c4c4c4', fontStyle: data?.joiningDate ? 'normal' : 'italic' }}>
 
-              {data?.joiningDate
-  ? formatDate(data.joiningDate).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  : 'Not set'}
+   {data?.joiningDate
+    ? dayjs(data.joiningDate).format("DD/MM/YYYY")
+    : "Not set"}
             </Typography>
           </Box>
         </Box>
@@ -1160,13 +1187,9 @@ renderCell: (params) => {
     fontStyle: data?.Candid_Reqstd_Join_date ? 'normal' : 'italic'
   }}
 >
-  {data?.Candid_Reqstd_Join_date
-    ? formatDate(data.Candid_Reqstd_Join_date)?.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      })
-    : 'Not set'}
+   {data?.Candid_Reqstd_Join_date
+    ? dayjs(data.Candid_Reqstd_Join_date).format("DD/MM/YYYY")
+    : "Not set"}
 </Typography>
           </Box>
         </Box>

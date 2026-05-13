@@ -254,7 +254,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
       const employeeInfo = [
         ['Name:', String(data?.NAME || 'N/A'), 'Case ID:', String(data.CHILD_CASEID || 'N/A')],
         ['Email:', String(data?.EMAIL || 'N/A'), 'Phone:', String(data?.PHONE_NUMBER || 'N/A')],
-        ['Job Title:', String(data?.DESIG || 'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
+        ['Job Title:', String(data?.DESIG || data?.MANPOWER_DESG ||  'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
       ];
 
       employeeInfo.forEach((row) => {
@@ -448,7 +448,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
   const handleSubmit = async (status) => {
 
-    console.log("staaaaaaaaaaaaaaaaaaaaaaaaaaaa",status);
+   
   const result = await Swal.fire({
     title: status === 'pending' ? 'Confirm Approval' : 'Confirm Rejection',
     text: `Are you sure you want to ${status === 'pending' ? 'approve' : 'reject'} this salary breakup?`,
@@ -606,10 +606,10 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
             <div className="grid grid-cols-3 gap-x-2 gap-y-1">
               <InfoRow label="Name" value={data?.NAME} />
               <InfoRow label="Case ID" value={data?.CHILD_CASEID} valueColor="text-blue-700" />
-              <InfoRow label="Job Title" value={data?.DEPT} />
+              <InfoRow label="Job Title" value={ data.DESIG || data?.MANPOWER_DESG} />
               <InfoRow label="Phone" value={data?.PHONE_NUMBER} />
               <InfoRow label="Location" value={data?.PLANT} valueColor="text-blue-700" />
-                  <InfoRow label="DESIG" value={data?.MANPOWER_DESG} />
+               <InfoRow label="DEPT" value={data?.DEPT} />
             </div>
           </div>
 

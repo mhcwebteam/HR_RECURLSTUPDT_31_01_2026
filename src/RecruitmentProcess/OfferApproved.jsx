@@ -34,7 +34,7 @@ import { ContextData } from '../Context/ContextData';
 import {API_BASE_URL, API_BASE_URLss} from '../Config/Config.jsx';
 import OfferLetterModal from './OfferLetterModal';
 import axiosInstance from '../Config/axiosConfig.jsx';
-
+import dayjs from 'dayjs';
 const OfferApproved = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -92,6 +92,8 @@ const OfferApproved = () => {
         const  payload =
         {
           CHILD_CASEID: rowData.CHILD_CASEID,
+       
+
        
         }
       const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/move-To-OnBoard`,payload,
@@ -319,6 +321,19 @@ console.log("fgfff",ofrList);
                         ),
                       }]
                     : []),
+
+
+                           {
+                                        field: 'CUR_REV_ID',
+                                        headerName: 'Rev ID',
+                                        flex: 1,
+                                        minWidth: 60,
+                                        renderCell: (params) => (
+                                            <Box sx={{ color: '#374151' }}>
+                                                 {params.value || "00"} 
+                                            </Box>
+                                        ),
+                                    },
     {
       field: 'PLANT',
       headerName: 'Plant Name',
@@ -503,13 +518,16 @@ console.log("fgfff",ofrList);
     },
 
 
-
 {
   field: 'joiningDate',
   headerName: 'Date of Joining',
   flex: 1.3,
   minWidth: 170,
-  renderCell: (params) => params.value,
+  renderCell: (params) => {
+    return params.value
+      ? dayjs(params.value).format("DD-MM-YYYY")
+      : "—";
+  },
 }
 
 ,

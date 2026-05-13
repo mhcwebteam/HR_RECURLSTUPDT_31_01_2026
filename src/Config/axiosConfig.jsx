@@ -32,7 +32,7 @@ axiosInstance.interceptors.response.use(
       await Swal.fire({
         icon: 'warning',
         title: 'Session Expired',
-        text: 'Your session has expired. Please login again axiossssssssssssss.',
+        text: 'Your session has expired. Please login again.',
         confirmButtonText: 'OK',
         allowOutsideClick: false
       });

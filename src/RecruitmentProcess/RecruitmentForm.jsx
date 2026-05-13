@@ -1,10 +1,6 @@
 
 
 
-
-
-
-
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Upload, User, Mail, Phone, Briefcase,Eye, BookOpen, Award, Plus, Trash2, GraduationCap, Info, FileUp, RotateCcw, Send } from 'lucide-react';
@@ -20,10 +16,12 @@ const RecruitmentForm = () => {
   const [sameAsPermanent, setSameAsPermanent] = useState(null);
 
 const [statusEdit, setStatusEdit] = useState(null); //
+const [updatedFiles, setUpdatedFiles] = useState([])
 
   // ✅ CORRECT ORDER
   const [formStatus, setFormStatus] = useState('');
-  const isPending = formStatus === 'pending';
+  const isPending = formStatus === 'pending' || formStatus === 'submit';
+  const [removedFiles, setRemovedFiles] = useState([]); // ✅ NEW: Track removed files with their metadata
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",
     PLANT: "",
@@ -37,15 +35,12 @@ const [statusEdit, setStatusEdit] = useState(null); //
     LANG_KNOWN: '',
     MOTHER_TONGUE: '',
     DEPT: '',
-
-    // Permanent Address
     HNO: '',
     CITY: '',
     MANDAL: '',
     DISTRICT: '',
     STATE: '',
     PINCODE: '',
-    // Present Address
     PRESENT_HNO: '',
     PRESENT_CITY: '',
     PRESENT_MANDAL: '',
@@ -102,6 +97,8 @@ const [statusEdit, setStatusEdit] = useState(null); //
     OTHER_FILENAME: null,
     // Files
     AADHAR_PATH: null,
+    AADHAR_DOCID: null, // ✅ Store Aadhaar Doc ID
+    AADHAR_STATUS: null, // ✅ Store Aadhaar Status
     PAN_PATH: null,
     PHOTO: null,
     RESUME_UPLOAD: null,
@@ -122,8 +119,26 @@ const [statusEdit, setStatusEdit] = useState(null); //
 GROUP_DEPT: "",
 RAISER_EMP_ID: "",
 RECRUIT_CYCLE: "",
-HIGHEST_QUA: ""
+HIGHEST_QUA: "",
 
+//  documentMetadata: {
+//   '10TH_FILENAME': { docId: null, status: null, certfi: null },
+//   'INTER_FILENAME': { docId: null, status: null, certfi: null },
+//   'BTECH_FILENAME': { docId: null, status: null, certfi: null },
+//   'PG_FILENAME': { docId: null, status: null, certfi: null },
+//   'PHD_FILENAME': { docId: null, status: null, certfi: null },
+//   'OTHER_FILENAME': { docId: null, status: null, certfi: null },
+//   'AADHAR_PATH': { docId: null, status: null, certfi: null },
+//   'PAN_PATH': { docId: null, status: null, certfi: null },
+//   'UAN_FILE': { docId: null, status: null, certfi: null },
+//   'PHOTO': { docId: null, status: null, certfi: null },
+//   'RESUME_UPLOAD': { docId: null, status: null, certfi: null },   // ✅ fixed key
+//   'payslips': { docId: null, status: null, certfi: null },
+//   'relieving_letter': { docId: null, status: null, certfi: null },
+//   'offer_letter': { docId: null, status: null, certfi: null },
+//   'exp_letter': { docId: null, status: null, certfi: null },
+//   'bank_statements': { docId: null, status: null, certfi: null }
+// }
   });
 
 
@@ -131,8 +146,8 @@ HIGHEST_QUA: ""
   // null = no selection
   const [openSections, setOpenSections] = useState({
     basicInfo: true,
-    education: false,
-    experience: false
+    education: true,
+    experience: true,
   });
   const [experiences, setExperiences] = useState([
     {
@@ -177,7 +192,22 @@ HIGHEST_QUA: ""
   };
 
 
-
+// ✅ ADD THIS before return()
+const responsiveStyles = `
+  @media (max-width: 768px) {
+    .address-grid { flex-direction: column !important; }
+    .address-grid > div { flex: none !important; width: 100% !important; }
+    .edu-table { font-size: 10px !important; }
+    .edu-table th, .edu-table td { padding: 4px !important; }
+    .edu-table input { font-size: 10px !important; height: 26px !important; }
+    .btn-row { flex-direction: column !important; align-items: center !important; }
+    .btn-row button { width: 90% !important; justify-content: center !important; }
+  }
+  @media (max-width: 480px) {
+    .edu-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+    .edu-table { min-width: 560px !important; }
+  }
+`;
 
   const fieldValidations = {
                                            
@@ -197,95 +227,165 @@ HIGHEST_QUA: ""
              PHD_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),  
               OTHER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
              OTHER_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),
-               COMPANY_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+               COMPANY_NAME: (val) => val.replace(/[^a-zA-Z0-9 ]/g, ''),
              DESIGNATION: (val) => val.replace(/[^a-zA-Z ]/g, ''),    
 }; 
 
-  const EmpVerify = async () => {
-    if (!userToken?.token) return;
+const EmpVerify = async () => {
+  if (!userToken?.token) return;
 
-    try {
-      const response = await axiosInstance.get(`${API_BASE_URL}/emp-verify-drftdata`, {
-        headers: { Authorization: `Bearer ${userToken.token}` },
-      });
+  try {
+    const response = await axiosInstance.get(`${API_BASE_URL}/emp-verify-drftdata`, {
+      headers: { Authorization: `Bearer ${userToken.token}` },
+    });
 
-      console.log("Draft Data Response:", response);
+    console.log("Draft Data Response:", response);
 
-      if (response.data?.success && response.data?.data) {
-        // Filter records for this specific candidate that are drafts
-        const userCaseId = userToken?.Manpower?.CHILD_CASEID || userToken?.CHILD_CASEID;
+    if (response.data?.success && response.data?.data) {
+      const userCaseId = userToken?.Manpower?.CHILD_CASEID || userToken?.CHILD_CASEID;
 
+      const draftRecords = response.data.data.filter(
+        item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
+          (item.status?.toLowerCase() === "draft" || 
+           item.status?.toLowerCase() === "pending" ||
+           item.Status_Edit === "Edit")
+      );
 
-         const draftRecords = response.data.data.filter(
-  item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
-    (
-      item.status?.toLowerCase() === "draft" || 
-      item.status?.toLowerCase() === "pending" ||
-      item.Status_Edit === "Edit"  // ✅ ADD THIS LINE ONLY
-    )
-);
+      if (draftRecords.length > 0) {
+        const draftData = draftRecords[0];
+        setFormStatus(draftData.status?.toLowerCase() || '');
+        setStatusEdit(draftData.Status_Edit || null);
 
-console.log("hhhhhhhhhhhhhhhhhh",draftRecords);
-        // const draftRecords = response.data.data.filter(
-        //   item => String(item.child_caseid || '').trim() == String(userCaseId || '').trim() &&
-        //     (item.status?.toLowerCase() == "draft" || item.status?.toLowerCase() == "pending")
-        // );
-        console.log(draftRecords, "Filtered draft records");
+        const documents = draftData.documents || {};
+        const documentMetadata = {};
 
-        if (draftRecords.length > 0) {
-          // ✅ Get the FIRST record from the filtered array
-          const draftData = draftRecords[0];
+        // ----- MAPPING FOR CERTIFICATE FILES (actual file paths) -----
+        const certificateMapping = {
+          // Education
+          '10th_certi': '10TH_FILENAME',
+          'Inter_certi': 'INTER_FILENAME',
+          'Gradu_certi': 'BTECH_FILENAME',
+          'PG_FILENAME': 'PG_FILENAME',
+          'PHD_FILENAME': 'PHD_FILENAME',
+          'OTHER_FILENAME': 'OTHER_FILENAME',
+          // ID
+          'Aadhar_certi': 'AADHAR_PATH',
+          'Pan_certi': 'PAN_PATH',
+          'UAN_FILE': 'UAN_FILE',
+          'photo': 'PHOTO',
+          'RESUME_UPLOAD': 'RESUME_UPLOAD',
+          // Experience
+          'payslips': 'payslips',
+          'relieving_letter': 'relieving_letter',
+          'offer_letter': 'offer_letter',
+          'exp_letter': 'exp_letter',
+          'bank_statements': 'bank_statements'
+        };
 
-          console.log("Using draft data:", draftData);
+        // ----- MAPPING FOR DocId SUFFIXES (e.g., 'UAN_DocId' -> 'UAN_FILE') -----
+        const docIdToField = {
+          'Aadhar': 'AADHAR_PATH',
+          'pan': 'PAN_PATH',          // matches "pan_DocId"
+          'UAN': 'UAN_FILE',          // matches "UAN_DocId"
+          'Tenth': '10TH_FILENAME',
+          'Inter': 'INTER_FILENAME',
+          'grad': 'BTECH_FILENAME',   // matches "grad_DocId"
+          'Pg': 'PG_FILENAME',
+          'PHD_FILENAME': 'PHD_FILENAME',
+          'OTHER_FILENAME': 'OTHER_FILENAME',
+          'RESUME': 'RESUME_UPLOAD',  // matches "RESUME_DocId"
+          'photo': 'PHOTO',
+          'payslips': 'payslips',
+          'bank_statements': 'bank_statements',
+          'relieving_letter': 'relieving_letter',
+          'offer_letter': 'offer_letter',
+          'exp_letter': 'exp_letter'
+        };
 
-          setFormStatus(draftData.status?.toLowerCase() || '');
-setStatusEdit(draftData.Status_Edit || null); 
+        // 1️⃣ Store certificate file paths
+        Object.keys(certificateMapping).forEach(certKey => {
+          const fieldName = certificateMapping[certKey];
+          if (documents[certKey]) {
+            if (!documentMetadata[fieldName]) documentMetadata[fieldName] = {};
+            documentMetadata[fieldName].certfi = documents[certKey];
+          }
+        });
 
-          // Map API fields to form fields
-          setFormData(prev => ({
-            ...prev,
-            CHILD_CASEID: draftData.child_caseid || '',
-           PLANT: draftData.PLANT || '',
-            FIRST_NAME: draftData.name || '',
-            EMAIL: draftData.email || '',
-            HIGHEST_QUA: draftData.HIGHEST_QUA || '',
-            PHONE_NUMBER: draftData.phone_number || '',
-            ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
-            GENDER: draftData.GENDER || '',
-            MARITAL_STATUS: draftData.MARITAL_STATUS || '',
-            LANG_KNOWN: draftData.LANG_KNOWN || '',
-            MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
-            DEPT: draftData.DEPT || '',
-            HNO: draftData.HNO || '',
-            CITY: draftData.CITY || '',
-            MANDAL: draftData.MANDAL || '',
-            DISTRICT: draftData.DISTRICT || '',
-            STATE: draftData.STATE || '',
-            PINCODE: draftData.PINCODE || '',
-            PRESENT_HNO: draftData.PRESENT_HNO || '',
-            PRESENT_CITY: draftData.PRESENT_CITY || '',
-            PRESENT_MANDAL: draftData.PRESENT_MANDAL || '',
-            PRESENT_DISTRICT: draftData.PRESENT_DISTRICT || '',
-            PRESENT_STATE: draftData.PRESENT_STATE || '',
-            PRESENT_PINCODE: draftData.PRESENT_PINCODE || '',
-            AADHAR_NUM: draftData.aadhar_number || '',
-            PAN_NUM: draftData.pan_number || '',
-            UAN_NUM: draftData.UAN_NUM || '',
+        // 2️⃣ Extract DocId and Status using docIdToField
+        Object.keys(documents).forEach(key => {
+          if (key.endsWith('_DocId')) {
+            const baseName = key.replace('_DocId', '');
+            const fieldName = docIdToField[baseName];
+            if (fieldName) {
+              if (!documentMetadata[fieldName]) documentMetadata[fieldName] = {};
+              documentMetadata[fieldName].docId = documents[key];
+              console.log(`✅ Mapped ${key}=${documents[key]} → ${fieldName}.docId`);
+            } else {
+              console.warn(`⚠️ No mapping for DocId key: ${key}`);
+            }
+          }
+          if (key.endsWith('_Status')) {
+            const baseName = key.replace('_Status', '');
+            const fieldName = docIdToField[baseName];
+            if (fieldName) {
+              if (!documentMetadata[fieldName]) documentMetadata[fieldName] = {};
+              documentMetadata[fieldName].status = documents[key];
+            }
+          }
+        });
 
-            // ✅ Safely access documents with optional chaining
-            '10TH_FILENAME': draftData.documents?.['10th_certi'] || '',
-            INTER_FILENAME: draftData.documents?.Inter_certi || '',
-            UAN_FILE: draftData.documents?.UAN_FILE || '',
-            AADHAR_PATH: draftData.documents?.Aadhar_certi || '',
-            PAN_PATH: draftData.documents?.Pan_certi || '',
-            RESUME_UPLOAD: draftData.documents?.RESUME_UPLOAD || '',
-            PHOTO: draftData.documents?.photo || '',
-            BTECH_FILENAME: draftData.documents?.Gradu_certi || '',
-            PG_FILENAME: draftData.documents?.Pg_certi || '',
-            PHD_FILENAME: draftData.documents?.PHD_FILENAME || '',
-            OTHER_FILENAME: draftData.documents?.OTHER_FILENAME || '',
+        console.log("Final Document Metadata:", documentMetadata);
 
-            DOB_ASPER_ADHAR: draftData.DOB_ASPER_ADHAR || '',
+        // Update formData
+        setFormData(prev => ({
+          ...prev,
+          CHILD_CASEID: draftData.child_caseid || '',
+          PLANT: draftData.PLANT || '',
+          FIRST_NAME: draftData.name || '',
+          EMAIL: draftData.email || '',
+          HIGHEST_QUA: draftData.HIGHEST_QUA || '',
+          PHONE_NUMBER: draftData.phone_number || '',
+          ORIGINAL_DOB: draftData.ORIGINAL_DOB || '',
+          GENDER: draftData.GENDER || '',
+          MARITAL_STATUS: draftData.MARITAL_STATUS || '',
+          LANG_KNOWN: draftData.LANG_KNOWN || '',
+          MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
+          DEPT: draftData.DEPT || '',
+          HNO: draftData.HNO || '',
+          CITY: draftData.CITY || '',
+          MANDAL: draftData.MANDAL || '',
+          DISTRICT: draftData.DISTRICT || '',
+          STATE: draftData.STATE || '',
+          PINCODE: draftData.PINCODE || '',
+          PRESENT_HNO: draftData.PRESENT_HNO || '',
+          PRESENT_CITY: draftData.PRESENT_CITY || '',
+          PRESENT_MANDAL: draftData.PRESENT_MANDAL || '',
+          PRESENT_DISTRICT: draftData.PRESENT_DISTRICT || '',
+          PRESENT_STATE: draftData.PRESENT_STATE || '',
+          PRESENT_PINCODE: draftData.PRESENT_PINCODE || '',
+          AADHAR_NUM: draftData.aadhar_number || '',
+          PAN_NUM: draftData.pan_number || '',
+          UAN_NUM: draftData.UAN_NUM || '',
+
+          // Document files (real paths or null)
+          '10TH_FILENAME': documents['10th_certi'] || null,
+          'INTER_FILENAME': documents['Inter_certi'] || null,
+          'BTECH_FILENAME': documents['Gradu_certi'] || null,
+          'PG_FILENAME': documents['PG_FILENAME'] || null,
+          'PHD_FILENAME': documents['PHD_FILENAME'] || null,
+          'OTHER_FILENAME': documents['OTHER_FILENAME'] || null,
+          'UAN_FILE': documents['UAN_FILE'] || null,
+          'AADHAR_PATH': documents['Aadhar_certi'] || null,
+          'PAN_PATH': documents['Pan_certi'] || null,
+          'RESUME_UPLOAD': documents['RESUME_UPLOAD'] || null,
+          'PHOTO': documents['photo'] || null,
+          'payslips': documents['payslips'] || null,
+          'relieving_letter': documents['relieving_letter'] || null,
+          'offer_letter': documents['offer_letter'] || null,
+          'exp_letter': documents['exp_letter'] || null,
+          'bank_statements': documents['bank_statements'] || null,
+
+           DOB_ASPER_ADHAR: draftData.DOB_ASPER_ADHAR || '',
             ESI_NUM: draftData.ESI_NUM || '',
             SRC_TYPE: draftData.SRC_TYPE || '',
             SRC_REFER_NAME: draftData.SRC_REFER_NAME || '',
@@ -323,66 +423,48 @@ setStatusEdit(draftData.Status_Edit || null);
             CURRENT_CTC: draftData.current_ctc || '',
             EXP_CTC: draftData.expected_ctc || '',
             AGE: draftData.AGE || '',
-      EMP_COMP_ID: draftData.EMP_COMP_ID || '',
+           EMP_COMP_ID: draftData.EMP_COMP_ID || '',
             TOTAL_EXP: draftData.TOTAL_EXP || '',
-            payslips: draftData.documents?.payslips || '',
-            relieving_letter: draftData.documents?.relieving_letter || '',
-            offer_letter: draftData.documents?.offer_letter || '',
-            exp_letter: draftData.documents?.exp_letter || '',
-            bank_statements: draftData.documents?.bank_statements || '',
+       
 
+          documentMetadata: { ...prev.documentMetadata, ...documentMetadata }
+        }));
+
+        // Address and experience data remain unchanged
+        if (draftData.address_status === "YES") setSameAsPermanent(true);
+        else if (draftData.address_status === "NO") setSameAsPermanent(false);
+
+        if (draftData.experienceData?.length) {
+          const mappedExperiences = draftData.experienceData.map((exp, index) => ({
+            id: Date.now() + index,
+            COMPANY_NAME: exp.COMPANY_NAME || '',
+            COMPANY_STAGES: exp.COMPANY_STAGES || (index === 0 ? "0" : "1"),
+            DESIGNATION: exp.DESIGNATION || '',
+            FROM_DATE: exp.START_DATE || '',
+            TO_DATE: exp.END_DATE || '',
+            DURATION: exp.EXPERIENCE_YEARS || '',
+            EMP_COMP_ID: exp.EMP_COMP_ID || '',
+            NOTICE_PERIOD: exp.noticePeriod || '',
+            isCurrent: exp.COMPANY_STAGES === "0" || index === 0,
+            CURRENT_CTC: '',
+            EXP_CTC: '',
+            PAYSLIPS: [],
+            BANK_STATEMENTS: [],
+            OFFER_LETTER: null,
+            RELIEVING_LETTER: null,
+            EXP_LETTER: null,
+            offer_letter: null,
+            relieving_letter: null
           }));
-          setFormStatus(draftData.status?.toLowerCase() || '');
-          // Set sameAsPermanent based on address_status
-          if (draftData.address_status === "YES") {
-            setSameAsPermanent(true);
-          } else if (draftData.address_status === "NO") {
-            setSameAsPermanent(false);
-          }
-
-
-
-          // Load experience data if available
-     if (draftData.experienceData && draftData.experienceData.length > 0) {
-  const mappedExperiences = draftData.experienceData.map((exp, index) => ({
-    id: Date.now() + index,
-    COMPANY_NAME: exp.COMPANY_NAME || '',
-    COMPANY_STAGES: exp.COMPANY_STAGES || (index == 0 ? "0" : "1"),
-    DESIGNATION: exp.DESIGNATION || '',
-    FROM_DATE: exp.START_DATE || '',
-    TO_DATE: exp.END_DATE || '',
-    DURATION: exp.EXPERIENCE_YEARS || '',
-    EMP_COMP_ID: exp.EMP_COMP_ID || '', // ✅ This ensures the property exists
-    NOTICE_PERIOD: exp.noticePeriod || '',
-    isCurrent: exp.COMPANY_STAGES == "0" || index == 0,
-    
-    // ✅ Add these missing properties with default values
-    CURRENT_CTC: '',
-    EXP_CTC: '',
-    PAYSLIPS: [],
-    BANK_STATEMENTS: [],
-    OFFER_LETTER: null,
-    RELIEVING_LETTER: null,
-    EXP_LETTER: null,
-    offer_letter: null,
-    relieving_letter: null
-  }));
-
-  setExperiences(mappedExperiences);
-}
-        } else {
-          console.log("No draft records found for candidate:", userToken?.Manpower?.CHILD_CASEID);
+          setExperiences(mappedExperiences);
         }
       }
-    } catch (err) {
-      console.error("Error fetching verify data", err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load draft data',
-      });
     }
-  };
+  } catch (err) {
+    console.error("Error fetching verify data", err);
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load draft data' });
+  }
+};
 
   useEffect(() => {
     EmpVerify();
@@ -534,121 +616,186 @@ const handleInputChange = (e) => {
 };
 
 
+const handleFileChange = (e) => {
+  if (isPending) return;
+  const { name, files } = e.target;
+  const file = files[0];
 
+  if (!file) return;
 
-//   const handleInputChange = (e) => {
-//     if (isPending) return;
-//     const { name, value } = e.target;
-// const sanitized = fieldValidations[name] ? fieldValidations[name](value) : value;
-//     if (name === "DOB_ASPER_ADHAR") {
-//       const age = calculateAge(value);
-//       setFormData((prev) => ({
-//         ...prev,
-//         DOB_ASPER_ADHAR: value,
-//         AGE: age,
-//       }));
-//     } else {
-//         setFormData((prev) => ({
-//             ...prev,
-//             [name]: sanitized,  // ✅ sanitized value
-//         }));
+  // clear error on change
+  if (showErrors && errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: "" }));
+  }
+
+  // ---------- CONFIG ----------
+  const photoFields = ["PHOTO"];
+  const isPhoto = photoFields.includes(name);
+
+  const maxPhotoSize = 50 * 1024; // 50 KB
+  const maxPdfSize = 200 * 1024; // 200 KB
+  const maxLargePdfSize = 500 * 1024; // 500 KB
+
+  // ---------- PHOTO VALIDATION ----------
+  if (isPhoto) {
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      Swal.fire({
+        title: "Invalid File Type",
+        text: "Only JPG, JPEG, or PNG images are allowed",
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > maxPhotoSize) {
+      Swal.fire({
+        title: "File Too Large",
+        text: "Photo size must be less than 50 KB",
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+  }
+
+  // ---------- PDF VALIDATION ----------
+  if (!isPhoto) {
+    if (file.type !== "application/pdf") {
+      Swal.fire({
+        title: "Invalid File Type",
+        text: "Only PDF files are allowed",
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    const maxSize =
+      name === "payslips" || name === "bank_statements"
+        ? maxLargePdfSize
+        : maxPdfSize;
+
+    if (file.size > maxSize) {
+      Swal.fire({
+        title: "File Too Large",
+        text: `File size must be less than ${maxSize === maxLargePdfSize ? "500kb" : "200kb"}`,
+        icon: "error",
+      });
+      e.target.value = "";
+      return;
+    }
+  }
+
+  // ✅ Get existing file and metadata dynamically
+  const oldFilePath = formData[name];
+  
+  // Get metadata from documentMetadata object (new structure)
+  let oldDocId = null;
+  let oldStatus = null;
+  let oldCertfi = null;
+  
+  if (formData.documentMetadata && formData.documentMetadata[name]) {
+    oldDocId = formData.documentMetadata[name].docId;
+    oldStatus = formData.documentMetadata[name].status;
+    oldCertfi = formData.documentMetadata[name].certfi;
+  }
+  
+  // Also check legacy flat fields for backward compatibility
+  const legacyDocId = formData[`${name}_DOCID`];
+  const legacyStatus = formData[`${name}_STATUS`];
+  const legacyCertfi = formData[`${name}_CERTFI`];
+  
+  if (legacyDocId) oldDocId = legacyDocId;
+  if (legacyStatus) oldStatus = legacyStatus;
+  if (legacyCertfi) oldCertfi = legacyCertfi;
+
+  // ✅ If there's an existing file, track it as an update
+  if (oldFilePath && typeof oldFilePath === 'string') {
+    // This is an update operation - track the old file being replaced
+    setUpdatedFiles(prev => [...prev, {
+      fieldName: name,
+      oldFilePath: oldFilePath,
+      oldDocId: oldDocId,
+      oldStatus: oldStatus,
+      oldCertfi: oldCertfi,
+      newFile: file,
+      updatedAt: new Date().toISOString()
+    }]);
+
+    // Also add to removed files
+    setRemovedFiles(prev => [...prev, {
+     fieldName: name,
+      filePath: oldFilePath,
+      docID: oldDocId,
+      file_status: oldStatus,
+      certfi: oldCertfi,
+      removedAt: new Date().toISOString()
+    }]);
+  }
+
+  // ✅ When uploading new file, clear ALL associated metadata dynamically
+  setFormData(prev => {
+    const updated = { ...prev, [name]: file };
     
-//     }
-
-//     if (showErrors && errors[name]) {
-//       setErrors(prev => ({ ...prev, [name]: '' }));
-//     }
-//   };
-
-
-  const handleFileChange = (e) => {
-    if (isPending) return;
-    const { name, files } = e.target;
-    const file = files[0];
-
-
-    if (!file) return;
-
-    // clear error on change
-    if (showErrors && errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+    // Clear metadata from documentMetadata object
+    if (prev.documentMetadata) {
+      updated.documentMetadata = {
+        ...prev.documentMetadata,
+        [name]: {
+          docId: null,
+          status: null,
+          certfi: null
+        }
+      };
     }
+    
+    // Clear legacy flat fields if they exist
+    const docIdField = `${name}_DOCID`;
+    const statusField = `${name}_STATUS`;
+    const certfiField = `${name}_CERTFI`;
+    
+    if (prev[docIdField] !== undefined) updated[docIdField] = null;
+    if (prev[statusField] !== undefined) updated[statusField] = null;
+    if (prev[certfiField] !== undefined) updated[certfiField] = null;
+    
+    return updated;
+  });
+};
 
-    // ---------- CONFIG ----------
-    const photoFields = ["PHOTO"];
-    const isPhoto = photoFields.includes(name);
 
-    const maxPhotoSize = 50 * 1024; // 50 KB
-    const maxPdfSize = 200 * 1024; // 1 MB
-    const maxLargePdfSize = 500 * 1024; // 2
 
-    // ---------- PHOTO VALIDATION ----------
-    if (isPhoto) {
-      const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+const handleRemoveFile = (name, filePath = null, verificationId = null, fileStatus = null, certfi = null) => {
+  // Prefer docID – it's the reliable key for deletion
 
-      if (!allowedImageTypes.includes(file.type)) {
-        Swal.fire({
-          title: "Invalid File Type",
-          text: "Only JPG, JPEG, or PNG images are allowed",
-          icon: "error",
-        });
-        e.target.value = "";
-        return;
-      }
 
-      if (file.size > maxPhotoSize) {
-        Swal.fire({
-          title: "File Too Large",
-          text: "Photo size must be less than 50 KB",
-          icon: "error",
-        });
-        e.target.value = "";
-        return;
-      }
+  if (verificationId) {
+    setRemovedFiles(prev => [...prev, {
+      Doc_Type: name,
+      verification_Id: verificationId,
+      removedAt: new Date().toISOString()
+    }]);
+  } else if (filePath && filePath.includes('/')) {
+    // Fallback to real file path if docID missing (should not happen)
+    setRemovedFiles(prev => [...prev, {
+      Doc_Type: name,
+      filePath: filePath,
+      removedAt: new Date().toISOString()
+    }]);
+  }
+  
+  // Clear the file and its metadata from formData
+  setFormData(prev => ({
+    ...prev,
+    [name]: null,
+    documentMetadata: {
+      ...prev.documentMetadata,
+      [name]: { docId: null, status: null, certfi: null }
     }
-
-    // ---------- PDF VALIDATION ----------
-    if (!isPhoto) {
-      if (file.type !== "application/pdf") {
-        Swal.fire({
-          title: "Invalid File Type",
-          text: "Only PDF files are allowed",
-          icon: "error",
-        });
-        e.target.value = "";
-        return;
-      }
-
-      const maxSize =
-        name === "PAYSLIPS" || name === "BANK_STATEMENTS"
-          ? maxLargePdfSize
-          : maxPdfSize;
-
-      if (file.size > maxSize) {
-        Swal.fire({
-          title: "File Too Large",
-          text: `File size must be less than ${maxSize === maxLargePdfSize ? "500kb" : "200kb"
-            }`,
-          icon: "error",
-        });
-        e.target.value = "";
-        return;
-      }
-    }
-
-    // ---------- SAVE FILE ----------
-    setFormData(prev => ({ ...prev, [name]: file }));
-  };
-
-
-
-  console.log(formData, "555555555555555")
-
-
-
-  const handleRemoveFile = (name) => {
-    setFormData(prev => ({ ...prev, [name]: null }));
-  };
+  }));
+};
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({
@@ -657,7 +804,7 @@ const handleInputChange = (e) => {
     }));
   };
 const experienceFieldValidations = {
-    COMPANY_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),
+    COMPANY_NAME: (val) => val.replace(/[^a-zA-Z0-9 ]/g, ''),
     DESIGNATION: (val) => val.replace(/[^a-zA-Z ]/g, ''),
 };
 const handleExperienceChange = (id, field, value) => {
@@ -776,14 +923,15 @@ if (!formData.FIRST_NAME?.trim()) {
     Object.entries(formData).forEach(([key, value]) => {
       if (!value) return;
 
-
-
       if (value instanceof File) {
         data.append(key, value);
-       
       } else if (typeof value == "string") {
-     
         data.append(key, value);
+      } else if (key === "AADHAR_DOCID" || key === "AADHAR_STATUS") {
+        // Send numeric/other values as strings
+        if (value !== null && value !== undefined) {
+          data.append(key, String(value));
+        }
       }
     });
 
@@ -793,6 +941,16 @@ if (!formData.FIRST_NAME?.trim()) {
     data.append("address_status", sameAsPermanent ? "YES" : "NO");
     if (formData.AGE) data.append("AGE", String(formData.AGE));
 
+    // ✅ Add removed files information
+  // if (removedFiles.length > 0) {
+  data.append('removed_files', JSON.stringify(removedFiles));
+// }
+
+if (updatedFiles.length > 0) {
+  data.append('updated_files', JSON.stringify(updatedFiles));
+}
+
+// Also send document metadata
 
 
 // Inside handleSubmit and handleDraft functions, replace the experiences loop with:
@@ -833,6 +991,8 @@ experiences.forEach((exp, index) => {
     });
 
     if (response.data.success) {
+      // ✅ Clear removed files after successful save
+      setRemovedFiles([]);
       Swal.fire({
         title: "Draft Saved!",
         text: "Your form has been saved as draft successfully.",
@@ -1209,11 +1369,6 @@ if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
        scrollToError(firstErrorField);
       }
 
-      // Swal.fire({
-      //   title: "Validation Error",
-      //   text: "Please fill all required fields correctly",
-      //   icon: "error",
-      // });
       return;
     }
 
@@ -1249,14 +1404,15 @@ if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
     Object.entries(formData).forEach(([key, value]) => {
       if (!value) return;
 
-
-
       if (value instanceof File) {
         data.append(key, value);
-       
       } else if (typeof value == "string") {
-      
         data.append(key, value);
+      } else if (key === "AADHAR_DOCID" || key === "AADHAR_STATUS") {
+        // Send numeric/other values as strings
+        if (value !== null && value !== undefined) {
+          data.append(key, String(value));
+        }
       }
     });
 
@@ -1266,6 +1422,10 @@ if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
    data.append('address_status', sameAsPermanent === true ? "YES" : sameAsPermanent === false ? "NO" : "");
     if (formData.AGE) data.append("AGE", String(formData.AGE));
 
+    // ✅ Add removed files information
+    if (removedFiles.length > 0) {
+      data.append('removed_files', JSON.stringify(removedFiles));
+    }
 
 
   
@@ -1303,6 +1463,8 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
     });
 
      if (response.data.success) {
+        // ✅ Clear removed files after successful save
+        setRemovedFiles([]);
         await Swal.fire({
           title: "Success",
           text: "Recruitment data updated successfully",
@@ -1310,7 +1472,7 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
           timer: 1500,
           showConfirmButton: false,
         });
-resetForm();
+// resetForm();
   try {
       const LogoutResponse = await fetch(`${API_BASE_URL}/logout`, {
           method: "POST",
@@ -1410,6 +1572,8 @@ resetForm();
       OTHER_PASSED_YEAR: '',
       OTHER_FILENAME: null,
       AADHAR_PATH: null,
+      AADHAR_DOCID: null,
+      AADHAR_STATUS: null,
       PAN_PATH: null,
       PHOTO: null,
       RESUME_UPLOAD: null,
@@ -1440,6 +1604,7 @@ resetForm();
     setSameAsPermanent(null);
    setErrors({});
     setShowErrors(false);
+    setRemovedFiles([]); // ✅ Clear removed files on reset
   };
 
   const sectionHeading = {
@@ -1466,20 +1631,61 @@ resetForm();
   };
 const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPending, onOpenFile }) => {
   const inputRef = React.useRef();
-
-  const getFileNameFromPath = (path) => {
-    if (!path) return null;
-    if (typeof path === 'string') {
-      const parts = path.split('/');
-      return parts[parts.length - 1];
-    }
-    return path?.name;
+  
+  // ✅ Get metadata from documentMetadata
+  const metadata = formData.documentMetadata?.[name] || {
+    docId: null,
+    status: null,
+    certfi: null
   };
 
+const getFileNameFromPath = (path) => {
+  if (!path) return null;
+
+  let fullName = '';
+  if (typeof path === 'string') {
+    const parts = path.split('/');
+    fullName = parts[parts.length - 1];
+  } else {
+    fullName = path?.name || '';
+  }
+
+  if (!fullName) return null;
+
+  const dotIndex = fullName.lastIndexOf('.');
+  const ext = dotIndex !== -1 ? fullName.slice(dotIndex) : '';      // e.g. ".pdf"
+  const baseName = dotIndex !== -1 ? fullName.slice(0, dotIndex) : fullName;
+
+  // ✅ Show up to 6 chars of base name + extension
+ const truncated = baseName.length > 15
+    ? baseName.slice(0, 15) + ext        // e.g. "resume.pdf", "aadhar.pdf"
+    : fullName;                       // short names shown as-is
+
+  return truncated;
+};
+
   const handleChange = (e) => onChange(e);
+  
   const handleRemove = () => {
     if (inputRef.current) inputRef.current.value = '';
-    onRemove(name);
+    
+    // ✅ IMPORTANT: Use the ACTUAL file path from selectedFile or metadata
+    let filePath = null;
+    let docId = metadata?.docId || null;
+    let status = metadata?.status || null;
+    let certfi = metadata?.certfi || null;
+
+    // Priority: selectedFile (if string) > certfi > null
+    if (selectedFile && typeof selectedFile === 'string') {
+      filePath = selectedFile;  // This is the actual file path from server
+    } else if (certfi) {
+      filePath = certfi;  // Fallback to certfi
+    } else if (selectedFile && selectedFile instanceof File) {
+      filePath = selectedFile.name;
+    }
+    
+    console.log(`Removing ${name}:`, { filePath, docId, status, certfi });
+    onRemove(name, filePath, docId, status, certfi);
   };
 
   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
@@ -1489,9 +1695,8 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
       <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
         {label}
       </label>
-      
+
       {!isPending ? (
-        // Normal mode: upload and view buttons
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
             <input
@@ -1502,124 +1707,34 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
               onChange={handleChange}
               style={{ display: 'none' }}
             />
-            <span
-              style={{
-                padding: '5px 10px',
-                background: 'linear-gradient(to right, #dbeafe, #bfdbfe)',
-                color: '#1e40af',
-                borderRadius: '6px',
-                fontWeight: '600',
-                fontSize: '11px',
-              }}
-            >
+            <span style={{ padding: '5px 10px', background: 'linear-gradient(to right, #dbeafe, #bfdbfe)', color: '#1e40af', borderRadius: '6px', fontWeight: '600', fontSize: '11px' }}>
               Choose File
             </span>
           </label>
-          
+
           {selectedFile && (
             <>
-              <button
-                type="button"
-                onClick={() => onOpenFile(selectedFile)}
-                style={{
-                  padding: '5px 10px',
-                  background: 'linear-gradient(to right, #6fb6ed, #76b2ee)',
-                  color: 'white',
-                  borderRadius: '6px',
-                  fontWeight: '600',
-                  fontSize: '11px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                   pointerEvents: 'auto',   // ← ADD
-    position: 'relative',    // ← ADD
-    zIndex: 10,              // ← ADD
-                }}
-              >
-               <span>
-  <Eye size={12} color="#1e40af" strokeWidth={3} />
-</span>
+              <button type="button" onClick={() => onOpenFile(selectedFile)} style={{ padding: '5px 10px', background: 'linear-gradient(to right, #6fb6ed, #76b2ee)', color: 'white', borderRadius: '6px', fontWeight: '600', fontSize: '11px', border: 'none', cursor: 'pointer' }}>
+                <Eye size={12} color="#1e40af" strokeWidth={3} />
               </button>
               
-              <button
-                type="button"
-                onClick={handleRemove}
-                style={{
-                  background: '#c84141',
-                  color: '#f6efef',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '9px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <button type="button" onClick={handleRemove} style={{ background: '#c84141', color: '#f6efef', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 ✕
               </button>
               
-              <span
-                style={{
-                  color: '#1e40af',
-                  fontSize: '10px',
-                  fontWeight: '500',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '140px',
-                }}
-              >
+              <span style={{ color: '#1e40af', fontSize: '10px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
                 {fileName || 'Selected file'}
               </span>
             </>
           )}
         </div>
       ) : (
-        
         selectedFile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
-            <button
-              type="button"
-              onClick={() => onOpenFile(selectedFile)}
-              style={{
-                padding: '4px 12px',
-                background: 'linear-gradient(to right, #7baaeb, #6998e9)',
-                color: 'white',
-                borderRadius: '6px',
-                fontWeight: '600',
-                fontSize: '11px',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                 pointerEvents: 'auto',   // ← ADD
-    position: 'relative',    // ← ADD
-    zIndex: 10,              // ← ADD
-              }}
-            >
-              <span>
-  <Eye size={12} color="#1e40af" strokeWidth={3} />
-</span>
+            <button type="button" onClick={() => onOpenFile(selectedFile)} style={{ padding: '4px 12px', background: 'linear-gradient(to right, #7baaeb, #6998e9)', color: 'white', borderRadius: '6px', fontWeight: '600', fontSize: '11px', border: 'none', cursor: 'pointer' }}>
+              <Eye size={12} color="#1e40af" strokeWidth={3} />
             </button>
-            <span
-              style={{
-                color: '#1e40af',
-                fontSize: '9px',
-                fontWeight: '500',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '140px',
-              }}
-            >
-              {fileName || 'File uploaded'}
-            </span>
+            <span style={{ color: '#1e40af', fontSize: '9px', fontWeight: '500' }}>{fileName || 'File uploaded'}</span>
           </div>
         )
       )}
@@ -1628,167 +1743,58 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
     </div>
   );
 };
-// const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPending, onOpenFile }) => {
-//   const inputRef = React.useRef();
-
-//   const getFileNameFromPath = (path) => {
-//     if (!path) return null;
-//     if (typeof path === 'string') {
-//       const parts = path.split('/');
-//       return parts[parts.length - 1];
-//     }
-//     return path?.name;
-//   };
-
-//   const handleChange = (e) => onChange(e);
-//   const handleRemove = () => {
-//     if (inputRef.current) inputRef.current.value = '';
-//     onRemove(name);
-//   };
-
-//   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
-
-//   return (
-//     <div id={name} ref={(ele) => registerRef(name, ele)}>
-//       {!isPending ? (
-//         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-//           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-//             <label style={{ cursor: 'pointer' }}>
-//               <input
-//                 ref={inputRef}
-//                 type="file"
-//                 name={name}
-//                 accept="application/pdf"
-//                 onChange={handleChange}
-//                 style={{ display: 'none' }}
-//               />
-//               <span
-//                 style={{
-//                   padding: '4px 8px',
-//                   background: selectedFile ? '#10b981' : '#3b82f6',
-//                   color: 'white',
-//                   borderRadius: '4px',
-//                   fontSize: '10px',
-//                   fontWeight: '600',
-//                   display: 'inline-block',
-//                   cursor: 'pointer',
-//                 }}
-//               >
-//                 {selectedFile ? '📎 Replace' : '📁 Upload'}
-//               </span>
-//             </label>
-            
-//             {selectedFile && (
-//               <>
-//                 <button
-//                   type="button"
-//                   onClick={() => onOpenFile(selectedFile)}
-//                   style={{
-//                     padding: '4px 8px',
-//                     background: '#059669',
-//                     color: 'white',
-//                     borderRadius: '4px',
-//                     fontSize: '10px',
-//                     fontWeight: '600',
-//                     border: 'none',
-//                     cursor: 'pointer',
-//                   }}
-//                 >
-//                   View
-//                 </button>
-                
-//                 <button
-//                   type="button"
-//                   onClick={handleRemove}
-//                   style={{
-//                     background: '#ef4444',
-//                     color: 'white',
-//                     border: 'none',
-//                     borderRadius: '50%',
-//                     width: '18px',
-//                     height: '18px',
-//                     fontSize: '9px',
-//                     cursor: 'pointer',
-//                     display: 'flex',
-//                     alignItems: 'center',
-//                     justifyContent: 'center',
-//                     padding: 0,
-//                   }}
-//                 >
-//                  ✕
-//                 </button>
-//               </>
-//             )}
-//           </div>
-          
-//           {selectedFile && (
-//             <span
-//               style={{
-//                 fontSize: '9px',
-//                 color: '#1e40af',
-//                 maxWidth: '100px',
-//                 overflow: 'hidden',
-//                 textOverflow: 'ellipsis',
-//                 whiteSpace: 'nowrap',
-//                 textAlign: 'center',
-//               }}
-//             >
-//               {fileName}
-//             </span>
-//           )}
-//         </div>
-//       ) : (
-//         // Pending/View mode
-//         selectedFile && (
-//           <div style={{ textAlign: 'center' }}>
-//             <button
-//               type="button"
-//               onClick={() => onOpenFile(selectedFile)}
-//               style={{
-//                 padding: '4px 8px',
-//                 background: '#059669',
-//                 color: 'white',
-//                 borderRadius: '4px',
-//                 fontSize: '10px',
-//                 fontWeight: '600',
-//                 border: 'none',
-//                 cursor: 'pointer',
-//                 display: 'inline-flex',
-//                 alignItems: 'center',
-//                 gap: '4px',
-//               }}
-//             >
-//               <span>👁️</span> View
-//             </button>
-//             <div style={{ fontSize: '9px', color: '#1e40af', marginTop: '2px' }}>
-//               {fileName}
-//             </div>
-//           </div>
-//         )
-//       )}
-      
-//       {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px', textAlign: 'center' }}>{error}</p>}
-//     </div>
-//   );
-// };
 
 
 const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPending, onOpenFile }) => {
   const inputRef = React.useRef();
-
-  const getFileNameFromPath = (path) => {
-    if (!path) return null;
-    if (typeof path === 'string') {
-      const parts = path.split('/');
-      return parts[parts.length - 1];
-    }
-    return path?.name;
+  
+  // ✅ Get metadata dynamically
+  const metadata = formData.documentMetadata?.[name] || {
+    docId: null,
+    status: null,
+    certfi: null
   };
+
+const getFileNameFromPath = (path) => {
+  if (!path) return null;
+
+  let fullName = '';
+  if (typeof path === 'string') {
+    const parts = path.split('/');
+    fullName = parts[parts.length - 1];
+  } else {
+    fullName = path?.name || '';
+  }
+
+  if (!fullName) return null;
+
+  const dotIndex = fullName.lastIndexOf('.');
+  const ext = dotIndex !== -1 ? fullName.slice(dotIndex) : '';      // e.g. ".pdf"
+  const baseName = dotIndex !== -1 ? fullName.slice(0, dotIndex) : fullName;
+
+  // ✅ Show up to 6 chars of base name + extension
+  const truncated = baseName.length > 15
+    ? baseName.slice(0, 15) + ext        // e.g. "resume.pdf", "aadhar.pdf"
+    : fullName;                          // short names shown as-is
+
+  return truncated;
+};
 
   const handleChange = (e) => onChange(e);
   const handleRemove = () => {
     if (inputRef.current) inputRef.current.value = '';
-    onRemove(name);
+    
+    let filePath = null;
+    let docId = metadata?.docId || null;
+    let status = metadata?.status || null;
+    let certfi = metadata?.certfi || null;
+
+    if (selectedFile && typeof selectedFile === 'string') {
+      filePath = selectedFile;
+    }
+
+    console.log(`Removing ${name}:`, { filePath, docId, status, certfi });
+    onRemove(name, filePath, docId, status, certfi);
   };
 
   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
@@ -1799,125 +1805,37 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <label style={{ cursor: 'pointer' }}>
-              <input
-                ref={inputRef}
-                type="file"
-                name={name}
-                accept="application/pdf"
-                onChange={handleChange}
-                style={{ display: 'none' }}
-              />
-              <span
-                style={{
-                  padding: '4px 8px',
-                  background: selectedFile ? '#3b82f6' : '#3b82f6',
-                  color: 'white',
-                  borderRadius: '4px',
-                  fontSize: '10px',
-                  fontWeight: '600',
-                  display: 'inline-block',
-                  cursor: 'pointer',
-                }}
-              >
+              <input ref={inputRef} type="file" name={name} accept="application/pdf" onChange={handleChange} style={{ display: 'none' }} />
+              <span style={{ padding: '4px 8px', background: '#3b82f6', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>
                 {selectedFile ? 'Upload' : '📁 Upload'}
               </span>
             </label>
             
             {selectedFile && (
               <>
-                <button
-                  type="button"
-                  onClick={() => onOpenFile(selectedFile, name)}  // Pass file and name to open function
-                  style={{
-                    padding: '4px 8px',
-                    background: '#9db6f5',
-                    color: 'white',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: '600',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-              <Eye size={12} color="#1e40af" strokeWidth={3} />
+                <button type="button" onClick={() => onOpenFile(selectedFile, name)} style={{ padding: '4px 8px', background: '#9db6f5', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
+                  <Eye size={12} color="#1e40af" strokeWidth={3} />
                 </button>
                 
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  style={{
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '18px',
-                    height: '18px',
-                    fontSize: '9px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                  }}
-                >
+                <button type="button" onClick={handleRemove} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   ✕
                 </button>
               </>
             )}
           </div>
-          
-          {selectedFile && (
-            <span
-              style={{
-                fontSize: '9px',
-                color: '#1e40af',
-                maxWidth: '100px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                textAlign: 'center',
-             }}
-            >
-              {fileName}
-            </span>
-          )}
+          {selectedFile && <span style={{ fontSize: '9px', color: '#1e40af' }}>{fileName}</span>}
         </div>
       ) : (
-        // Pending/View mode
         selectedFile && (
           <div style={{ textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => onOpenFile(selectedFile, name)}  // Pass file and name to open function
-              style={{
-                padding: '4px 8px',
-                background: '#a5bef0',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '9px',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                  pointerEvents: 'auto',   // ← ADD
-    position: 'relative',    // ← ADD
-    zIndex: 10,              // ← ADD
-              }}
-            >
-           <span>
-  <Eye size={12} color="#1e40af" strokeWidth={3} />
-</span>
+            <button type="button" onClick={() => onOpenFile(selectedFile, name)} style={{ padding: '4px 8px', background: '#a5bef0', color: 'white', borderRadius: '4px', fontSize: '9px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
+              <Eye size={12} color="#1e40af" strokeWidth={3} />
             </button>
-            <div style={{ fontSize: '7px', color: '#1e40af', marginTop: '2px' }}>
-              {fileName}
-            </div>
+            <div style={{ fontSize: '7px', color: '#1e40af' }}>{fileName}</div>
           </div>
-       )
+        )
       )}
-      
-      {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '2px', textAlign: 'center' }}>{error}</p>}
+      {error && <p style={{ color: '#ef4444', fontSize: '9px', textAlign: 'center' }}>{error}</p>}
     </div>
   );
 };
@@ -1934,7 +1852,8 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
       border: '3px solid #87b5ee',
       background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe, #eff6ff)'
     }}>
-      <div style={{ maxWidth: '100%', margin: '0 auto' }}>
+      <style>{responsiveStyles}</style>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
         <form
          id="recruitmentForm"
           onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1969,7 +1888,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
               pointerEvents: 'none',
             }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+  <div className="btn-row" style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '25px', marginBottom: '10px', flexWrap: 'wrap', padding: '15px 0' }}>
                        <h2 style={{
                          ...sectionHeading,
                          margin: 0,
@@ -2000,12 +1919,12 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                          {openSections.basicInfo ? '▲' : '▼'}
                        </button>
                      </div>
-            <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
+            <div style={{ opacity: isPending ? 0.85 : 1 }}>
     
   {openSections.basicInfo && (
     <>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '6px' }}>
         <InputField 
           label="Child Case ID" 
           name="CHILD_CASEID" 
@@ -2426,7 +2345,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
               Permanent Address <span style={{ color: '#ef4444' }}>*</span>
             </h3>
           </div>
-          <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+         <div className="address-grid" style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
             {[
               { name: 'HNO', label: 'H.No / Street', err: errors.HNO },
               { name: 'CITY', label: 'Village / City', err: errors.CITY },
@@ -2508,7 +2427,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
               Present Address <span style={{ color: '#ef4444' }}>*</span>
             </h3>
           </div>
-          <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+        <div className="address-grid" style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
             {[
               { name: 'PRESENT_HNO', label: 'H.No / Street', err: errors.PRESENT_HNO },
               { name: 'PRESENT_CITY', label: 'Village / City', err: errors.PRESENT_CITY },
@@ -2545,7 +2464,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
       {/* FILE UPLOADS */}
       <div style={{
         marginTop: '6px',
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '6px',
         padding: '6px 8px',
         background: 'linear-gradient(135deg, rgb(255, 255, 255) 0%, rgba(2rgb(243, 249, 247)rgb(246, 245, 250) 100%)',
         borderRadius: '8px',
@@ -2569,8 +2488,10 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
           onRemove={handleRemoveFile} 
           selectedFile={formData.AADHAR_PATH} 
           error={showErrors ? errors.AADHAR_PATH : ''}  
-           onOpenFile={openFile} 
-            isPending={isPending} 
+          onOpenFile={openFile} 
+          isPending={isPending} 
+          docId={formData.AADHAR_DOCID}
+          fileStatus={formData.AADHAR_STATUS}
         />
         <FileUpload 
           label={<>Resume Upload with sign <span style={{ color: '#ef4444' }}>*</span></>} 
@@ -2619,7 +2540,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
             position: 'relative',
           }}>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <div className="btn-row" style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '25px', marginBottom: '10px', flexWrap: 'wrap', padding: '15px 0' }}>
               <h2 style={{
                 margin: 0,
                 fontSize: '13px',
@@ -2654,9 +2575,9 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
             </div>
 
             {openSections.education && (
-              <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
+              <div style={{opacity: isPending ? 0.85 : 1 }}>
+          <div className="edu-table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+  <table className="edu-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ background: 'rgb(115, 164, 244)', color: '#ffffff' }}>
                         <th style={{ width: '160px', padding: '8px' }}>Qualification</th>
@@ -2665,7 +2586,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                         <th style={{ width: '90px', padding: '8px', textAlign: 'center' }}>Per (%)</th>
                         <th style={{ width: '160px', padding: '8px' }}>Passed Year</th>
                         <th style={{ width: '120px', padding: '8px' }}>Certificate</th>
-                      </tr>
+                   </tr>
                     </thead>
                     <tbody>
                       {/* SSC */}
@@ -2854,19 +2775,21 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(147,197,253,0.18) 0%, transparent 65%)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: '-30px', left: '-20px', width: '120px', height: '120px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(186,230,253,0.15) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+         <div className="btn-row" style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '25px', marginBottom: '10px', flexWrap: 'wrap', padding: '15px 0' }}>
               <h2 style={{ ...sectionHeading, margin: 0, fontSize: '13px', fontWeight: '800', letterSpacing: '0.6px', textTransform: 'uppercase', background: 'linear-gradient(90deg, #1e3a8a, #1d4ed8, #0284c7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Briefcase size={16} color="#1e40af" />
                 Experience Details
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {!isPending && (
+               
+                <button type="button" onClick={() => toggleSection('experience')} style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', border: 'none', cursor: 'pointer', color: '#fff', borderRadius: '6px', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)' }}>
+                  {openSections.experience ? '▲' : '▼'}
+
+                </button>
+                 {!isPending && (
                   <button type="button" onClick={addExperience} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: '#fff', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)', transition: 'all 0.2s', letterSpacing: '0.3px' }}>
                     <Plus size={14} /> Add
                   </button>)}
-                <button type="button" onClick={() => toggleSection('experience')} style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', border: 'none', cursor: 'pointer', color: '#fff', borderRadius: '6px', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700', boxShadow: '0 2px 6px rgba(37,99,235,0.35)' }}>
-                  {openSections.experience ? '▲' : '▼'}
-                </button>
               </div>
             </div>
             <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
@@ -2887,7 +2810,7 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                     )}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
              <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME}  inputRef={(el) => registerRef(`exp_${exp.id}_COMPANY_NAME`, el)}  onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}/>
                     <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION}  inputRef={(el) => registerRef(`exp_${exp.id}_DESIGNATION`, el)} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
                    <InputField
@@ -2926,20 +2849,19 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
                   </div>
 
                   {exp.isCurrent && (
-                    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', padding: '8px 10px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', borderRadius: '8px', border: '1.5px dashed #93c5fd', boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' }}>
+                    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', padding: '8px 10px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', borderRadius: '8px', border: '1.5px dashed #93c5fd', boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' }}>
                       <div style={{ gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '1px', paddingBottom: '3px', borderBottom: '1px solid rgba(147,197,253,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <FileUp size={13} color="#0f3f8b" />
                         Document Uploads
                       </div>
-                      {/* <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_PAYSLIPS`} onChange={(e) => handleExperienceFileChange(exp.id, 'PAYSLIPS', e)} onRemove={(index) => handleExperienceRemoveFile(exp.id, 'PAYSLIPS', index)} maxSize="500kb" error={showErrors ? errors[`exp_${exp.id}_PAYSLIPS`] : ''} selectedFiles={exp.PAYSLIPS || []} /> */}
 
-                      <FileUpload label={<>Pay Slips (6 months) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange}  onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData.payslips}   error={showErrors ? errors.payslips : ''}  />
+                      <FileUpload label={<>Pay Slips (6 ms) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange}  onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData.payslips}   error={showErrors ? errors.payslips : ''}  />
 
                       <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
                       <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
 
                       <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
-                      <FileUpload label={<>Bank Statements (3 months) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
+                      <FileUpload label={<>Bank Statements (3 ms) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
                     </div>
                   )}
                 </div>
@@ -2958,11 +2880,10 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
           flexWrap: 'wrap',
           padding: '15px 0'
         }}>
-          {/* Submit Button - triggers form submission via form ID */}
+          {/* Submit Button */}
           <button
             type="button"
             onClick={() => {
-              // Create a fake event and call handleSubmit directly
               const fakeEvent = { preventDefault: () => { } };
               handleSubmit(fakeEvent);
             }}
@@ -3028,20 +2949,19 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
           <button
             type="button"
             onClick={async () => {
-  // Convert PHOTO file to base64 if it's a File object
   let photoBase64 = null;
   if (formData.PHOTO instanceof File) {
     photoBase64 = await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result); // base64 data URL
+      reader.onloadend = () => resolve(reader.result);
       reader.readAsDataURL(formData.PHOTO);
     });
   } else if (typeof formData.PHOTO === 'string') {
-    photoBase64 = formData.PHOTO; // already a path/URL from server
+    photoBase64 = formData.PHOTO;
   }
 
   const previewData = {
-    formData: { ...formData, PHOTO_BASE64: photoBase64 }, // ← store as base64
+    formData: { ...formData, PHOTO_BASE64: photoBase64 },
     experiences,
     sameAsPermanent,
   };
@@ -3080,15 +3000,8 @@ const TableFileUpload = ({ name, onChange, onRemove, selectedFile, error, isPend
             <Info size={16} /> Preview
           </button>
 
-          {/* Reset Button */}
-
         </div>)}
       </div>
-
-
-
-
-
 
     </div>
   );
@@ -3107,8 +3020,8 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
           ref={inputRef}
       maxLength={maxLength}
       placeholder={placeholder}
-        min={min}   // ✅ add this
-      max={max}   // ✅ add this
+        min={min}
+      max={max}
       style={{
         width: '100%',
         padding: '2px 8px',
@@ -3129,8 +3042,6 @@ const InputField = ({ label, name, type = "text", value, onChange, error, disabl
     {error && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>{error}</p>}
   </div>
 );
-
-
 
 export default RecruitmentForm;
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { API_BASE_URLss } from '../Config/Config';
-
+import dayjs from 'dayjs';
 const THEMES = {
   basic:    { border: '#a5b4fc', hBg: '#eef2ff', icon: '#818cf8', title: '#4338ca', div: '#c7d2fe' },
   permAddr: { border: '#86efac', hBg: '#f0fdf4', icon: '#4ade80', title: '#15803d', div: '#bbf7d0' },
@@ -34,6 +34,54 @@ const VerifyPreviewPage = () => {
 
   console.log("dattttttttttttt",data);
   const sameAsPermanent = previewData.sameAsPermanent;
+
+  // Add this useEffect in VerifyPreviewPage component
+useEffect(() => {
+  const handleMessage = async (event) => {
+    if (event.data.type === 'GET_PDF_BLOB') {
+      // Generate PDF and send blob back to parent
+      if (previewRef.current) {
+        try {
+          const clone = previewRef.current.cloneNode(true);
+          const btn = clone.querySelector('.no-print');
+          if (btn) btn.remove();
+          
+          Object.assign(clone.style, {
+            position: 'fixed',
+            top: '-999999px',
+            left: '0',
+            width: `${PDF_CONTENT_PX}px`,
+            background: '#ffffff',
+          });
+          
+          document.body.appendChild(clone);
+          await new Promise(r => setTimeout(r, 450));
+          
+          const canvas = await html2canvas(clone, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            width: PDF_CONTENT_PX,
+          });
+          
+          document.body.removeChild(clone);
+          
+          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+          const imgWidth = PDF_W_MM - MARGIN_MM * 2;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', MARGIN_MM, MARGIN_MM, imgWidth, imgHeight);
+          
+          const blob = pdf.output('blob');
+          window.parent.postMessage({ type: 'PDF_BLOB', blob }, '*');
+        } catch (err) {
+          console.error('PDF generation error:', err);
+        }
+      }
+    }
+  };
+  
+  window.addEventListener('message', handleMessage);
+  return () => window.removeEventListener('message', handleMessage);
+}, [previewRef.current]);
 
   useEffect(() => {
     const s = document.createElement('style');
@@ -229,7 +277,33 @@ const VerifyPreviewPage = () => {
     { qual: 'Degree/B.Tech *', school: data.GRAD_COLLEGE_NAME,  board: data.DEGREE_UNIVERSITY, marks: data.BTECH_MARKS, year: data.DEGREE_PASSED_YEAR },
     ...(data.PG_COLLEGE_NAME ? [
       { qual: 'PG', school: data.PG_COLLEGE_NAME, board: data.PG_UNIVERSITY, marks: data.PG_MARKS, year: data.PG_PASSED_YEAR },
-    ] : []),
+    ]
+    
+    
+    : []),
+
+        ...(data.PHD_COLLEGE_NAME ? [
+
+ { qual: 'PHD', school: data.PHD_COLLEGE_NAME, board: data.PHD_UNIVERSITY, marks: data.PHD_MARKS, year: data.PHD_PASSED_YEAR },
+
+    ]
+    
+    
+    : []),
+
+            ...(data.OTHER_COLLEGE_NAME ? [
+
+  { qual: 'Others', school: data.OTHER_COLLEGE_NAME, board: data.OTHER_UNIVERSITY, marks: data.OTHER_MARKS, year: data.OTHER_PASSED_YEAR },
+    ]
+    
+    
+    : []),
+
+
+
+    
+    
+    
   ];
 
   return (
@@ -350,8 +424,10 @@ const VerifyPreviewPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {data.experienceData.map((exp, idx) => {
 
-                    console.log("dfffffffffffff",exp)
-                   const isCurrent = exp.COMPANY_STAGES == "0" ? 'Current Company' : 'Previous Company';
+                
+
+                    const isCurrent = exp.COMPANY_STAGES == "0";
+
                     const et = isCurrent
                       ? { border: '#6ee7b7', hBg: '#ecfdf5', icon: '#34d399', title: '#065f46', div: '#a7f3d0' }
                       : { border: '#bae6fd', hBg: '#f0f9ff', icon: '#7dd3fc', title: '#0c4a6e', div: '#e0f2fe' };
@@ -359,8 +435,8 @@ const VerifyPreviewPage = () => {
                     const expRows = padRows([
                       ['Company Name',  exp.COMPANY_NAME],
                       ['Designation',   exp.DESIGNATION],
-                      ['From Date',     exp.START_DATE],
-                      ['To Date',       isCurrent ? 'Present' : exp.END_DATE],
+                      ['From Date',     dayjs(exp.START_DATE).format("DD/MM/YYYY")],
+                      ['To Date',       dayjs(exp.END_DATE).format("DD/MM/YYYY")],
                       ...(isCurrent ? [
                         ['Current CTC',   data.CURRENT_CTC   ? `₹${data.CURRENT_CTC}`          : undefined],
                         ['Expected CTC',  data.EXP_CTC       ? `₹${data.EXP_CTC}`              : undefined],

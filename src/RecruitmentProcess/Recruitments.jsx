@@ -8,7 +8,6 @@ import { People as PeopleIcon, TrendingUp as TrendingUpIcon, Assignment as Assig
 import { useLocation, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RecruitmentMail from './RecruitmentMail';
-import RecruitmentForm from './RecruitmentForm';
 import { CircleCheckBig, ScrollText, Mail, ShieldCheck, DollarSign, UserCheck, FileText, Send, Zap } from 'lucide-react';
 import Verification from './Verification';
 import Salarystackup from './Salarystackup';

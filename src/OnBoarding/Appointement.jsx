@@ -1,411 +1,1072 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Container,
-  Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  IconButton,
-  FormControlLabel,
-  Checkbox,
-  Alert
-} from '@mui/material';
-import { Download, Print, Save, ArrowBack } from '@mui/icons-material';
+import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip, Modal, IconButton, Divider, FormControlLabel, Checkbox, Alert } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../Config/Config.jsx';
+import DocUpload from './DocUpload.jsx';
+import History from './History.jsx';
+import Swal from 'sweetalert2';
+import JoiningReportForm from './JoiningReportForm.jsx';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-
+import DescriptionIcon from '@mui/icons-material/Description';
+import { CheckCircle2, Download } from 'lucide-react';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 const AppointmentLetter = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    reference_no_App: '',
-    DO_App: '',
-    Name_of_the_candidate: '',
-    Address_of_The_CandidateP1: '',
-    Designation: '',
-    DO_Offer: '',
-    Location: '',
-    Reporting_to: '',
-    CTC_Lpa: '',
-    CTC_in_words: '',
-    Probation: '6 months',
-    Company: 'Company Name'
-  });
+  const [joiningData, setJoiningData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
 
-  // Sample data - in real app, this would come from API
-  const sampleData = {
-    reference_no_App: 'HR/APPT/2024/001',
-    DO_App: '15-06-2024',
-    Name_of_the_candidate: 'John Doe',
-    Address_of_The_CandidateP1: '123 Main Street, Hyderabad, Telangana - 500032',
-    Designation: 'Senior Software Engineer',
-    DO_Offer: '01-06-2024',
-    Location: 'Hyderabad',
-    Reporting_to: 'Project Manager',
-    CTC_Lpa: '15,00,000',
-    CTC_in_words: 'Fifteen Lakhs Only',
-    Probation: '6 months',
-    Company: 'Tech Solutions Pvt. Ltd.'
-  };
-
-  const [ctcBreakup, setCtcBreakup] = useState([
-    { component: 'Basic Salary', amount: '₹ 7,50,000', percentage: '50%' },
-    { component: 'House Rent Allowance', amount: '₹ 3,75,000', percentage: '25%' },
-    { component: 'Special Allowance', amount: '₹ 2,25,000', percentage: '15%' },
-    { component: 'Medical Allowance', amount: '₹ 75,000', percentage: '5%' },
-    { component: 'Provident Fund', amount: '₹ 75,000', percentage: '5%' },
-    { component: 'Total CTC', amount: '₹ 15,00,000', percentage: '100%' }
-  ]);
-
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [openDocModal, setOpenDocModal] = useState(false);
+  const [openHistoryModal, setOpenHistoryModal] = useState(false);
+  const [openReportModal, setOpenReportModal] = useState(false);
+  const [openAppointmentModal, setOpenAppointmentModal] = useState(false);
+  const [appointmentLetterData, setAppointmentLetterData] = useState(null);
   const [accepted, setAccepted] = useState(false);
-  const [editable, setEditable] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  useEffect(() => {
-    // Load data from API or localStorage
-    const savedData = localStorage.getItem('appointmentData');
-    if (savedData) {
-      setFormData(JSON.parse(savedData));
-    } else {
-      setFormData(sampleData);
-    }
-  }, []);
+  const [joiningDates, setJoiningDates] = useState({});
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const navigate = useNavigate();
+  const [Token, useToken] = useState(() => {
+    const userToken = JSON.parse(localStorage.getItem('userInfo'));
+    return userToken ? userToken : null;
+  })
+
+  //----------------------------JoiningDataStart------------------------//
+  const joinData = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/emp-verify-data`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${Token.token}`,
+          },
+        }
+      );
+
+      const apiData = response.data.data;
+
+      const formattedRows = apiData
+        .filter(item => {
+          const hasJoiningDate = item.onBoarding === "3"
+          return hasJoiningDate;
+        })
+        .map((item, index) => ({
+          id: item.verification_id || index,
+          CHILD_CASEID: item.child_caseid,
+          employee_name: item.name,
+          email: item.email,
+          phone: item.phone_number,
+          department: item.DEPT,
+          location: item.PLANT,
+          joining_date: item.joiningDate,
+          current_ctc: item.CURRENT_CTC,
+          expected_ctc: item.EXP_CTC,
+          offered_ctc: item.OFFER_CTC ?? '',
+          TYPE_PLANT: item?.TYPE_PLANT,
+          GROUP_CODE: item?.GROUP_CODE,
+          SUB_CODE: item?.SUB_CODE,
+          SUB_POST: item?.SUB_POST,
+          DESIG: item.DESIG || 'N/A',
+          MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
+          RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
+          hrEvaluationFile: item?.hrEvaluationFile,
+          joining_status: 'Joined',
+          offer_letter: item.OfferLetterFlag ?? '',
+          bgv_status: item.verification_status ?? '',
+          documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+          current_stage: item.CURRENT_TASK,
+          hr_owner: item.CURRENT_USER,
+          created_at: item.created_at,
+          fullData: item,
+        }));
+
+      console.log("Filtered formattedRows (with joining dates):", apiData);
+      setJoiningData(formattedRows);
+      setFilteredData(formattedRows);
+    } catch (error) {
+      console.error("Error in fetching joining data", error);
+    }
   };
 
-  const handleSave = () => {
-    localStorage.setItem('appointmentData', JSON.stringify(formData));
-    alert('Appointment letter data saved successfully!');
+  useEffect(() => {
+    if (Token.token) {
+      joinData();
+    }
+  }, [Token.token]);
+
+  // Function to convert number to words
+  const convertToWords = (amount) => {
+    if (!amount || amount === 'Not Specified') return 'Not Specified';
+    const numStr = amount.toString().replace(/[^0-9]/g, '');
+    if (!numStr) return 'Zero Rupees Only';
+    const num = parseInt(numStr);
+    
+    const getWords = (n) => {
+      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      
+      if (n === 0) return '';
+      if (n < 10) return ones[n];
+      if (n < 20) return teens[n - 10];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + getWords(n % 100) : '');
+      if (n < 100000) return getWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 !== 0 ? ' ' + getWords(n % 1000) : '');
+      if (n < 10000000) return getWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 !== 0 ? ' ' + getWords(n % 100000) : '');
+      return getWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 !== 0 ? ' ' + getWords(n % 10000000) : '');
+    };
+    
+    const result = getWords(num);
+    return result ? result + ' Rupees Only' : 'Zero Rupees Only';
+  };
+
+  const handleAppointmentClick = (rowData) => {
+    // Reset acceptance status when opening new appointment letter
+    setAccepted(false);
+    
+    // Generate appointment letter data from row data
+    const appointmentData = {
+      reference_no_App: `HR/APPT/${new Date().getFullYear()}/${rowData.CHILD_CASEID}`,
+      DO_App: new Date().toLocaleDateString('en-GB'),
+      Name_of_the_candidate: rowData.employee_name,
+      Address_of_The_CandidateP1: rowData.fullData?.current_address || 'Not Provided',
+      Designation: rowData.DESIG || rowData.MANPOWER_DESG || 'Not Specified',
+      DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
+      Location: rowData.location,
+      Reporting_to: rowData.fullData?.reporting_to || 'HOD',
+      CTC_Lpa: rowData.offered_ctc || rowData.current_ctc || 'Not Specified',
+      CTC_in_words: convertToWords(rowData.offered_ctc || rowData.current_ctc || '0'),
+      Probation: '6 months',
+      Company: 'Company Name',
+      email: rowData.email,
+      phone: rowData.phone,
+      caseId: rowData.CHILD_CASEID,
+      date:rowData.joining_date,
+    };
+    
+    setAppointmentLetterData(appointmentData);
+    setOpenAppointmentModal(true);
+  };
+
+  const handleCloseAppointmentModal = () => {
+    setOpenAppointmentModal(false);
+    setAppointmentLetterData(null);
+    setAccepted(false);
   };
 
   const generatePDF = async () => {
+    if (!accepted) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Acceptance Required',
+        text: 'Please accept the terms and conditions before downloading the appointment letter.',
+        confirmButtonColor: '#667eea',
+      });
+      return;
+    }
+
     setIsGeneratingPDF(true);
+    
     try {
-      const input = document.getElementById('appointment-letter-content');
-      const canvas = await html2canvas(input, {
+      const element = document.getElementById('appointment-letter-content');
+      if (!element) {
+        throw new Error('Appointment letter content not found');
+      }
+
+      // Use html2canvas with better settings for quality
+      const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
       
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      });
+      
+      const imgWidth = 190; // mm (A4 width minus margins)
+      const pageHeight = 277; // mm (A4 height minus margins)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = position - pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Appointment_Letter_${formData.reference_no_App}.pdf`);
+      pdf.save(`Appointment_Letter_${appointmentLetterData.reference_no_App}.pdf`);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Appointment letter downloaded successfully!',
+        timer: 1500,
+        showConfirmButton: false
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      Swal.fire({
+        icon: 'error',
+        title: 'PDF Generation Failed',
+        text: 'Error generating PDF. Please try again.',
+        confirmButtonColor: '#667eea',
+      });
     } finally {
       setIsGeneratingPDF(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+
+
+
+  const handleReportClick = (rowData) => {
+    setSelectedRow(rowData);
+    setOpenReportModal(true);
   };
 
-  const handleBack = () => {
-    navigate(-1);
+  const handleCloseReportModal = () => {
+    setOpenReportModal(false);
+    setSelectedRow(null);
   };
 
-  const formatText = (text) => {
-    if (!text) return '';
-    
-    // Replace placeholders with actual data
-    return text
-      .replace(/«Reference_no_App»/g, formData.reference_no_App)
-      .replace(/«DO_App\_»/g, formData.DO_App)
-      .replace(/«Name_of_the_candidate»/g, formData.Name_of_the_candidate)
-      .replace(/«Address_of_The_CandidateP1»/g, formData.Address_of_The_CandidateP1)
-      .replace(/«Designation»/g, formData.Designation)
-      .replace(/«DO_Offer»/g, formData.DO_Offer)
-      .replace(/«Location»/g, formData.Location)
-      .replace(/«Reporting_to»/g, formData.Reporting_to)
-      .replace(/«CTC_Lpa»/g, formData.CTC_Lpa)
-      .replace(/«CTC_in_words»/g, formData.CTC_in_words)
-      .replace(/«Probation»/g, formData.Probation)
-      .replace(/«Company»/g, formData.Company);
+  const handleSearch = (e) => {
+    const searchValue = e.target.value;
+    setSearchText(searchValue);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+
+    if (!searchValue) {
+      setFilteredData(joiningData);
+      return;
+    }
+
+    const filtered = joiningData.filter(row => {
+      const search = searchValue.toLowerCase();
+      return (
+        (row.CHILD_CASEID && row.CHILD_CASEID.toLowerCase().includes(search)) ||
+        (row.employee_name && row.employee_name.toLowerCase().includes(search)) ||
+        (row.email && row.email.toLowerCase().includes(search)) ||
+        (row.phone && row.phone.toLowerCase().includes(search)) ||
+        (row.department && row.department.toLowerCase().includes(search)) ||
+        (row.location && row.location.toLowerCase().includes(search)) ||
+        (row.hr_owner && row.hr_owner.toLowerCase().includes(search))
+      );
+    });
+    setFilteredData(filtered);
   };
 
-  const appointmentContent = `
-Ref No: ${formData.reference_no_App}
+  const handleDocUploadClick = (rowData) => {
+    setSelectedRow(rowData);
+    setOpenDocModal(true);
+  };
 
-${formData.DO_App}
+  const handleHistoryClick = (rowData) => {
+    setSelectedRow(rowData);
+    setOpenHistoryModal(true);
+  };
 
-To,
-${formData.Name_of_the_candidate},
-${formData.Address_of_The_CandidateP1}
+  const handleCloseModal = () => {
+    setOpenDocModal(false);
+    setSelectedRow(null);
+  };
 
-Letter of Appointment as ${formData.Designation}
+  const handleCloseHistoryModal = () => {
+    setOpenHistoryModal(false);
+    setSelectedRow(null);
+  };
 
-Dear ${formData.Name_of_the_candidate},
+  const handleJoiningDateChange = (caseId, value) => {
+    setJoiningDates(prev => ({
+      ...prev,
+      [caseId]: value,
+    }));
+  };
 
-With reference to our offer letter dated:- ${formData.DO_Offer}, we are pleased to appoint you as ${formData.Designation} at "${formData.Location}". Your employment will be governed by the following terms and conditions:
 
-1. Date of Appointment: Your date of commencement on job is from ${formData.DO_App}.
 
-2. Place of Posting & Transfer:
-   Your initial place of posting will be at our ${formData.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future. Upon such transfer, you will be governed by the rules and regulations of the Company as applicable to the place of work.
+  const handleSubmitAppointment = async () => {
+  if (!accepted) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Acceptance Required',
+      text: 'Please accept the terms and conditions before submitting.',
+      confirmButtonColor: '#667eea',
+    });
+    return;
+  }
 
-3. Reporting:
-   You will report to ${formData.Reporting_to} or any other authority assigned by Management from time to time.
+  setIsGeneratingPDF(true);
+  
+  try {
+    // Step 1: Generate PDF from the appointment letter content
+    const element = document.getElementById('appointment-letter-content');
+    if (!element) {
+      throw new Error('Appointment letter content not found');
+    }
 
-4. Remuneration:
-   You will be paid ₹${formData.CTC_Lpa} (${formData.CTC_in_words}) per annum, which will be subject to the statutory deductions as per the Company's policy and Government norms. The detailed breakup of the emoluments of CTC stack up is provided in Annexure - A appended herewith to this Letter of Appointment.
-
-5. Probation:
-   You will be on probation for a period of ${formData.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing. The probation period can be curtailed or extended by the Company at its sole discretion without assigning any reasons whatsoever in nature.
-   
-   During the probationary period, your performance will be thoroughly assessed / evaluated by the Company and only on satisfactory completion of your initial or extended probationary period; you will be confirmed in writing in the regular services of the Company.
-
-6. Reference Checks:
-   Your employment is subject to the obtaining or receiving satisfactory responses from the reference checks conducted by the company.
-
-7. General:
-   a) You will be eligible for Leaves/Weekly Offs/National & Festival Holidays as may be announced by the Company from time to time.
-   b) If at any stage, during the tenure of your services, it is found that the information furnished by you, regarding your age, educational qualifications, and previous experience is false; your services will be terminated without any notice.
-   c) You shall inform the Company about the changes in personal information, if any, like change in residential address, acquiring higher qualifications etc. from time to time.
-   d) During the period of employment with the Company, you will be in whole-time service of the Company and shall not engage or associate yourself directly / indirectly or in any other manner whatsoever, or work part time and shall not accept any emoluments, commission or service charges or honoraria whatsoever from any one. You shall devote your whole time, attention and skill to the best of your ability for the business of the Company only.
-
-8. Company's Property:
-   You will always maintain in good condition Company's property, which may be entrusted to you for official use during the course of your employment and shall return all such property to the Company prior to relinquishment of your charge, failing which the cost of the same will be recovered from you by the Company.
-
-9. Service Rules and Procedure:
-   You will be governed by the service rules, regulations and such other practices, systems, policies and procedures such as office working hours. Leaves, Standing Orders and Other Service Conditions of the place of business of the Company as applicable and in force from time to time of the Company as notified and in force. Further, you shall follow in true spirit and abide by the Standard Operating Procedures of the Company.
-
-10. Confidential Information:
-    During your period of employment, you have to maintain complete secrecy on projects which you will be working on, about clients and the Company. Any confidential information/ Data / Drawing (soft copy or hard copy) shall not be shared with anyone. Sharing of confidential information outside the Company will be considered as offense. Any breach of the above conditions will result in termination of employment with immediate effect and appropriate damages will be claimed accordingly.
-    
-    You will maintain strict confidential of the information which is provided or given to your access by the Employer during the term of your employment. Any breach of the same will result in breach of the terms of employment and the employer has right to take stringent action against you which might result taking appropriate criminal action. The Employer has a right to file a civil case as well as to recover the damages caused due to such breach by the Employee.
-    
-    The Employee agrees not to use or cause to be used for own benefit or for the benefit of any third parties or to disclose to any third party in any manner, directly or indirectly the information concerning to the internal organization or business structure of Employer or its customers, or the work assignments or capabilities of any officer or Employee, Proprietary Information, Customer's Confidential Information, trade secrets or any other Knowledge or information, except that which is public knowledge, or relating to the business of Employer or its customers at any time during or after Employee's terms of employment with Employer, without prior written consent of Employer.
-
-11. Applicability of Company Policy:
-    The Company shall be entitled to make policy declarations from time to time pertaining to matters like leave entitlement, maternity leave, employees' benefits, working hours, transfer policies, etc., and may alter the same from time to time at its sole discretion. All such policy decisions of the Company shall be binding on you and shall override this Letter of Appointment to that extent.
-
-12. Substance Abuse:
-    a. The Unauthorized Possession, distribution, consumption, dispensing or misuse of substances (banned drugs, tobacco, gutka, pan masala etc.) and alcoholic beverages, are in violation of Company regulations and is prohibited.
-    b. Employees violating this policy will be subject to strict disciplinary action up to and including termination of employment.
-
-13. Separation:
-    Your services are terminable by 30 days' notice or 30 days' gross salary in lieu on either side during probation period or after confirmation.
-    a) In case of notice by you intending the desire to leave the services, the Company shall have the option to accept the resignation with immediate effect and relieve you from the services with immediate effect, earlier than the expiry of the notice period given by you.
-    b) No Notice is required for termination of services in case of any act of misconduct Incompetence, poor work performance, incapability, failure to carry out reasonable instructions, redundancy, insubordination, fraud, theft or breach of any of the terms of employment implied or expressed on your part.
-    c) In case if you quit employment or remain absent from duty without any notice before the expiry of the Notice Period, in lieu of notice period you shall not only forfeit your salary by way of liquidated damages, company shall also be entitled to deduct an appropriate amount of liquidated damages from or against any money found due to you by the Company on any account whatsoever.
-    d) No notice period shall be required in cases where a transfer is denied, the existing assignment is completed, the project scope is reduced or modified by the concerned department, the project is handed over upon completion, or in any other situation involving suspension of work or reduction in scope.
-    e) Any Information furnished by you in your Bio- Data and at the time of interview is found incorrect in our enquiry in future, your candidature will automatically be cancelled and your service through this appointment will stand terminated.
-    f) Incase your remain absent without prior permission or authorization or over stay leave for eight consecutive calendar days beyond the period of leave originally granted or subsequently extended it shall be deemed that you have vacated your employment in the company on your own accord without notice and the same shall be treated as abandonment of employment on your part.
-
-14. Retirement:
-    You will retire on attaining the age of superannuation, which shall be 60 years, unless you are otherwise disqualified due to continued ill health, physical or mental disability.
-
-15. Full and Final Settlement:
-    a) Handover of Charge: You shall properly hand over the all documents to your reporting manager or any other authority assigned by the company.
-    b) Your dues, if any, shall be cleared after receiving the Company assets, No dues certificate from the Reporting Manager's and HOD's.
-
-16. Jurisdiction:
-    All disputes shall be subject to the exclusive jurisdiction of Courts at Ranga Reddy District, Telangana.
-
-17. Acceptance of our offer:
-    Please acknowledge the receipt of Appointment Order by signing and returning the duplicate copy.
-
-We welcome you and wish all success in your assignment with us.
-
-Thanking you,
-
-For ${formData.Company}.
-
-Sudeep Kumar K
-Vice President - HR
-
-I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
-
-Signature of the Employee
-`;
-
-  return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      {/* Header */}
   
 
-      {/* Appointment Letter Content */}
-      <Paper id="appointment-letter-content" elevation={3} sx={{ p: 4 }}>
-        <Box sx={{ fontFamily: "'Times New Roman', serif", lineHeight: 1.6 }}>
-          {/* Header with Reference Number */}
-          <Typography variant="body1" sx={{ textAlign: 'right', mb: 2 }}>
-            <strong>Ref No:</strong> {formData.reference_no_App}
-          </Typography>
-          
-          <Typography variant="body1" sx={{ textAlign: 'right', mb: 4 }}>
-            <strong>Date:</strong> {formData.DO_App}
-          </Typography>
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight
+    });
+    
+    // Convert canvas to blob
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pdf = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    });
+    
+    const imgWidth = 190;
+    const pageHeight = 277;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
 
-          {/* Recipient Address */}
-          <Typography variant="body1" sx={{ mb: 1 }}>
-            To,
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 1 }}>
-            {formData.Name_of_the_candidate},
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            {formData.Address_of_The_CandidateP1}
-          </Typography>
+    pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
 
-          {/* Title */}
-          <Typography variant="h5" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
-            LETTER OF APPOINTMENT AS {formData.Designation.toUpperCase()}
-          </Typography>
+    while (heightLeft > 0) {
+      position = position - pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
 
-          {/* Salutation */}
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            Dear {formData.Name_of_the_candidate},
-          </Typography>
+    // Convert PDF to Blob
+    const pdfBlob = pdf.output('blob');
+    const pdfFile = new File([pdfBlob], `Appointment_Letter_${appointmentLetterData?.reference_no_App}.pdf`, { type: 'application/pdf' });
 
-          {/* Introduction */}
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            With reference to our offer letter dated: {formData.DO_Offer}, we are pleased to appoint you as <strong>{formData.Designation}</strong> at <strong>"{formData.Location}"</strong>. Your employment will be governed by the following terms and conditions:
-          </Typography>
+    // Step 2: Upload to backend
+    const formData = new FormData();
+    formData.append('CHILD_CASEID', appointmentLetterData?.caseId);
+    formData.append('appointment_letter', pdfFile); 
+      formData.append('onBoarding', 3); // Using the apiKey from your DocUpload component
 
-          {/* Terms and Conditions */}
-          <Box sx={{ mb: 4 }}>
-            {[
-              {
-                title: "1. Date of Appointment:",
-                content: `Your date of commencement on job is from ${formData.DO_App}.`
-              },
-              {
-                title: "2. Place of Posting & Transfer:",
-                content: `Your initial place of posting will be at our ${formData.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future. Upon such transfer, you will be governed by the rules and regulations of the Company as applicable to the place of work.`
-              },
-              {
-                title: "3. Reporting:",
-                content: `You will report to ${formData.Reporting_to} or any other authority assigned by Management from time to time.`
-              },
-              {
-                title: "4. Remuneration:",
-                content: `You will be paid ₹${formData.CTC_Lpa} (${formData.CTC_in_words}) per annum, which will be subject to the statutory deductions as per the Company's policy and Government norms. The detailed breakup of the emoluments of CTC stack up is provided in Annexure - A appended herewith to this Letter of Appointment.`
-              },
-              {
-                title: "5. Probation:",
-                content: `You will be on probation for a period of ${formData.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing. The probation period can be curtailed or extended by the Company at its sole discretion without assigning any reasons whatsoever in nature.\n\nDuring the probationary period, your performance will be thoroughly assessed / evaluated by the Company and only on satisfactory completion of your initial or extended probationary period; you will be confirmed in writing in the regular services of the Company.`
-              }
-            ].map((item, index) => (
-              <Box key={index} sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {item.title}
-                </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line', pl: 2 }}>
-                  {item.content}
-                </Typography>
-              </Box>
-            ))}
+    Swal.fire({
+      title: 'Submitting...',
+      text: 'Please wait while we upload the appointment letter',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+     
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/on-board-Store`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${Token.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    if (response.data.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Appointment letter submitted and verified successfully!',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+
+        await joinData()
+      
+      // Close modal and refresh data
+      handleCloseAppointmentModal();
+      
+  
+      // Optional: Show additional success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Completed!',
+        text: 'Employee onboarding process completed successfully.',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } else {
+      throw new Error(response.data.message || 'Submission failed');
+    }
+    
+  } catch (error) {
+    console.error('Error submitting appointment letter:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Submission Failed',
+      text: error.response?.data?.message || error.message || 'Error generating or uploading PDF',
+      confirmButtonColor: '#667eea',
+    });
+  } finally {
+    setIsGeneratingPDF(false);
+  }
+};
+
+  const hasTypePlant = filteredData?.some(row => row.TYPE_PLANT);
+  const recCycle = filteredData?.some(row => row.RECRUIT_CYCLE);
+
+  const columns = [
+    {
+      field: 'SNO',
+      headerName: 'S.NO',
+      flex: 0.5,
+      minWidth: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 600, color: '#374151' }}>
+          {params.api.getAllRowIds().indexOf(params.id) + 1}
+        </Box>
+      ),
+    },
+    {
+      field: 'CHILD_CASEID',
+      headerName: 'Case ID',
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+
+       {
+          field: 'doc_upload',
+          headerName: 'Doc Upload',
+          flex: 0.8,
+          minWidth: 100,
+          sortable: false,
+          renderCell: (params) => (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<DescriptionIcon />}
+              onClick={() => handleDocUploadClick(params.row)}
+              sx={{
+                fontSize: '10px',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                textTransform: 'capitalize',
+                backgroundColor: '#10b981',
+                fontWeight: 600,
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                '&:hover': {
+                  backgroundColor: '#059669',
+                  boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              View
+            </Button>
+          ),
+        },
+    ...(hasTypePlant ? [{
+      field: 'TYPE_PLANT',
+      headerName: 'Type Plant',
+      flex: 1.2,
+            minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
+    ...(recCycle ? [{
+      field: 'RECRUIT_CYCLE',
+      headerName: 'Emp Level',
+      flex: 1.2,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
+    {
+      field: 'employee_name',
+      headerName: 'Employee Name',
+      flex: 1.2,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'email',
+      headerName: 'Email',
+      flex: 1.5,
+      minWidth: 180,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'phone',
+      headerName: 'Phone',
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'department',
+      headerName: 'Department',
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'MANPOWER_DESG',
+      headerName: 'M.Designation',
+      flex: 1.2,
+      minWidth: 130,
+      renderCell: (params) => {
+        const subCode = params.row.SUB_CODE;
+        const value = params.value || 'N/A';
+        return (
+          <Box sx={{
+            color: '#374151',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}>
+            {subCode ? `${subCode} - ${value}` : value}
           </Box>
+        );
+      },
+    },
+    {
+      field: 'DESIG',
+      headerName: 'Designation',
+      flex: 1.2,
+      minWidth: 130,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'location',
+      headerName: 'Location',
+      flex: 1.2,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'joining_date',
+      headerName: 'Joining Date',
+      flex: 1,
+      minWidth: 110,
+      renderCell: (params) => {
+        const caseId = params.row.CHILD_CASEID;
+        return (
+          <TextField
+            size="small"
+            type="date"
+            value={
+              joiningDates[caseId] ??
+              (params.row.joining_date
+                ? params.row.joining_date.split('T')[0]
+                : '')
+            }
+            onChange={(e) =>
+              handleJoiningDateChange(caseId, e.target.value)
+            }
+            sx={{
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                fontSize: '12px',
+                height: '32px',
+                '& fieldset': {
+                  borderColor: '#d1d5db',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#667eea',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                },
+              },
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'joining_status',
+      headerName: 'Status',
+      flex: 0.8,
+      minWidth: 100,
+      renderCell: (params) => (
+        <Chip
+          size="small"
+          label={params.value}
+          sx={{
+            backgroundColor: params.value === 'Joined' ? '#10b981' : '#ef4444',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: '11px',
+            height: '24px',
+          }}
+        />
+      ),
+    },
+    {
+      field: 'Appointment',
+      headerName: 'Appointment',
+      flex: 0.8,
+      minWidth: 100,
+      renderCell: (params) => (
+        <Tooltip title="View Appointment Letter">
+          <IconButton
+            size="small"
+            onClick={() => handleAppointmentClick(params.row)}
+            sx={{
+              color: '#667eea',
+              '&:hover': {
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              },
+            }}
+          >
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
+  ];
 
-       
+  // Modal style
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '90%',
+    maxWidth: '1000px',
+    maxHeight: '90vh',
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    borderRadius: '12px',
+    overflow: 'auto',
+    p: 3,
+  };
 
-          {/* Rest of the terms (simplified for display) */}
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mb: 4 }}>
-            {appointmentContent.split('\n').slice(28).join('\n')}
-          </Typography>
-
-          {/* Signature Section */}
-          <Box sx={{ mt: 6 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  For {formData.Company}
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 4, fontWeight: 'bold' }}>
-                  Sudeep Kumar K
-                </Typography>
-                <Typography variant="body1">
-                  Vice President - HR
-                </Typography>
-              </Box>
-              
-              <Box sx={{ textAlign: 'center' }}>
-                <Divider sx={{ width: 300, mb: 2 }} />
-                <Typography variant="body1">
-                  Signature of the Employee
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Acceptance Checkbox */}
-            <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={accepted}
-                    onChange={(e) => setAccepted(e.target.checked)}
-                    color="primary"
-                  />
+  return (
+    <Box sx={{
+      maxWidth: "1400px",
+      margin: "0 auto",
+      padding: "12px",
+    }}>
+      <Paper sx={{
+        width: '100%',
+        padding: 2,
+        borderRadius: '12px',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        border: '1px solid #e2e8f0',
+      }}>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ flex: 1, maxWidth: '400px' }}>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Search joining reports..."
+              value={searchText}
+              onChange={handleSearch}
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#667eea', fontSize: '20px' }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  borderRadius: '10px',
+                  backgroundColor: '#f8fafc',
+                  height: '38px',
+                  fontSize: '13px',
+                  '&:hover': {
+                    backgroundColor: '#f1f5f9',
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: '#ffffff',
+                  }
                 }
-                label={
-                  <Typography variant="body1">
-                    I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
-                  </Typography>
-                }
-              />
-            </Box>
-
-            {accepted && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Appointment letter accepted on {new Date().toLocaleDateString()}
-              </Alert>
-            )}
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": {
+                    borderColor: "#cedef2ff",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#d1d6ebff",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#667eea",
+                  },
+                },
+              }}
+            />
           </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" sx={{
+              color: '#64748b',
+              minWidth: 'fit-content',
+              fontWeight: 500,
+              fontSize: '13px'
+            }}>
+              {filteredData.length} Appoinments
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{
+          width: "100%",
+          borderRadius: "10px",
+          overflow: "hidden",
+          border: "1px solid #dfe5f1ff",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+        }}>
+          <DataGrid
+            rows={filteredData}
+            columns={columns}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            pageSizeOptions={[10, 20, 50]}
+            rowHeight={42}
+            columnHeaderHeight={44}
+            disableRowSelectionOnClick
+            sx={{
+              border: "none",
+              "& .MuiDataGrid-columnHeaders": {
+                borderBottom: "2px solid #e2e8f0",
+              },
+              "& .MuiDataGrid-columnHeader": {
+                fontWeight: 600,
+                fontSize: "13px",
+                color: "#1e293b",
+                backgroundColor: "rgba(188, 198, 238, 0.5)",
+                borderRight: "1px solid #e2e8f0",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid #f1f5f9",
+                borderRight: "1px solid #f1f5f9",
+                fontSize: "12px",
+                color: "#374151",
+                padding: "0 8px",
+                display: "flex",
+                alignItems: "center",
+              },
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "#f0f9ff",
+                cursor: "pointer",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                minHeight: "48px",
+              },
+            }}
+          />
+
+
+
         </Box>
       </Paper>
 
-      {/* Footer Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, gap: 2 }}>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => {
-            if (accepted) {
-              generatePDF();
-            } else {
-              alert('Please accept the terms and conditions first.');
-            }
-          }}
-          disabled={!accepted || isGeneratingPDF}
-        >
-          {isGeneratingPDF ? 'Generating Final Copy...' : 'Generate Final Appointment Letter'}
-        </Button>
-      </Box>
-    </Container>
+    {openDocModal && selectedRow && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '1000px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+   
+
+            <DocUpload
+              rowData={selectedRow}
+              onClose={handleCloseModal}
+            refreshTable={joinData}
+            Report = "Appointement"
+            />
+          </div>
+        </div>
+      )}
+      {/* Appointment Letter Modal */}
+      <Modal
+        open={openAppointmentModal}
+        onClose={handleCloseAppointmentModal}
+        aria-labelledby="appointment-letter-modal"
+      >
+        <Box sx={modalStyle}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '1px solid #e2e8f0' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+              Appointment Letter
+            </Typography>
+            <IconButton onClick={handleCloseAppointmentModal} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          <Box id="appointment-letter-content" sx={{ fontFamily: "'Times New Roman', serif", lineHeight: 1.6, p: 2 }}>
+            {/* Header with Reference Number */}
+            <Typography variant="body1" sx={{ textAlign: 'right', mb: 2 }}>
+              <strong>Ref No:</strong> {appointmentLetterData?.reference_no_App}
+            </Typography>
+            
+        <Typography variant="body1" sx={{ textAlign: 'right', mb: 4 }}>
+  <strong>Date:</strong>{" "}
+  {appointmentLetterData?.date
+    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+    : ''}
+</Typography>
+
+            {/* Recipient Address */}
+            <Typography variant="body1" sx={{ mb: 1 }}>To,</Typography>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              {appointmentLetterData?.Name_of_the_candidate},
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 4 }}>
+              {appointmentLetterData?.Address_of_The_CandidateP1}
+            </Typography>
+
+            {/* Title */}
+            <Typography variant="h5" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
+              LETTER OF APPOINTMENT AS {appointmentLetterData?.Designation?.toUpperCase()}
+            </Typography>
+
+            {/* Salutation */}
+            <Typography variant="body1" sx={{ mb: 4 }}>
+              Dear {appointmentLetterData?.Name_of_the_candidate},
+            </Typography>
+
+            {/* Introduction */}
+            <Typography variant="body1" sx={{ mb: 4 }}>
+              With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
+            </Typography>
+
+            {/* Terms and Conditions */}
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>1. Date of Appointment:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  Your date of commencement on job is from {appointmentLetterData?.date
+    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+    : ''}.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>2. Place of Posting & Transfer:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  Your initial place of posting will be at our {appointmentLetterData?.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>3. Reporting:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  You will report to {appointmentLetterData?.Reporting_to} or any other authority assigned by Management from time to time.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>4. Remuneration:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  You will be paid ₹{appointmentLetterData?.CTC_Lpa} ({appointmentLetterData?.CTC_in_words}) per annum, which will be subject to the statutory deductions as per the Company's policy and Government norms.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>5. Probation:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  You will be on probation for a period of {appointmentLetterData?.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>6. Reference Checks:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  Your employment is subject to the obtaining or receiving satisfactory responses from the reference checks conducted by the company.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>7. General:</Typography>
+                <Typography variant="body1" sx={{ pl: 2 }}>
+                  a) You will be eligible for Leaves/Weekly Offs/National & Festival Holidays as may be announced by the Company from time to time.<br />
+                  b) If at any stage, during the tenure of your services, it is found that the information furnished by you, regarding your age, educational qualifications, and previous experience is false; your services will be terminated without any notice.<br />
+                  c) You shall inform the Company about the changes in personal information, if any, like change in residential address, acquiring higher qualifications etc. from time to time.<br />
+                  d) During the period of employment with the Company, you will be in whole-time service of the Company and shall not engage or associate yourself directly / indirectly or in any other manner whatsoever.
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Signature Section */}
+            <Box sx={{ mt: 6 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    For {appointmentLetterData?.Company}
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 4, fontWeight: 'bold' }}>
+                    Sudeep Kumar K
+                  </Typography>
+                  <Typography variant="body1">Vice President - HR</Typography>
+                </Box>
+                
+                <Box sx={{ textAlign: 'center' }}>
+                  <Divider sx={{ width: 200, mb: 2 }} />
+                  <Typography variant="body1">Signature of the Employee</Typography>
+                </Box>
+              </Box>
+
+              {/* Acceptance Checkbox */}
+              <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={accepted}
+                      onChange={(e) => setAccepted(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body1">
+                      I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
+                    </Typography>
+                  }
+                />
+              </Box>
+
+              {accepted && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Terms accepted on   {appointmentLetterData?.date
+    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+    : ''}
+                </Alert>
+              )}
+            </Box>
+          </Box>
+
+       <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 flex-wrap">
+
+  {/* DOWNLOAD BUTTON (PRIMARY) */}
+
+    <button
+    onClick={handleCloseAppointmentModal}
+    className="px-6 py-2.5 rounded-lg font-semibold
+    border border-indigo-500 text-indigo-600
+    hover:bg-indigo-50 hover:-translate-y-0.5
+    transition-all duration-200"
+  >
+    Close
+  </button>
+
+
+  <button
+    onClick={generatePDF}
+    disabled={!accepted || isGeneratingPDF}
+    className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
+    bg-gradient-to-r from-indigo-500 to-indigo-600
+    hover:from-indigo-600 hover:to-indigo-700
+    hover:-translate-y-0.5 transition-all duration-200
+    shadow-md hover:shadow-lg
+    disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+  >
+    <Download size={18} />
+      Appoinment Letter
+  </button>
+
+  {/* CLOSE BUTTON (SECONDARY) */}
+
+  {/* VERIFY & SUBMIT (SUCCESS) */}
+<button
+  onClick={handleSubmitAppointment}
+  disabled={!accepted || isGeneratingPDF}
+  className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
+  bg-gradient-to-r from-green-500 to-green-600
+  hover:from-green-600 hover:to-green-700
+  hover:-translate-y-0.5 transition-all duration-200
+  shadow-md hover:shadow-lg
+  disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+>
+  <CheckCircle2 size={18} />
+  {isGeneratingPDF ? "Processing..." : "Verify & Submit"}
+</button>
+
+</div>
+        </Box>
+      </Modal>
+
+
+    </Box>
   );
 };
 

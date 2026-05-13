@@ -5,6 +5,7 @@ import { FileText, Settings, BarChart3 } from 'lucide-react';
 import JoiningReportList from './JoiningReportList';
 import Appointement from './Appointement'
 import Mediclaim from './Mediclaim';
+import OnBoardEmployeeList from './OnBoardEmployeeList'
 
 const Onboarding = () => {
   const [activeComponent, setActiveComponent] = useState(null);
@@ -12,17 +13,7 @@ const Onboarding = () => {
 
 
  const onboardingMenuItems = [
-  {
-    label: 'Joining Report',
-    component: 'joining-report',
-    icon: FileText,
-    color: 'from-orange-500 to-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    hoverBg: 'hover:bg-orange-100',
-    textColor: 'text-orange-700',
-    iconColor: 'text-orange-600'
-  },
+
   {
     label: 'Mediclaim Enrolment',
     component: 'Mediclaim-Enrolment',
@@ -34,6 +25,18 @@ const Onboarding = () => {
     textColor: 'text-blue-700',
     iconColor: 'text-blue-600'
   },
+
+    {
+    label: 'Joining Report',
+    component: 'joining-report',
+    icon: FileText,
+    color: 'from-orange-500 to-orange-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200',
+    hoverBg: 'hover:bg-orange-100',
+    textColor: 'text-orange-700',
+    iconColor: 'text-orange-600'
+  },
   {
     label: 'Appointment',
     component: 'Appointement',
@@ -44,7 +47,21 @@ const Onboarding = () => {
     hoverBg: 'hover:bg-emerald-100',
     textColor: 'text-emerald-700',
     iconColor: 'text-emerald-600'
+  },
+ {
+    label: 'Onboard Employee List',
+    component: 'Onboarding Employee List',
+    icon: FileText,
+    color: 'from-purple-500 to-purple-600',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    hoverBg: 'hover:bg-purple-100',
+    textColor: 'text-purple-700',
+    iconColor: 'text-purple-600'
   }
+
+
+
 ];
 
   const renderOnboardingComponent = () => {
@@ -58,6 +75,10 @@ const Onboarding = () => {
       case 'Appointement':
 
     return <Appointement />;
+
+       case 'Onboarding Employee List':
+
+    return <OnBoardEmployeeList />;
 
        
 

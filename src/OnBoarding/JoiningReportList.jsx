@@ -18,6 +18,7 @@ import History from './History.jsx';
 import Swal from 'sweetalert2';
 import { FilePen } from 'lucide-react';
 import JoiningReportForm from './JoiningReportForm.jsx';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 const JoiningReportList = () => {
   const [joiningData, setJoiningData] = useState([]);
@@ -41,7 +42,7 @@ const [openReportModal, setOpenReportModal] = useState(false);
   //----------------------------JoiningDataStart------------------------//
   const joinData = async () => {
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `${API_BASE_URL}/emp-verify-data`,
         {
           headers: {
@@ -58,11 +59,10 @@ const [openReportModal, setOpenReportModal] = useState(false);
   
 
 
-    const formattedRows = apiData
+const formattedRows = apiData
   .filter(item => {
     const hasJoiningDate =
-      item.onBoarding === "1" 
-    
+      item.onBoarding == "1" || item.onBoarding == "2";
 
     return hasJoiningDate;
   })
@@ -86,6 +86,7 @@ SUB_POST: item?.SUB_POST,
   MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
 RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 hrEvaluationFile:item?.hrEvaluationFile,
+  
 
     joining_status: 'Joined',
     offer_letter: item.OfferLetterFlag ?? '',
@@ -98,7 +99,7 @@ hrEvaluationFile:item?.hrEvaluationFile,
   }));
 
 
-      console.log("Filtered formattedRows (with joining dates):", formattedRows);
+      console.log("Filtered formattedRows (with joining dates):", apiData);
       setJoiningData(formattedRows);
       setFilteredData(formattedRows);
     } catch (error) {
@@ -113,6 +114,8 @@ hrEvaluationFile:item?.hrEvaluationFile,
       joinData();
     }
   }, [Token.token]);
+
+
 
 
   const handleReportClick = (rowData) => {
@@ -150,6 +153,8 @@ const handleCloseReportModal = () => {
     setFilteredData(filtered);
   };
 
+  
+
   const handleDocUploadClick = (rowData) => {
     setSelectedRow(rowData);
     setOpenDocModal(true);
@@ -163,6 +168,7 @@ const handleCloseReportModal = () => {
   const handleCloseModal = () => {
     setOpenDocModal(false);
     setSelectedRow(null);
+     
   };
 
   const handleCloseHistoryModal = () => {
@@ -403,6 +409,7 @@ const date_only = joiningDates
             ? [{
                 field: 'TYPE_PLANT',
                 headerName: 'Type Plant',
+                minWidth: 150,
                 flex: 1.2,
                 renderCell: (params) => (
                   <Box sx={{ color: '#374151' }}>
@@ -596,54 +603,27 @@ const date_only = joiningDates
       ),
     },
 
-    {
-      field: 'documents_status',
-      headerName: 'Docs Status',
-      flex: 0.8,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Chip
-          size="small"
-          label={params.value}
-          sx={{
-            backgroundColor: params.value === 'Complete' ? '#10b981' : '#f59e0b',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '11px',
-            height: '24px',
-          }}
-        />
-      ),
-    },
+    // {
+    //   field: 'documents_status',
+    //   headerName: 'Docs Status',
+    //   flex: 0.8,
+    //   minWidth: 100,
+    //   renderCell: (params) => (
+    //     <Chip
+    //       size="small"
+    //       label={params.value}
+    //       sx={{
+    //         backgroundColor: params.value === 'Complete' ? '#10b981' : '#f59e0b',
+    //         color: 'white',
+    //         fontWeight: 600,
+    //         fontSize: '11px',
+    //         height: '24px',
+    //       }}
+    //     />
+    //   ),
+    // },
 
    
-
-
-     {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="Send Email">
-          <Button
-            size="small"
-            variant="contained"
-            onClick={() => handleOfferLterEmail(params.row)}
-            sx={{
-              backgroundColor: '#10b981',
-              textTransform: 'none',
-              fontSize: '12px',
-              '&:hover': {
-                backgroundColor: '#059669',
-              },
-            }}
-          >
-            Send Email
-          </Button>
-        </Tooltip>
-      ),
-    }
 
   ];
 
@@ -791,33 +771,13 @@ const date_only = joiningDates
             overflow: 'auto',
             position: 'relative'
           }}>
-            {/* <button
-              onClick={handleCloseModal}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                border: 'none',
-                fontSize: '32px',
-                cursor: 'pointer',
-                color: '#ffffff',
-                zIndex: 10,
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                transition: 'all 0.2s'
-              }}
-            >
-              ×
-            </button> */}
+   
 
             <DocUpload
               rowData={selectedRow}
               onClose={handleCloseModal}
+            refreshTable={joinData}
+              Report = "JoiningReportList"
             />
           </div>
         </div>
@@ -871,6 +831,7 @@ const date_only = joiningDates
       <JoiningReportForm
         rowData={selectedRow}
         onClose={handleCloseReportModal}
+      
       />
     </div>
   </div>

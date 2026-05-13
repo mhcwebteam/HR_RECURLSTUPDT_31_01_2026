@@ -2,14 +2,17 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip } from '@mui/material';
+import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip, RadioGroup, FormControlLabel, Radio, FormControl, FormLabel, Divider, IconButton, CircularProgress } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
 import HistoryIcon from '@mui/icons-material/History';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../Config/Config.jsx';
@@ -17,6 +20,8 @@ import DocUpload from './DocUpload.jsx';
 import History from './History.jsx';
 import Swal from 'sweetalert2';
 import MediDocUpload from './MediDocUpload.jsx';
+import { CircleX, CloudUploadIcon, GroupIcon, Users } from 'lucide-react';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
 const Mediclaim = () => {
   const [joiningData, setJoiningData] = useState([]);
@@ -26,9 +31,25 @@ const Mediclaim = () => {
 
   const [selectedRow, setSelectedRow] = useState(null);
   const [openDocModal, setOpenDocModal] = useState(false);
+  const [openFamilyModal, setFamilyModal] = useState(false);
   const [openHistoryModal, setOpenHistoryModal] = useState(false);
+  const [joiningDates, setJoiningDates] = useState({});
+  
+const [familyFormData, setFamilyFormData] = useState({
+  spouseName: '',
+  spouseDob: '', // Added spouse date of birth
+  daughters: [],  // each daughter: { name: '', dob: '', file: null }
+  sons: [],       // each son: { name: '', dob: '', file: null }
+});
 
-    const [joiningDates, setJoiningDates] = useState({});
+const [fileErrors, setFileErrors] = useState({
+  spouse: '',
+  daughters: [],
+  sons: []
+});
+
+
+const [familyLoading, setFamilyLoading] = useState(false);
 
   const navigate = useNavigate();
   const [Token, useToken] = useState(() => {
@@ -36,79 +57,244 @@ const Mediclaim = () => {
     return userToken ? userToken : null;
   })
 
-  //----------------------------JoiningDataStart------------------------//
-  const joinData = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/emp-verify-data`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": `Bearer ${Token.token}`,
-          },
-        }
-      );
-
-
-      const apiData = response.data.data;
-
-  
-
-
-    const formattedRows = apiData
-  .filter(item => {
-    const hasJoiningDate =
-      item.onBoarding === "1" 
-    
-
-    return hasJoiningDate;
-  })
-  .map((item, index) => ({
-    id: item.verification_id || index,
-    CHILD_CASEID: item.child_caseid,
-    employee_name: item.name,
-    email: item.email,
-    phone: item.phone_number,
-    department: item.DEPT,
-    location: item.PLANT,
-    joining_date: item.joiningDate,
-    current_ctc: item.CURRENT_CTC,
-    expected_ctc: item.EXP_CTC,
-    offered_ctc: item.OFFER_CTC ?? '',
-     TYPE_PLANT: item?.TYPE_PLANT,
-GROUP_CODE: item?.GROUP_CODE,
-SUB_CODE: item?.SUB_CODE,
-SUB_POST: item?.SUB_POST,
- DESIG: item.DESIG || 'N/A',
-  MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
-RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
-hrEvaluationFile:item?.hrEvaluationFile,
-
-    joining_status: 'Joined',
-    offer_letter: item.OfferLetterFlag ?? '',
-    bgv_status: item.verification_status ?? '',
-    documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
-    current_stage: item.CURRENT_TASK,
-    hr_owner: item.CURRENT_USER,
-    created_at: item.created_at,
-    fullData: item,
+// Add Daughter
+const addDaughter = () => {
+  setFamilyFormData(prev => ({
+    ...prev,
+    daughters: [...prev.daughters, { name: '', dob: '', file: null }]
   }));
+};
 
+// Update Daughter
+const updateDaughter = (index, field, value) => {
+  const updatedDaughters = [...familyFormData.daughters];
+  updatedDaughters[index][field] = value;
+  setFamilyFormData({
+    ...familyFormData,
+    daughters: updatedDaughters
+  });
+};
 
-      console.log("Filtered formattedRows (with joining dates):", formattedRows);
-      setJoiningData(formattedRows);
-      setFilteredData(formattedRows);
-    } catch (error) {
-      console.error("Error in fetching joining data", error);
+// Remove Daughter
+const removeDaughter = (index) => {
+  const updatedDaughters = familyFormData.daughters.filter((_, i) => i !== index);
+  setFamilyFormData({
+    ...familyFormData,
+    daughters: updatedDaughters
+  });
+};
+
+// Add Son
+const addSon = () => {
+  setFamilyFormData(prev => ({
+    ...prev,
+    sons: [...prev.sons, { name: '', dob: '', file: null }]
+  }));
+};
+
+// Update Son
+const updateSon = (index, field, value) => {
+  const updatedSons = [...familyFormData.sons];
+  updatedSons[index][field] = value;
+  setFamilyFormData({
+    ...familyFormData,
+    sons: updatedSons
+  });
+};
+
+console.log(familyFormData,"fa444444444444444");
+
+// Remove Son
+const removeSon = (index) => {
+  const updatedSons = familyFormData.sons.filter((_, i) => i !== index);
+  setFamilyFormData({
+    ...familyFormData,
+    sons: updatedSons
+  });
+};
+
+// Handle File Selection
+const handleFileSelect = (event, type, index) => {
+  const file = event.target.files[0];
+  const error = validateFileType(file);
+
+  if (type === 'daughter') {
+    let errors = [...fileErrors.daughters];
+
+    if (error) {
+      errors[index] = error;
+      setFileErrors(prev => ({ ...prev, daughters: errors }));
+      return;
     }
-  };
 
-  useEffect(() => {
-    if (Token.token) {
-      joinData();
+    errors[index] = '';
+    setFileErrors(prev => ({ ...prev, daughters: errors }));
+
+    const updated = [...familyFormData.daughters];
+    updated[index].file = file;
+
+    setFamilyFormData({ ...familyFormData, daughters: updated });
+  }
+
+  if (type === 'son') {
+    let errors = [...fileErrors.sons];
+
+    if (error) {
+      errors[index] = error;
+      setFileErrors(prev => ({ ...prev, sons: errors }));
+      return;
     }
-  }, [Token.token]);
+
+    errors[index] = '';
+    setFileErrors(prev => ({ ...prev, sons: errors }));
+
+    const updated = [...familyFormData.sons];
+    updated[index].file = file;
+
+    setFamilyFormData({ ...familyFormData, sons: updated });
+  }
+};
+
+// Reset Family Form
+const resetFamilyForm = () => {
+  setFamilyFormData({
+    spouseName: '',
+    spouseDob: '',
+    daughters: [],
+    sons: [],
+  });
+
+  setFileErrors({
+      spouse: '',
+  daughters: [],
+  sons: []
+  })
+
+
+};
+
+// Handle Family Submit - Single API call
+const handleFamilySubmit = async () => {
+  setFamilyLoading(true);
+
+  try {
+    const formData = new FormData();
+
+    // Basic details
+    formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
+    formData.append('employee_name', selectedRow?.employee_name || '');
+    formData.append('employee_email', selectedRow?.email || '');
+    formData.append('spouse_name', familyFormData.spouseName || '');
+    formData.append('spouse_dob', familyFormData.spouseDob || ''); // Added spouse DOB
+    formData.append('daughters_count', familyFormData.daughters.length);
+    formData.append('sons_count', familyFormData.sons.length);
+      formData.append('onBoarding', 1);
+
+    // ✅ Spouse file
+    if (familyFormData.spouseFile) {
+      formData.append('spouseFile', familyFormData.spouseFile);
+    }
+
+    // Daughters
+    familyFormData.daughters.forEach((daughter, index) => {
+      formData.append(`daughter_${index + 1}_name`, daughter.name || '');
+      formData.append(`daughter_${index + 1}_dob`, daughter.dob || ''); // Added daughter DOB
+
+      if (daughter.file) {
+        formData.append(`daughter_${index + 1}_document`, daughter.file);
+      }
+    });
+
+    // Sons
+    familyFormData.sons.forEach((son, index) => {
+      formData.append(`son_${index + 1}_name`, son.name || '');
+      formData.append(`son_${index + 1}_dob`, son.dob || ''); // Added son DOB
+
+      if (son.file) {
+        formData.append(`son_${index + 1}_document`, son.file);
+      }
+    });
+
+    // ✅ Debug FormData
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/on-board-Store`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${Token.token}`,
+          // ❗ Don't manually set Content-Type (axios handles it)
+        },
+      }
+    );
+
+if (response.data.success || response.data.message) {
+
+  await Swal.fire({
+    icon: 'success',
+    title: 'Success!',
+    text: response.data.message || 'Family details saved successfully',
+    timer: 2000,
+    showConfirmButton: false
+  });
+
+  // AFTER alert completes
+  resetFamilyForm();
+  setFamilyModal(false);
+  setSelectedRow(null);
+  await joinData();
+
+    } else {
+      throw new Error(response.data.message || 'Failed to save');
+    }
+  } catch (error) {
+    console.error('FULL ERROR:', error);
+
+    Swal.fire(
+      'Error',
+      error.response?.data?.message || error.message || 'Something went wrong',
+      'error'
+    );
+  } finally {
+    setFamilyLoading(false);
+  }
+};
+
+// Close Family Modal
+const handleCloseFamilyModal = () => {
+  setFamilyModal(false);
+  setSelectedRow(null);
+  resetFamilyForm();
+};
+
+// Handle family form changes
+const handleFamilyChange = (e) => {
+  setFamilyFormData({
+    ...familyFormData,
+    [e.target.name]: e.target.value
+  });
+};
+
+// Handle Spouse File Selection
+const handleSpouseFileSelect = (event) => {
+  const file = event.target.files[0];
+  const error = validateFileType(file);
+
+  if (error) {
+    setFileErrors(prev => ({ ...prev, spouse: error }));
+    return;
+  }
+
+  setFileErrors(prev => ({ ...prev, spouse: '' }));
+
+  setFamilyFormData({
+    ...familyFormData,
+    spouseFile: file
+  });
+};
 
   const handleSearch = (e) => {
     const searchValue = e.target.value;
@@ -129,7 +315,7 @@ hrEvaluationFile:item?.hrEvaluationFile,
         (row.phone && row.phone.toLowerCase().includes(search)) ||
         (row.department && row.department.toLowerCase().includes(search)) ||
         (row.location && row.location.toLowerCase().includes(search)) ||
-        (row.hr_owner && row.hr_owner.toLowerCase().includes(search))
+       (row.hr_owner && row.hr_owner.toLowerCase().includes(search))
       );
     });
     setFilteredData(filtered);
@@ -140,6 +326,12 @@ hrEvaluationFile:item?.hrEvaluationFile,
     setOpenDocModal(true);
   };
 
+  const handleFamilyUploadClick = (rowData) => {
+    setSelectedRow(rowData);
+    resetFamilyForm();
+    setFamilyModal(true);
+  };
+
   const handleHistoryClick = (rowData) => {
     setSelectedRow(rowData);
     setOpenHistoryModal(true);
@@ -148,6 +340,8 @@ hrEvaluationFile:item?.hrEvaluationFile,
   const handleCloseModal = () => {
     setOpenDocModal(false);
     setSelectedRow(null);
+
+
   };
 
   const handleCloseHistoryModal = () => {
@@ -159,102 +353,155 @@ hrEvaluationFile:item?.hrEvaluationFile,
     navigate('/DocApproval', { state: { rowData } });
   };
 
+  const handleJoiningDateChange = (caseId, value) => {
+    setJoiningDates(prev => ({
+      ...prev,
+      [caseId]: value,
+    }));
+  };
 
-const handleJoiningDateChange = (caseId, value) => {
-  setJoiningDates(prev => ({
-    ...prev,
-    [caseId]: value,
-  }));
-};
-
-
-
-  const handleOfferLterEmail= async (rowData) =>
-
-
-
-
-  {
-
-  
-    try
-    {
+  const handleOfferLterEmail = async (rowData) => {
+    try {
       const confirm = await Swal.fire({
-          title: "Are you sure?",
-          text: "You want to Send this Mail",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Yes, Send",
-          cancelButtonText: "Cancel",
-          confirmButtonColor: "#2563eb",
-        });
-        if (!confirm.isConfirmed) return;
+        title: "Are you sure?",
+        text: "You want to Send this Mail",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Send",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#2563eb",
+      });
+      if (!confirm.isConfirmed) return;
 
+      const date_only = joiningDates ? Object.values(joiningDates)[0] : null;
 
-const date_only = joiningDates
-  ? Object.values(joiningDates)[0]
-  : null;
+      const payload = {
+        CHILD_CASEID: rowData.CHILD_CASEID,
+        EMAIL: rowData.email,
+        joiningDate: date_only,
+      }
 
-
-
-        const  payload =
-        {
-          CHILD_CASEID: rowData.CHILD_CASEID,
-          EMAIL     :rowData.email,
-          joiningDate: date_only,
+      const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${Token.token}`
         }
+      })
 
-        
-      const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
-        {
-        headers:
-        {
-           "Content-Type" :"application/json",
-           "Accept"       :"application/json",
-           "Authorization":`Bearer ${Token.token}`
-         }})
-
-     
-      if (ofrMailSend.data.message) 
-        {
-       
-
-    await Swal.fire({
-      icon: "success",
-      title: "Success",
-      text: "Mail Sent successfully",
-      timer: 1500,
-      showConfirmButton: false,
-    });
-
-
-
-
-
-           
-         } else {
-           await Swal.fire("Failed", response.data.message, "error");
-         }
-       } catch (error) {
-         console.error(error);
-         await Swal.fire(
-           "Error",
-           error.response?.data?.message || "Something went wrong",
-           "error"
-         );
-       }
+      if (ofrMailSend.data.message) {
+        await Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: "Mail Sent successfully",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        await Swal.fire("Failed", response.data.message, "error");
+      }
+    } catch (error) {
+      console.error(error);
+      await Swal.fire(
+        "Error",
+        error.response?.data?.message || "Something went wrong",
+        "error"
+      );
+    }
   }
 
+const validateFileType = (file) => {
+  const maxPhotoSize = 50 * 1024;
 
+  if (!file) return 'No file selected';
 
-    const hasTypePlant = filteredData?.some(row => row.TYPE_PLANT);
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    
+  if (!validTypes.includes(file.type)) {
+    return 'Only JPG, JPEG, PNG allowed';
+  }
 
-  
+  if (file.size > maxPhotoSize) {
+    return `Max 50KB allowed (Current: ${(file.size / 1024).toFixed(1)}KB)`;
+  }
 
+  return '';
+};
+
+  //----------------------------JoiningDataStart------------------------//
+  const joinData = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/emp-verify-data`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${Token.token}`,
+          },
+        }
+      );
+
+      const apiData = response.data.data;
+
+      console.log("appppppppppppp",apiData);
+
+      const formattedRows = apiData
+        .filter(item => {
+         const hasJoiningDate = item.onBoarding == "1";
+    // Condition 2: Must NOT be verified
+    const isNotVerified = item.onboarding_status !== "verified"; 
+
+    return hasJoiningDate && isNotVerified;
+  })
+        .map((item, index) => ({
+          id: item.verification_id || index,
+          CHILD_CASEID: item.child_caseid,
+          employee_name: item.name,
+          spouse_name: item.spouse_name,
+            spouse_dob: item.spouse_dob,
+          email: item.email,
+          phone: item.phone_number,
+          department: item.DEPT,
+          location: item.PLANT,
+          joining_date: item.joiningDate,
+          current_ctc: item.CURRENT_CTC,
+          expected_ctc: item.EXP_CTC,
+          offered_ctc: item.OFFER_CTC ?? '',
+          TYPE_PLANT: item?.TYPE_PLANT,
+          GROUP_CODE: item?.GROUP_CODE,
+          SUB_CODE: item?.SUB_CODE,
+          SUB_POST: item?.SUB_POST,
+          DESIG: item.DESIG || 'N/A',
+          MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
+          RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
+          hrEvaluationFile: item?.hrEvaluationFile,
+          joining_status: 'Joined',
+          offer_letter: item.OfferLetterFlag ?? '',
+          bgv_status: item.verification_status ?? '',
+          documents_status: item.overallDocments_aprvl === '1' ? 'Complete' : 'Pending',
+          current_stage: item.CURRENT_TASK,
+          hr_owner: item.CURRENT_USER,
+          created_at: item.created_at,
+          fullData: item,
+        }));
+
+      console.log("Filtered formattedRows (with joining dates):", formattedRows);
+      setJoiningData(formattedRows);
+      setFilteredData(formattedRows);
+    } catch (error) {
+      console.error("Error in fetching joining data", error);
+    }
+  };
+
+  useEffect(() => {
+    if (Token.token) {
+      joinData();
+    }
+  }, [Token.token]);
+
+  const hasTypePlant = filteredData?.some(row => row.TYPE_PLANT);
   const recCycle = filteredData?.some(row => row.RECRUIT_CYCLE);
-  
 
   const columns = [
     {
@@ -270,12 +517,11 @@ const date_only = joiningDates
         </Box>
       ),
     },
-
     {
       field: 'doc_upload',
-      headerName: 'Doc Upload',
+      headerName: 'Mediclaim Upload',
       flex: 0.8,
-      minWidth: 100,
+      minWidth: 140,
       sortable: false,
       renderCell: (params) => (
         <Button
@@ -302,8 +548,7 @@ const date_only = joiningDates
         </Button>
       ),
     },
-
-   {
+    {
       field: 'history',
       headerName: 'History',
       flex: 1,
@@ -333,10 +578,9 @@ const date_only = joiningDates
           >
             View
           </Button>
-        </Box>
+       </Box>
       ),
     },
-
     {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
@@ -348,36 +592,28 @@ const date_only = joiningDates
         </Box>
       ),
     },
-
-            ...(hasTypePlant
-            ? [{
-                field: 'TYPE_PLANT',
-                headerName: 'Type Plant',
-                flex: 1.2,
-                renderCell: (params) => (
-                  <Box sx={{ color: '#374151' }}>
-                    {params.value}
-                  </Box>
-                ),
-              }]
-            : []),
-        
-          // ✅ MUST be array
-          ...(recCycle
-            ? [{
-                field: 'RECRUIT_CYCLE',
-                headerName: 'Emp Level',
-                flex: 1.2,
-                renderCell: (params) => (
-                  <Box sx={{ color: '#374151' }}>
-                    {params.value}
-                  </Box>
-                ),
-              }]
-            : []),
-
-
-  
+    ...(hasTypePlant ? [{
+      field: 'TYPE_PLANT',
+      headerName: 'Type Plant',
+      minWidth: 120,
+      flex: 1.2,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
+    ...(recCycle ? [{
+      field: 'RECRUIT_CYCLE',
+      headerName: 'Emp Level',
+      flex: 1.2,
+            minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
     {
       field: 'employee_name',
       headerName: 'Employee Name',
@@ -411,7 +647,6 @@ const date_only = joiningDates
         </Box>
       ),
     },
-
     {
       field: 'department',
       headerName: 'Department',
@@ -423,8 +658,7 @@ const date_only = joiningDates
         </Box>
       ),
     },
-
-      {
+    {
       field: 'MANPOWER_DESG',
       headerName: 'M.Designation',
       flex: 1.2,
@@ -432,100 +666,92 @@ const date_only = joiningDates
       renderCell: (params) => {
         const subCode = params.row.SUB_CODE;
         const value = params.value || 'N/A';
-    
         return (
-          <Box
-            sx={{
-              color: '#374151',
-              padding: '2px 8px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-            }}
-          >
+          <Box sx={{ color: '#374151', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
             {subCode ? `${subCode} - ${value}` : value}
           </Box>
         );
       },
     },
-
-        
-              {
-              field: 'DESIG',
-              headerName: 'Designation',
-              flex: 1.2,
-              minWidth: 130,
-              
-               renderCell: (params) => (
-            
-                    <Box sx={{ color: '#374151', fontSize: '12px' }}>
-            
-                      {params.value}
-            
-                    </Box>
-            
-                  ),
-            },
+    {
+      field: 'DESIG',
+      headerName: 'Designation',
+      flex: 1.2,
+      minWidth: 130,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+          {params.value}
+        </Box>
+      ),
+    },
     {
       field: 'location',
       headerName: 'Location',
       flex: 1.2,
-      minWidth: 140,
+      minWidth: 220,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
         </Box>
       ),
     },
-{
-  field: 'joining_date',
-  headerName: 'Joining Date',
-  flex: 1,
-  minWidth: 110,
-  renderCell: (params) => {
-    const caseId = params.row.CHILD_CASEID;
-
-
-
-    return (
-      <TextField
-        size="small"
-        type="date"
-        value={
-          joiningDates[caseId] ??
-          (params.row.joining_date
-            ? params.row.joining_date.split('T')[0]
-            : '')
-        }
-        onChange={(e) =>
-          handleJoiningDateChange(caseId, e.target.value)
-        }
-        sx={{
-          width: '100%',
-          '& .MuiOutlinedInput-root': {
-            fontSize: '12px',
-            height: '32px',
-            '& fieldset': {
-              borderColor: '#d1d5db',
+    {
+      field: 'joining_date',
+      headerName: 'Joining Date',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => {
+        const caseId = params.row.CHILD_CASEID;
+        return (
+          <TextField
+            size="small"
+            type="date"
+            value={joiningDates[caseId] ?? (params.row.joining_date ? params.row.joining_date.split('T')[0] : '')}
+            onChange={(e) => handleJoiningDateChange(caseId, e.target.value)}
+            sx={{
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                fontSize: '12px',
+                height: '32px',
+                '& fieldset': { borderColor: '#d1d5db' },
+                '&:hover fieldset': { borderColor: '#667eea' },
+                '&.Mui-focused fieldset': { borderColor: '#667eea' },
+              },
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'familyUpload',
+      headerName: 'Family Upload',
+      flex: 1.2,
+        minWidth: 140,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<Users className='w-4' />}
+          onClick={() => handleFamilyUploadClick(params.row)}
+          sx={{
+            fontSize: '10px',
+            padding: '4px 10px',
+            borderRadius: '8px',
+            textTransform: 'capitalize',
+            backgroundColor: '#10b981',
+            fontWeight: 600,
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+            '&:hover': {
+              backgroundColor: '#059669',
+              boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
+              transform: 'translateY(-1px)',
             },
-            '&:hover fieldset': {
-              borderColor: '#667eea',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#667eea',
-            },
-          },
-        }}
-      />
-    );
-  },
-},
-
-
-
-
-
-
+          }}
+        >
+          Upload
+        </Button>
+      ),
+    },
     {
       field: 'joining_status',
       headerName: 'Status',
@@ -545,56 +771,48 @@ const date_only = joiningDates
         />
       ),
     },
-
-    {
-      field: 'documents_status',
-      headerName: 'Docs Status',
-      flex: 0.8,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Chip
-          size="small"
-          label={params.value}
-          sx={{
-            backgroundColor: params.value === 'Complete' ? '#10b981' : '#f59e0b',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '11px',
-            height: '24px',
-          }}
-        />
-      ),
-    },
-
-   
-
-
-     {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Tooltip title="Send Email">
-          <Button
-            size="small"
-            variant="contained"
-            onClick={() => handleOfferLterEmail(params.row)}
-            sx={{
-              backgroundColor: '#10b981',
-              textTransform: 'none',
-              fontSize: '12px',
-              '&:hover': {
-                backgroundColor: '#059669',
-              },
-            }}
-          >
-            Send Email
-          </Button>
-        </Tooltip>
-      ),
-    }
-
+    // {
+    //   field: 'documents_status',
+    //   headerName: 'Docs Status',
+    //   flex: 0.8,
+    //   minWidth: 100,
+    //   renderCell: (params) => (
+    //     <Chip
+    //       size="small"
+    //       label={params.value}
+    //       sx={{
+    //         backgroundColor: params.value === 'Complete' ? '#10b981' : '#f59e0b',
+    //         color: 'white',
+    //         fontWeight: 600,
+    //         fontSize: '11px',
+    //         height: '24px',
+    //       }}
+    //     />
+    //   ),
+    // },
+    // {
+    //   field: 'actions',
+    //   headerName: 'Actions',
+    //   width: 120,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <Tooltip title="Send Email">
+    //       <Button
+    //         size="small"
+    //         variant="contained"
+    //         onClick={() => handleOfferLterEmail(params.row)}
+    //         sx={{
+    //           backgroundColor: '#10b981',
+    //           textTransform: 'none',
+    //           fontSize: '12px',
+    //           '&:hover': { backgroundColor: '#059669' },
+    //         }}
+    //       >
+    //         Send Email
+    //       </Button>
+    //     </Tooltip>
+    //   ),
+    // }
   ];
 
   return (
@@ -631,39 +849,20 @@ const date_only = joiningDates
                   backgroundColor: '#f8fafc',
                   height: '38px',
                   fontSize: '13px',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                  }
+                  '&:hover': { backgroundColor: '#f1f5f9' },
+                  '&.Mui-focused': { backgroundColor: '#ffffff' }
                 }
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#cedef2ff",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#d1d6ebff",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#667eea",
-                  },
+                  "& fieldset": { borderColor: "#cedef2ff" },
+                  "&:hover fieldset": { borderColor: "#d1d6ebff" },
+                  "&.Mui-focused fieldset": { borderColor: "#667eea" },
                 },
               }}
             />
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{
-              color: '#64748b',
-              minWidth: 'fit-content',
-              fontWeight: 500,
-              fontSize: '13px'
-            }}>
-              {filteredData.length} joining reports
-            </Typography>
-          </Box>
+         
         </Box>
 
         <Box sx={{
@@ -717,6 +916,385 @@ const date_only = joiningDates
         </Box>
       </Paper>
 
+{openFamilyModal && selectedRow && (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    padding: '20px'
+  }}>
+    <Paper sx={{
+      width: '100%',
+      maxWidth: 600,
+      maxHeight: '90vh',
+      overflow: 'auto',
+      borderRadius: '16px',
+      position: 'relative'
+    }}>
+      {/* Header */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 24px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          👨‍👩‍👧‍👦 Family Details
+        </Typography>
+        <IconButton onClick={handleCloseFamilyModal} sx={{ color: 'white' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      {/* Form Body */}
+      <Box sx={{ padding: '24px' }}>
+        {/* Employee Info */}
+        <Box sx={{
+          backgroundColor: '#f8fafc',
+          padding: '12px 16px',
+          borderRadius: '12px',
+          marginBottom: '24px'
+        }}>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            Employee: <strong>{selectedRow?.employee_name || 'N/A'}</strong>
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            Case ID: <strong>{selectedRow?.CHILD_CASEID || 'N/A'}</strong>
+          </Typography>
+        </Box>
+
+        {/* Spouse Name with DOB and Upload */}
+        <Box sx={{ marginBottom: '24px' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#374151', mb: 2 }}>
+            👰 Spouse Details
+          </Typography>
+         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField
+              sx={{ flex: 1, minWidth: '200px' }}
+              label="Spouse Name"
+              name="spouseName"
+              value={familyFormData.spouseName}
+              onChange={handleFamilyChange}
+              placeholder="Enter spouse's full name"
+              size="small"
+              required
+            />
+            <TextField
+              sx={{ flex: 1, minWidth: '150px' }}
+              label="Date of Birth"
+              name="spouseDob"
+              type="date"
+              value={familyFormData.spouseDob}
+              onChange={handleFamilyChange}
+              size="small"
+              InputLabelProps={{ shrink: true }}
+            />
+            <Button
+              size="small"
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                borderColor: '#667eea',
+                color: '#667eea',
+                flexShrink: 0,
+                '&:hover': {
+                  borderColor: '#764ba2',
+                  backgroundColor: '#f5f3ff'
+                }
+              }}
+            >
+              Upload
+              <input
+                type="file"
+                hidden
+              accept="image/jpeg,image/jpg,image/png"
+                onChange={(e) => handleSpouseFileSelect(e)}
+              />
+            </Button>
+          </Box>
+          {familyFormData.spouseFile && (
+            <Typography variant="caption" sx={{ color: '#10b981', display: 'block', marginTop: '8px' }}>
+              📄 {familyFormData.spouseFile.name.substring(0, 30)}
+            </Typography>
+          )}
+
+          {fileErrors.spouse && (
+  <Typography variant="caption" sx={{ color: 'red', display: 'block', mt: 1 }}>
+    {fileErrors.spouse}
+  </Typography>
+)}
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Daughters Section */}
+        <Box sx={{ marginBottom: '24px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#374151' }}>
+              👧 Daughters
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={addDaughter}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '20px',
+                borderColor: '#10b981',
+                color: '#10b981',
+               '&:hover': {
+                  borderColor: '#059669',
+                  backgroundColor: '#f0fdf4'
+                }
+              }}
+            >
+              + Add Daughter
+            </Button>
+          </Box>
+
+          {/* Dynamic Daughter Fields */}
+          {familyFormData.daughters?.map((daughter, index) => (
+            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
+     <IconButton
+  onClick={() => removeDaughter(index)}
+  size="small"
+  sx={{
+    position: 'absolute',
+    top:-8,
+    right: -5,
+    color: '#ef4444',
+    backgroundColor: '#fff',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+    '&:hover': {
+      backgroundColor: '#fee2e2'
+    }
+  }}
+>
+  <CircleX size={16} />
+</IconButton>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  sx={{ flex: 1, minWidth: '180px' }}
+                  label={`Daughter ${index + 1} Name`}
+                  value={daughter.name}
+                  onChange={(e) => updateDaughter(index, 'name', e.target.value)}
+                  placeholder="Enter daughter's name"
+                  size="small"
+                />
+                <TextField
+                  sx={{ flex: 1, minWidth: '150px' }}
+                  label="Date of Birth"
+                  type="date"
+                  value={daughter.dob}
+                  onChange={(e) => updateDaughter(index, 'dob', e.target.value)}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  component="label"
+                  startIcon={<CloudUploadIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    '&:hover': {
+                      borderColor: '#764ba2',
+                      backgroundColor: '#f5f3ff'
+                    }
+                  }}
+                >
+                  Upload
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => handleFileSelect(e, 'daughter', index)}
+                  />
+                </Button>
+
+
+              </Box>
+              {daughter.file && (
+                <Typography variant="caption" sx={{ color: '#10b981', display: 'block', marginTop: '8px' }}>
+                  📄 {daughter.file.name.substring(0, 30)}
+                </Typography>
+              )}
+
+              {fileErrors.daughters[index] && (
+  <Typography variant="caption" sx={{ color: 'red', mt: 1 }}>
+    {fileErrors.daughters[index]}
+  </Typography>
+)}
+            </Box>
+          ))}
+          
+          {(!familyFormData.daughters || familyFormData.daughters.length === 0) && (
+            <Typography variant="body2" sx={{ color: '#9ca3af', textAlign: 'center', py: 2 }}>
+              No daughters added. Click "+ Add Daughter" to add.
+            </Typography>
+          )}
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Sons Section */}
+        <Box sx={{ marginBottom: '24px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#374151' }}>
+              👦 Sons
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={addSon}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '20px',
+                borderColor: '#10b981',
+                color: '#10b981',
+                '&:hover': {
+                  borderColor: '#059669',
+                  backgroundColor: '#f0fdf4'
+                }
+              }}
+            >
+              + Add Son
+            </Button>
+          </Box>
+
+          {/* Dynamic Son Fields */}
+          {familyFormData.sons?.map((son, index) => (
+            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
+             <IconButton
+  onClick={() => removeSon(index)}
+  size="small"
+  sx={{
+    position: 'absolute',
+    top:-8,
+    right: -5,
+    color: '#ef4444',
+    backgroundColor: '#fff',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+    '&:hover': {
+      backgroundColor: '#fee2e2'
+    }
+  }}
+>
+  <CircleX size={16} />
+</IconButton>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  sx={{ flex: 1, minWidth: '180px' }}
+                  label={`Son ${index + 1} Name`}
+                  value={son.name}
+                  onChange={(e) => updateSon(index, 'name', e.target.value)}
+                  placeholder="Enter son's name"
+                  size="small"
+                />
+                <TextField
+                  sx={{ flex: 1, minWidth: '150px' }}
+                  label="Date of Birth"
+                  type="date"
+                  value={son.dob}
+                  onChange={(e) => updateSon(index, 'dob', e.target.value)}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  component="label"
+                  startIcon={<CloudUploadIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    '&:hover': {
+                      borderColor: '#764ba2',
+                      backgroundColor: '#f5f3ff'
+                    }
+                  }}
+                >
+                  Upload
+                  <input
+                    type="file"
+                    hidden
+                  accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => handleFileSelect(e, 'son', index)}
+                  />
+                </Button>
+              </Box>
+              {son.file && (
+                <Typography variant="caption" sx={{ color: '#10b981', display: 'block', marginTop: '8px' }}>
+                  📄 {son.file.name.substring(0, 30)}
+                </Typography>
+              )}
+                        {fileErrors.sons[index] && (
+  <Typography variant="caption" sx={{ color: 'red', mt: 1 }}>
+    {fileErrors.sons[index]}
+  </Typography>
+)}
+            </Box>
+          ))}
+
+          
+          {(!familyFormData.sons || familyFormData.sons.length === 0) && (
+            <Typography variant="body2" sx={{ color: '#9ca3af', textAlign: 'center', py: 2 }}>
+              No sons added. Click "+ Add Son" to add.
+            </Typography>
+          )}
+        </Box>
+
+
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', marginTop: '16px' }}>
+          <Button
+            variant="outlined"
+            onClick={handleCloseFamilyModal}
+            sx={{ textTransform: 'none', borderRadius: '8px' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleFamilySubmit}
+            disabled={familyLoading}
+            startIcon={familyLoading ? <CircularProgress size={20} /> : <SaveIcon />}
+            sx={{
+              textTransform: 'none',
+              borderRadius: '8px',
+              backgroundColor: '#10b981',
+              '&:hover': { backgroundColor: '#059669' }
+            }}
+          >
+            {familyLoading ? 'Saving...' : 'Save Family Details'}
+          </Button>
+        </Box>
+      </Box>
+    </Paper>
+  </div>
+)}
+
       {/* DocUpload Modal */}
       {openDocModal && selectedRow && (
         <div style={{
@@ -768,6 +1346,7 @@ const date_only = joiningDates
             <MediDocUpload
               rowData={selectedRow}
               onClose={handleCloseModal}
+                refreshTable={joinData}
             />
           </div>
         </div>
@@ -780,7 +1359,6 @@ const date_only = joiningDates
           onClose={handleCloseHistoryModal}
           data={selectedRow.fullData}
           onStatusChange={() => {
-            // Refresh data after status change
             joinData();
           }}
         />

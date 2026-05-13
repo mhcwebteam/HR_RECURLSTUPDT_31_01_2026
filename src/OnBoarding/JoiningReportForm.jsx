@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { X, Printer } from 'lucide-react';
 import logo from "../../src/asset/imagesmy.png";
+
+
 const JoiningReportForm = ({ rowData, onClose }) => {
   
 
