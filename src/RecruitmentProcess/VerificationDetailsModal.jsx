@@ -461,7 +461,7 @@ const handleSubmit = async () => {
   
   Swal.fire({
     title: 'Loading...',
-    text: 'Please wait',
+    text: 'Please wait...',
     allowOutsideClick: false,
     didOpen: () => Swal.showLoading()
   });

@@ -31,6 +31,9 @@ function ManPowerView({ caseId, onClose }) {
   const [modalType, setModalType] = useState("");
   const [deptdesigndata, setDeptDesign] = useState({ empDept: '', empDesignation: '' });
 
+
+  console.log(formData.plant,"ytyyyyyyyyyyy")
+
   useEffect(() => {
     const uid = userToken.Emp_Id;
     axiosInstance.get(`http://192.168.8.91:8084/inactive/phpapi/get_empdetails.php?uid=${uid}`)
@@ -53,7 +56,7 @@ function ManPowerView({ caseId, onClose }) {
         });
         if (response.data) {
           console.log("ressssssssssssssssss",response.data);
-          setFormData(prev => ({ ...prev, ...response.data, caseid: response.data.CHILD_CASEID }));
+          setFormData(prev => ({ ...prev, ...response?.data?.data, caseid: response?.data?.data?.CHILD_CASEID }));
           if (response.data.CUR_TASK) setCurrentTask(response.data.CUR_TASK);
         }
       } catch (error) {
@@ -366,7 +369,7 @@ const CustomDateField = () => (
                   {/* Approvals Section */}
                   <motion.div>
                     {(formData?.GM_STATUS || formData?.PRJ_STATUS || formData?.FUNC_STATUS ||
-                      formData?.SP_STATUS || formData?.EVC_STATUS || formData?.HO_HOD_STATUS) && (
+                      formData?.SP_STATUS || formData?.HO_HOD_STATUS) && (
                         <div className="rounded-xl shadow-sm p-2 border-2 border-yellow-200 mt-1.5">
                           <div className="mb-1.5">
                             <div className="flex items-center gap-1.5">
@@ -402,12 +405,12 @@ const CustomDateField = () => (
                                 <textarea value={formData?.SP_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
                               </div>
                             )}
-                            {formData?.EVC_STATUS && (
+                    
                               <div>
                                 <label className="block mb-0.5 text-gray-700 text-xs font-semibold">EVC:</label>
-                                <textarea value={formData?.EVC_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
+                                <textarea value={formData?.EVC_REM  || formData?.CFO_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
                               </div>
-                            )}
+                          
                             {formData?.HO_HOD_STATUS && (
                               <div>
                                 <label className="block mb-0.5 text-gray-700 text-xs font-semibold">HOD:</label>

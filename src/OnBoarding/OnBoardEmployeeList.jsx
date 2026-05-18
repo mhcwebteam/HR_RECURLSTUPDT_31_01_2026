@@ -653,47 +653,33 @@ const OnBoardEmployeeList = () => {
         );
       }
     },
-    {
-      field: 'joining_date',
-      headerName: 'Joining Date',
-      flex: 1,
-      minWidth: 130,
-      renderCell: (params) => {
-        const caseId = params.row.CHILD_CASEID;
-        const isFinalSubmitted = params.row.isFinalSubmitted;
-        
-        return (
-          <TextField
-            size="small"
-            type="date"
-            value={
-              joiningDates[caseId] ??
-              (params.row.joining_date
-                ? params.row.joining_date.split('T')[0]
-                : '')
-            }
-            onChange={(e) => handleJoiningDateChange(caseId, e.target.value)}
-            disabled={isFinalSubmitted}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                fontSize: '12px',
-                height: '32px',
-                '& fieldset': {
-                  borderColor: '#d1d5db',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#667eea',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#667eea',
-                },
-              },
-            }}
-          />
-        );
-      },
-    },
+{
+  field: 'joining_date',
+  headerName: 'Joining Date',
+  flex: 1,
+  minWidth: 110,
+  renderCell: (params) => {
+    const formattedDate = params.row.joining_date
+      ? new Date(params.row.joining_date).toLocaleDateString('en-GB')
+      : '';
+
+    return (
+      <TextField
+        size="small"
+        type="text"
+        disabled
+        value={formattedDate} // DD-MM-YYYY
+        sx={{
+          width: '100%',
+          '& .MuiOutlinedInput-root': {
+            fontSize: '12px',
+            height: '32px',
+          },
+        }}
+      />
+    );
+  },
+},
     {
       field: 'joining_status',
       headerName: 'Status',

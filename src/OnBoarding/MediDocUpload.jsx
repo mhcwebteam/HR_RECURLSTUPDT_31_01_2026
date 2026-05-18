@@ -499,6 +499,8 @@ const toBase64ViaAxios = async (url) => {
       formData.append('onboarding_status', "verified");
       formData.append("mediclaim_form", pdfBlob, fileName);
           formData.append("onBoarding", 2);
+              formData.append("MED_STATUS", "YES" || "");
+
       const response = await axiosInstance.post(
         `${API_BASE_URL}/on-board-Store`,
         formData,
@@ -595,18 +597,13 @@ const toBase64ViaAxios = async (url) => {
                         Mediclaim Data Enrolment Form
                       </p>
                     </div>
-                    <div className="px-3 py-1.5 text-[10px] text-right min-w-[160px]">
-                      <p className="font-semibold">DIR No. ASDPL-HR-F31</p>
-                      <p>
-                        Date:{" "}
-                        {new Date().toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                      <p>Rev. Version 02</p>
-                    </div>
+                <div className="px-3 py-1.5 text-[10px] text-right min-w-[160px]">
+  <p className="font-semibold">DIR No. ASDPL-HR-F31</p>
+  <p>
+    Date: 01st Nov, 2019
+  </p>
+  <p>Rev. Version 02</p>
+</div>
                   </div>
                 </div>
               </div>
@@ -626,7 +623,7 @@ const toBase64ViaAxios = async (url) => {
                 },
                 {
                   label: "Designation",
-                  value: rowData?.DESIG?.toUpperCase(),
+                  value: rowData?.MANPOWER_DESG?.toUpperCase(),
                 },
                 {
                   label: "Department",

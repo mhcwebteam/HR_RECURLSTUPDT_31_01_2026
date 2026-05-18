@@ -368,7 +368,7 @@ setSelectedCandidate({ ...user });
   }
 };
 
-console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuu",ofrList);
+
 
 
   const filteredData = useMemo(() => {

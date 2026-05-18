@@ -9,6 +9,8 @@ import axiosInstance from '../Config/axiosConfig';
 
 const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
 
+  console.log("doddddddddddddddddd",rowData);
+
  
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -24,7 +26,10 @@ const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
 
   const [uploadedDocsStatus, setUploadedDocsStatus] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewingPdf, setViewingPdf] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState({});
 
+  
   useEffect(() => {
     const styleId = 'swal-z-index-fix';
     if (!document.getElementById(styleId)) {
@@ -77,13 +82,28 @@ const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
     { id: 12, name: 'JOINING REPORT', apiKey: 'joining_report', statusKey: 'joining_report_Status', documentIdKey: 'joining_report_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
     { id: 13, name: 'CODE OF CONDUCT WITH ATTESTATION', apiKey: 'code_of_conduct', statusKey: 'code_of_conduct_Status', documentIdKey: 'code_of_conduct_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
     { id: 14, name: 'PAYMENT OF GRATUITY FORM', apiKey: 'gratuity_form', statusKey: 'gratuity_form_Status', documentIdKey: 'gratuity_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 15, name: 'MEDICAL ENROLMENT FORM', apiKey: 'mediclaim_form', statusKey: 'mediclaim_form_Status', documentIdKey: 'mediclaim_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 16, name: 'NOMINATION AND DECLARATION FORM -2 (EPFO) / ESIC FORM -1', apiKey: 'epfo_form', statusKey: 'epfo_form_Status', documentIdKey: 'epfo_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 17, name: 'DATA PROTECTION AND PRIVACY POLICY', apiKey: 'privacy_policy', statusKey: 'privacy_policy_Status', documentIdKey: 'privacy_policy_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 18, name: 'EPFO COMPOSITE DECLARATION FORM 11', apiKey: 'epfo_form_11', statusKey: 'epfo_form_11_Status', documentIdKey: 'epfo_form_11_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 19, name: 'IT DECLARATION FILLED FORM (IF APPLICABLE)', apiKey: 'it_declaration', statusKey: 'it_declaration_Status', documentIdKey: 'it_declaration_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 20, name: 'MEDICAL REPORTS (CBP, CUE & ABO Typing)', apiKey: 'medical_reports', statusKey: 'medical_reports_Status', documentIdKey: 'medical_reports_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
-    { id: 21, name: 'UAN Document', apiKey: 'UAN_FILE', statusKey: 'UAN_Status', documentIdKey: 'UAN_DocId', approved: false, fileName: '', filePath: '', type: 'single' }
+  
+    { id: 15, name: 'NOMINATION AND DECLARATION FORM -2 (EPFO) / ESIC FORM -1', apiKey: 'epfo_form', statusKey: 'epfo_form_Status', documentIdKey: 'epfo_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 16, name: 'DATA PROTECTION AND PRIVACY POLICY', apiKey: 'privacy_policy', statusKey: 'privacy_policy_Status', documentIdKey: 'privacy_policy_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 17, name: 'EPFO COMPOSITE DECLARATION FORM 11', apiKey: 'epfo_form_11', statusKey: 'epfo_form_11_Status', documentIdKey: 'epfo_form_11_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 18, name: 'IT DECLARATION FILLED FORM (IF APPLICABLE)', apiKey: 'it_declaration', statusKey: 'it_declaration_Status', documentIdKey: 'it_declaration_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 19, name: 'MEDICAL REPORTS (CBP, CUE & ABO Typing)', apiKey: 'medical_reports', statusKey: 'medical_reports_Status', documentIdKey: 'medical_reports_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 20, name: 'UAN Document', apiKey: 'UAN_FILE', statusKey: 'UAN_Status', documentIdKey: 'UAN_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+      // { id: 21, name: 'MEDICAL ENROLMENT FORM', apiKey: 'mediclaim_form', statusKey: 'mediclaim_form_Status', documentIdKey: 'mediclaim_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+      {
+  id: 21,
+  name: 'MEDICAL ENROLMENT FORM',
+  apiKey: 'mediclaim_form',
+  statusKey: 'mediclaim_form_Status',
+  documentIdKey: 'mediclaim_form_DocId',
+  approved: false,
+  fileName: '',
+  filePath: '',
+  type: 'single',
+  showEnrollmentRadio: true,  // Flag to show radio buttons
+  enrollmentStatus: ''
+       // Will store 'yes' or 'no'
+}
   ]);
 
   const handleEditUpload = (item, subItem = null) => {
@@ -164,105 +184,27 @@ const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
     tempInput.click();
   }
 };
-  // Add this function after handleDownloadDocument or before renderActionButtons
-// const handleEditUpload = (item, subItem = null) => {
-//   // Create a file input and trigger it
-//   const inputId = subItem ? `edit-file-${item.id}-${subItem.id}` : `edit-file-${item.id}`;
-  
-//   // Check if input already exists, if not create it
-//   let fileInput = document.getElementById(inputId);
-//   if (!fileInput) {
-//     fileInput = document.createElement('input');
-//     fileInput.type = 'file';
-//     fileInput.id = inputId;
-//     fileInput.style.display = 'none';
-//     fileInput.accept = '.pdf,.jpg,.jpeg,.png';
-//     document.body.appendChild(fileInput);
-    
-//     // Handle file selection
-//     fileInput.onchange = (e) => {
-//       const file = e.target.files[0];
-//       if (file) {
-//         handleEditFileUpload(item, subItem, file);
-//       }
-//       // Clean up
-//       document.body.removeChild(fileInput);
-//     };
-//   }
-  
-//   fileInput.click();
-// };
-
-// Add this function to handle edit file upload
-const handleEditFileUpload = (item, subItem = null, file) => {
-  if (!file) return;
-  
-  // Show confirmation before replacing
-  Swal.fire({
-    title: 'Replace Document?',
-    text: `Are you sure you want to replace "${subItem?.name || item.name}"?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, Replace it!',
-    cancelButtonText: 'Cancel'
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      // Store the new file for submission
-      const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
-      setUploadedFiles(prev => ({ ...prev, [fileKey]: file }));
-      setUploadedDocsStatus(prev => ({ ...prev, [fileKey]: true }));
-      
-      // Update UI to show new file (temporarily)
-      const updatedChecklist = documentChecklist.map(docItem => {
-        if (docItem.id === item.id) {
-          if (subItem && docItem.subItems) {
-            const updatedSubItems = docItem.subItems.map(sub =>
-              sub.id === subItem.id
-                ? { 
-                    ...sub, 
-                    fileName: file.name, 
-                    filePath: URL.createObjectURL(file), 
-                    status: '0', // Reset to pending after edit
-                    approved: false 
-                  }
-                : sub
-            );
-            return { ...docItem, subItems: updatedSubItems };
-          }
-          return { 
-            ...docItem, 
-            fileName: file.name, 
-            filePath: URL.createObjectURL(file), 
-            status: '0', // Reset to pending after edit
-            approved: false 
-          };
-        }
-        return docItem;
-      });
-      setDocumentChecklist(updatedChecklist);
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'File Selected!',
-        text: `${file.name} has been selected. Click Submit to save changes.`,
-        timer: 2000,
-        showConfirmButton: false
-      });
-    }
-  });
-};
 
 
-  const ignoreDocs =
-  Report == 'JoiningReportList'
-    ? ['appointment_letter']
-    : [];
+
+    const ignoreDocs = Report == 'JoiningReportList'
+  ? ['appointment_letter', 'mediclaim_form']
+  : [];
 
 const isAllVerified = documentChecklist?.every((item) => {
   // Ignore appointment_letter only for JoiningReportList
   if (ignoreDocs.includes(item.apiKey)) return true;
+
+  // Medical Enrollment Form validation (id: 21)
+  if (item.id === 21) {
+    // Check if MED_STATUS is already 'YES' from API (already filled)
+    if (item.fullData?.MED_STATUS === 'YES') {
+      return true;
+    }
+    // Otherwise, must select Yes/No option
+    if (!item.enrollmentStatus) return false;
+    return true;
+  }
 
   // Multiple documents
   if (item.type === "multiple" && item.subItems) {
@@ -274,9 +216,47 @@ const isAllVerified = documentChecklist?.every((item) => {
 });
 
   const handleSubmit = async () => {
+
     const formData = new FormData();
     formData.append('CHILD_CASEID', rowData?.CHILD_CASEID);
+      
+
      { Report  == "JoiningReportList"  ? formData.append('onBoarding', 3) : formData.append('onBoarding', 4)};
+
+  const medicalItem = documentChecklist.find(item => item.id === 21);
+ formData.append('MED_STATUS', medicalItem.enrollmentStatus);
+
+
+      if (medicalItem && medicalItem.fullData?.MED_STATUS !== 'YES') {
+    // If MED_STATUS is not already YES from API, user must select Yes/No
+    if (!medicalItem.enrollmentStatus) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Medical Enrollment Required',
+        text: 'Please select Yes or No for Medical Enrollment Form before submitting.',
+        confirmButtonColor: '#f59e0b'
+      });
+      return;
+    }
+    
+    // If user selects "Yes", they need to upload the document
+    if (medicalItem.enrollmentStatus === 'YES') {
+      // Check if the document is uploaded
+      const hasFile = medicalItem.filePath;
+      const isUploaded = medicalItem.status == "1";
+
+      
+      if (!hasFile && !isUploaded) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Document Required',
+          text: 'Please upload the Medical Enrollment Form document when selecting "Yes".',
+          confirmButtonColor: '#dc2626'
+        });
+        return;
+      }
+    }
+  }
 
        const confirmResult = await Swal.fire({
     title: 'Are you sure?',
@@ -309,12 +289,12 @@ const isAllVerified = documentChecklist?.every((item) => {
     if (response.data.success) {
       await Swal.fire({ icon: "success", title: "Success!", text: response?.data?.message || "Form submitted successfully", timer: 2000, showConfirmButton: false });
       if (refreshTable) await refreshTable();
-      onClose();
+     
     }
+    onClose();
   };
 
-  const [viewingPdf, setViewingPdf] = useState(null);
-  const [uploadedFiles, setUploadedFiles] = useState({});
+
 
 useEffect(() => {
   if (rowData && rowData.fullData) {
@@ -322,7 +302,7 @@ useEffect(() => {
     setFormData({
       employeeName: employeeData.name || rowData.employee_name || '',
       empId: employeeData.child_caseid || rowData.CHILD_CASEID || '',
-      designation: employeeData.DESIG || employeeData.designation || rowData.department || '',
+      designation:  employeeData.designation  ||employeeData.MANPOWER_DESG || rowData.department || '',
       doj: employeeData.joiningDate || rowData.joining_date || '',
       department: employeeData.DEPT || rowData.department || '',
       siteLocation: employeeData.PLANT || rowData.location || ''
@@ -333,9 +313,6 @@ useEffect(() => {
       if (path.startsWith('http')) return path;
       return `${API_BASE_URLss}${path}`;
     };
-
-    
-   
     
     // 👇 Complete mapping for all documents
     const getDocSubmitKey = (apiKey) => {
@@ -387,6 +364,19 @@ useEffect(() => {
     
     if (employeeData.documents || employeeData) {
       const updatedChecklist = documentChecklist.map(item => {
+        // Handle Medical Enrollment Form (id: 21) - Set enrollmentStatus from MED_STATUS
+        if (item.id === 21) {
+          return {
+            ...item,
+            fullData: employeeData, // Store fullData for access to MED_STATUS
+            enrollmentStatus: employeeData.MED_STATUS === 'YES' ? 'YES' : (employeeData.MED_STATUS === 'NO' ? 'NO' : ''),
+            // Also set file info if document exists
+            fileName: employeeData.documents?.mediclaim_form ? employeeData.documents.mediclaim_form.split('/').pop() : '',
+            filePath: employeeData.documents?.mediclaim_form ? normalizeFileUrl(employeeData.documents.mediclaim_form) : '',
+            status: employeeData.documents?.mediclaim_form_Status || '0'
+          };
+        }
+        
         if (item.type === 'single') {
           const apiDoc = employeeData.documents[item.apiKey] || employeeData[item.apiKey];
           const status = item.statusKey ? employeeData.documents[item.statusKey] || employeeData[item.statusKey] : null;
@@ -504,39 +494,8 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
 };
 
 
-  // const handleFileUpload = (itemId, file, subItemId = null) => {
-  //   if (file) {
-  //     const updatedChecklist = documentChecklist.map(item => {
-  //       if (item.id === itemId) {
-  //         if (subItemId && item.subItems) {
-  //           const updatedSubItems = item.subItems.map(subItem =>
-  //             subItem.id === subItemId
-  //               ? { ...subItem, fileName: file.name, filePath: URL.createObjectURL(file), status: '0', approved: false, documentId: subItem.documentId || null, verificationId: subItem.verificationId || rowData?.fullData?.Verification_Id || null }
-  //               : subItem
-  //           );
-  //           return { ...item, subItems: updatedSubItems };
-  //         }
-  //         return { ...item, fileName: file.name, filePath: URL.createObjectURL(file), status: '0', approved: false, documentId: item.documentId || null, verificationId: item.verificationId || rowData?.fullData?.Verification_Id || null };
-  //       }
-  //       return item;
-  //     });
-  //     setDocumentChecklist(updatedChecklist);
 
-
-  //     const fileKey = subItemId ? `${itemId}-${subItemId}` : itemId;
-  //     setUploadedFiles(prev => ({ ...prev, [fileKey]: file }));
-  //     setUploadedDocsStatus(prev => ({ ...prev, [fileKey]: true }));
-  //     Swal.fire({ 
-  //       icon: 'success', 
-  //       title: 'File Uploaded!',
-  //        text: `${file.name} has been uploaded. Click Submit to save.`,
-  //         timer: 2000, 
-  //         showConfirmButton: false 
-  //       });
-  //   }
-  // };
-
-  const handleSubmitDocument = async (item, subItem = null) => {
+const handleSubmitDocument = async (item, subItem = null) => {
   if (isSubmitting) return;
 
   try {
@@ -560,6 +519,7 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
     // Check if it's an edit (has existing document ID) or new upload
     const isEdit = uploadedData?.existingDocumentId;
     const uploadedFile = isEdit ? uploadedData.file : uploadedData;
+    const existingDocumentId = uploadedData?.existingDocumentId;
 
     if (!uploadedFile) {
       await Swal.fire({
@@ -580,6 +540,13 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
     formData.append('CHILD_CASEID', childCaseId);
     formData.append(targetItem.apiKey, uploadedFile);
     formData.append('onBoarding', 2);
+    
+    // CRITICAL: Send the existing document ID to backend for update
+    if (isEdit && existingDocumentId) {
+      formData.append('DOCUMENT_ID', existingDocumentId);
+      formData.append('IS_UPDATE', 'true');
+      console.log('Updating existing document ID:', existingDocumentId);
+    }
 
     const response = await axiosInstance.post(
       `/on-board-Store`,
@@ -593,13 +560,20 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
     );
 
     if (response.data.success) {
-      // Use existing document ID if available, otherwise use response's document_id
+      // For edits, ALWAYS use the existing document ID
+      // For new uploads, get from response or use temporary
       const newDocumentId = isEdit 
-        ? uploadedData.existingDocumentId  // Keep existing ID
-        : (response?.data?.document_id || targetItem.documentId);
+        ? existingDocumentId  // Keep the same ID for updates
+        : (response?.data?.document_id || targetItem.documentId || `temp_${Date.now()}`);
       
       const verificationId = rowData?.fullData?.Verification_Id || null;
 
+      console.log('Document saved with ID:', newDocumentId, 'Is Edit:', isEdit);
+        if (refreshTable) {
+        await refreshTable();
+      }
+
+      // Update local state
       setDocumentChecklist(prevChecklist => {
         return prevChecklist.map(docItem => {
           if (docItem.id === item.id) {
@@ -610,9 +584,9 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
                   sub.id === subItem.id
                     ? {
                         ...sub,
-                        status: '0',
+                        status: '0',  // Reset to pending after update (needs re-approval)
                         approved: false,
-                        documentId: newDocumentId,  // Keep existing ID for edits
+                        documentId: newDocumentId,  // Keep same ID for edits
                         verificationId: verificationId,
                         fileName: uploadedFile.name,
                         filePath: URL.createObjectURL(uploadedFile)
@@ -623,9 +597,9 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
             }
             return {
               ...docItem,
-              status: '0',
+              status: '0',  // Reset to pending after update
               approved: false,
-              documentId: newDocumentId,  // Keep existing ID for edits
+              documentId: newDocumentId,  // Keep same ID for edits
               verificationId: verificationId,
               fileName: uploadedFile.name,
               filePath: URL.createObjectURL(uploadedFile)
@@ -649,11 +623,14 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
 
       await Swal.fire({
         icon: 'success',
-        title: 'Submitted!',
+        title: 'Success!',
         text: `${targetItem.name} ${isEdit ? 'updated' : 'submitted'} successfully.`,
         timer: 2000,
         showConfirmButton: false
       });
+
+      // Optional: Refresh parent table to get latest data
+    
     }
   } catch (error) {
     console.error('Error submitting document:', error);
@@ -665,13 +642,24 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
   } finally {
     setIsSubmitting(false);
   }
-};
-
-
+}; 
 
   
 
-  const handleViewDocument = (filePath) => { if (filePath) window.open(filePath, '_blank'); };
+const handleViewDocument = (filePath) => {
+  if (!filePath) return;
+
+  let fullPath = filePath;
+
+  if (filePath.includes('hrEvaldocument')) {
+    fullPath = filePath.replace(
+      'storage/',
+      'storage/verification_files/'
+    );
+  }
+
+  window.open(fullPath, '_blank');
+};
   const handleViewPdfInline = (filePath, fileName) => { if (filePath) setViewingPdf({ filePath, fileName }); };
   const handleClosePdfViewer = () => setViewingPdf(null);
   const handleDownloadDocument = (filePath, fileName) => {
@@ -685,37 +673,186 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
     }
   };
 
-  const handleApproveDocument = async (item, subItem = null) => {
-    const latestItem = documentChecklist.find(i => i.id === item.id);
-    const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
-    if (!targetItem) return;
-    const { documentId, verificationId, name: documentName } = targetItem;
-    const latest = latestItem?.apiKey == "hrEvaluationFile" ? "hr_evolution" : "";
-    if (!documentId || !verificationId) {
-      await Swal.fire({ icon: 'warning', title: 'Cannot Approve', html: `<p>Document ID or Verification ID is missing. Please submit the document first.</p>`, confirmButtonColor: '#f59e0b' });
-      return;
-    }
-    const result = await Swal.fire({ title: 'Are you sure?', text: `Approve ${documentName}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#16a34a', cancelButtonColor: '#dc2626', confirmButtonText: 'Yes, Approve', cancelButtonText: 'No' });
-    if (!result.isConfirmed) return;
-    try {
-      const response = await axiosInstance.post(`${API_BASE_URL}/verify-Doc-Status`, 
-        { Verification_Id: verificationId, Document_Id: documentId, doc_type: latest }, 
-        { headers: { Authorization: `Bearer ${userToken.token}`, 
-        'Content-Type': 'application/json' } });
 
-      setDocumentChecklist(prev => prev.map(docItem => {
-        if (docItem.id === item.id) {
-          if (subItem && docItem.subItems) return { ...docItem, subItems: docItem.subItems.map(sub => sub.id === subItem.id ? { ...sub, status: '1', approved: true } : sub) };
-          return { ...docItem, status: '1', approved: true };
+  const handleApproveDocument = async (item, subItem = null) => {
+  const latestItem = documentChecklist.find(i => i.id === item.id);
+
+  const targetItem = subItem
+    ? latestItem?.subItems?.find(s => s.id === subItem.id)
+    : latestItem;
+
+  if (!targetItem) return;
+
+  // FIXED VALUES
+  const documentId =
+    targetItem?.documentId ||
+    targetItem?.fullData?.documents?.mediclaim_form_DocId;
+
+  const verificationId =
+    targetItem?.verificationId ||
+    targetItem?.fullData?.Verification_Id;
+
+  const documentName = targetItem?.name;
+
+
+  const latest =
+    latestItem?.apiKey == "hrEvaluationFile"
+      ? "hr_evolution"
+      : "";
+
+  // VALIDATION
+  if (!documentId || !verificationId) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Cannot Approve',
+      html: `<p>Document ID or Verification ID is missing. Please submit the document first.</p>`,
+      confirmButtonColor: '#f59e0b'
+    });
+
+    return;
+  }
+
+  // CONFIRM
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Approve ${documentName}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Yes, Approve',
+    cancelButtonText: 'No'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+
+    // API CALL
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/verify-Doc-Status`,
+      {
+        Verification_Id: verificationId,
+        Document_Id: documentId,
+        doc_type: latest
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          'Content-Type': 'application/json'
         }
+      }
+    );
+
+    // UPDATE UI
+    setDocumentChecklist(prev =>
+      prev.map(docItem => {
+
+        if (docItem.id === item.id) {
+
+          // SUB ITEMS
+          if (subItem && docItem.subItems) {
+            return {
+              ...docItem,
+              subItems: docItem.subItems.map(sub =>
+                sub.id === subItem.id
+                  ? {
+                      ...sub,
+                      status: '1',
+                      approved: true
+                    }
+                  : sub
+              )
+            };
+          }
+
+          // NORMAL ITEMS
+          return {
+            ...docItem,
+            status: '1',
+            approved: true
+          };
+        }
+
         return docItem;
-      }));
-      setUploadedDocsStatus(prev => ({ ...prev, [subItem ? subItem.id : item.id]: 'approved' }));
-      await Swal.fire({ icon: 'success', title: 'Approved!', text: 'Document approved successfully.', timer: 2000, showConfirmButton: false });
-    } catch (error) {
-      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Something went wrong.' });
+      })
+    );
+
+    // STATUS UPDATE
+    setUploadedDocsStatus(prev => ({
+      ...prev,
+      [subItem ? subItem.id : item.id]: 'approved'
+    }));
+
+    // REFRESH TABLE
+    if (refreshTable) {
+      await refreshTable();
     }
-  };
+
+    // SUCCESS
+    await Swal.fire({
+      icon: 'success',
+      title: 'Approved!',
+      text: 'Document approved successfully.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch (error) {
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text:
+        error.response?.data?.message ||
+        'Something went wrong.'
+    });
+
+  }
+};
+
+// const handleApproveDocument = async (item, subItem = null) => {
+//   const latestItem = documentChecklist.find(i => i.id === item.id);
+//   const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+
+
+//   if (!targetItem) return;
+//   const { documentId, verificationId, name: documentName } = targetItem;
+
+//   console.log("verification_id",verificationId, "akkkkkkkkk","dcooooooooooo",documentId)
+
+//   const latest = latestItem?.apiKey == "hrEvaluationFile" ? "hr_evolution" : "";
+//   if (!documentId || !verificationId) {
+//     await Swal.fire({ icon: 'warning', title: 'Cannot Approve', html: `<p>Document ID or Verification ID is missing. Please submit the document first.</p>`, confirmButtonColor: '#f59e0b' });
+//     return;
+//   }
+//   const result = await Swal.fire({ title: 'Are you sure?', text: `Approve ${documentName}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#16a34a', cancelButtonColor: '#dc2626', confirmButtonText: 'Yes, Approve', cancelButtonText: 'No' });
+//   if (!result.isConfirmed) return;
+//   try {
+//     const response = await axiosInstance.post(`${API_BASE_URL}/verify-Doc-Status`, 
+//       { Verification_Id: verificationId, Document_Id: documentId, doc_type: latest }, 
+//       { headers: { Authorization: `Bearer ${userToken.token}`, 
+//       'Content-Type': 'application/json' } });
+
+//     setDocumentChecklist(prev => prev.map(docItem => {
+//       if (docItem.id === item.id) {
+//         if (subItem && docItem.subItems) return { ...docItem, subItems: docItem.subItems.map(sub => sub.id === subItem.id ? { ...sub, status: '1', approved: true } : sub) };
+//         return { ...docItem, status: '1', approved: true };
+//       }
+//       return docItem;
+//     }));
+//     setUploadedDocsStatus(prev => ({ ...prev, [subItem ? subItem.id : item.id]: 'approved' }));
+    
+//     // IMPORTANT: Refresh the parent table data after successful approval
+//     if (refreshTable) {
+//       await refreshTable();
+//     }
+    
+//     await Swal.fire({ icon: 'success', title: 'Approved!', text: 'Document approved successfully.', timer: 2000, showConfirmButton: false });
+//   } catch (error) {
+//     Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Something went wrong.' });
+//   }
+// };
 
   // ─── Shared icon size for ALL action buttons ───
   const ICON_SIZE = 13;
@@ -730,8 +867,6 @@ const handleFileUpload = (itemId, file, subItemId = null) => {
   const btnApprove = { ...btnBase, background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff' };
   const btnUpload = { ...btnBase, background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer' };
 
-
-
 const renderActionButtons = (item, subItem = null, isSubRow = false) => {
   const latestItem = documentChecklist.find(i => i.id === item.id);
   const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
@@ -739,15 +874,99 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
   const isUploaded = uploadedDocsStatus[fileKey] === true;
   const isSubmittedStatus = uploadedDocsStatus[fileKey] === 'submitted';
   const hasFile = targetItem?.filePath;
+
+  console.log("hasssssssssss",hasFile);
   const isApproved = targetItem?.status === '1' || targetItem?.status === 1;
   const isPending = targetItem?.status === '0' || targetItem?.status === 0;
   
-  // 👇 Case insensitive check for docsubmit
-  const hasDocSubmit = targetItem?.docSubmitValue && 
-                       targetItem.docSubmitValue.toLowerCase() === "docsubmit";
+  // Special handling for Medical Enrollment Form (id: 21)
+  if (item.id === 21) {
+    const medStatus = targetItem?.fullData?.MED_STATUS;
+
+      const mediclaimStatus =
+    targetItem?.status ||
+    targetItem?.fullData?.documents?.mediclaim_form_Status;
+
+  const isMediclaimApproved =
+    mediclaimStatus === '1' ||
+    mediclaimStatus === 1;
+    
+    // If MED_STATUS is "YES" from API - show view/preview/download only (no edit/submit/approve)
+    if (medStatus === 'YES') {
+    return (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+    
+    {hasFile && (
+      <>
+        <button
+          style={btnView}
+          onClick={() => handleViewDocument(targetItem.filePath)}
+        >
+          <Eye size={ICON_SIZE} /> View
+        </button>
+
+        <button
+          style={btnPreview}
+          onClick={() =>
+            handleViewPdfInline(
+              targetItem.filePath,
+              targetItem.fileName
+            )
+          }
+        >
+          <FileText size={ICON_SIZE} /> Preview
+        </button>
+
+        <button
+          style={btnDownload}
+          onClick={() =>
+            handleDownloadDocument(
+              targetItem.filePath,
+              targetItem.fileName
+            )
+          }
+        >
+          <Download size={ICON_SIZE} /> Download
+        </button>
+
+        {/* SHOW APPROVE ONLY IF NOT APPROVED */}
+        {!isMediclaimApproved && (
+          <button
+            style={btnApprove}
+            onClick={() => handleApproveDocument(item, subItem)}
+          >
+            <CheckCircle2 size={ICON_SIZE} /> Approve
+          </button>
+        )}
+
+        {/* SHOW APPROVED TAG */}
+        {isMediclaimApproved && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 8px',
+              background: '#dcfce7',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              color: '#15803d',
+              fontWeight: 600
+            }}
+          >
+            <CheckCircle size={ICON_SIZE} /> Approved
+          </span>
+        )}
+      </>
+    )}
+  </div>
+);
+    }
+    
+    return null; // Return null to show no action buttons for Medical Enrollment Form when not YES
+  }
   
-  console.log(`${targetItem?.name}: docSubmitValue=${targetItem?.docSubmitValue}, hasDocSubmit=${hasDocSubmit}, isPending=${isPending}`);
-  
+  // Normal document handling for other documents
   if (hasFile) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
@@ -757,9 +976,8 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
         <button style={btnPreview} onClick={() => handleViewPdfInline(targetItem.filePath, targetItem.fileName)}>
           <FileText size={ICON_SIZE} /> Preview
         </button>
-        
-        {/* Show Edit button only if hasDocSubmit AND isPending */}
-        {hasDocSubmit && isPending && (
+   
+        {isPending && (
           <button style={btnEdit} onClick={() => handleEditUpload(item, subItem)}>
             <Edit size={ICON_SIZE} /> Edit
           </button>
@@ -800,6 +1018,71 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
     </div>
   );
 };
+
+// const renderActionButtons = (item, subItem = null, isSubRow = false) => {
+//   const latestItem = documentChecklist.find(i => i.id === item.id);
+//   const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+//   const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
+//   const isUploaded = uploadedDocsStatus[fileKey] === true;
+//   const isSubmittedStatus = uploadedDocsStatus[fileKey] === 'submitted';
+//   const hasFile = targetItem?.filePath;
+//   const isApproved = targetItem?.status === '1' || targetItem?.status === 1;
+//   const isPending = targetItem?.status === '0' || targetItem?.status === 0;
+  
+
+
+  
+//   if (hasFile) {
+//     return (
+//       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+//         <button style={btnView} onClick={() => handleViewDocument(targetItem.filePath)}>
+//           <Eye size={ICON_SIZE} /> View
+//         </button>
+//         <button style={btnPreview} onClick={() => handleViewPdfInline(targetItem.filePath, targetItem.fileName)}>
+//           <FileText size={ICON_SIZE} /> Preview
+//         </button>
+   
+//         {  isPending && (
+//           <button style={btnEdit} onClick={() => handleEditUpload(item, subItem)}>
+//             <Edit size={ICON_SIZE} /> Edit
+//           </button>
+//         )}
+        
+//         <button style={btnDownload} onClick={() => handleDownloadDocument(targetItem.filePath, targetItem.fileName)}>
+//           <Download size={ICON_SIZE} /> Download
+//         </button>
+        
+//         {isUploaded && !isSubmittedStatus && (
+//           <button style={btnSubmit} onClick={() => handleSubmitDocument(item, subItem)} disabled={isSubmitting}>
+//             <CheckCircle2 size={ICON_SIZE} /> {isSubmitting ? 'Saving...' : 'Submit'}
+//           </button>
+//         )}
+        
+//         {isPending && !isUploaded && (
+//           <button style={btnApprove} onClick={() => handleApproveDocument(item, subItem)}>
+//             <CheckCircle2 size={ICON_SIZE} /> Approve
+//           </button>
+//         )}
+        
+//         {isApproved && (
+//           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#dcfce7', borderRadius: '9999px', fontSize: '11px', color: '#15803d', fontWeight: 600 }}>
+//             <CheckCircle size={ICON_SIZE} /> Approved
+//           </span>
+//         )}
+//       </div>
+//     );
+//   }
+
+//   const inputId = subItem ? `file-${item.id}-${subItem.id}` : `file-${item.id}`;
+//   return (
+//     <div>
+//       <input type="file" id={inputId} onChange={(e) => handleFileUpload(item.id, e.target.files[0], subItem?.id)} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" />
+//       <label htmlFor={inputId} style={btnUpload}>
+//         <Download size={ICON_SIZE} style={{ transform: 'rotate(180deg)' }} /> Upload
+//       </label>
+//     </div>
+//   );
+// };
   // PDF Generation functions with improved visibility
   const generatePDFPreview = () => {
     const doc = new jsPDF();
@@ -868,7 +1151,13 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
     doc.setFont('helvetica', 'bold');
     doc.text('Date of Joining:', midX, yPosition + 15);
     doc.setFont('helvetica', 'normal');
-    doc.text(formData.doj ? new Date(formData.doj).toLocaleDateString() : 'N/A', midX, yPosition + 19);
+   doc.text(
+  formData.doj
+    ? new Date(formData.doj).toLocaleDateString('en-GB')
+    : 'N/A',
+  midX,
+  yPosition + 19
+);
 
     doc.setFont('helvetica', 'bold');
     doc.text('Site/Location:', midX, yPosition + 25);
@@ -1076,7 +1365,7 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
      doc.setFont('helvetica', 'bold');
      doc.text('Designation:', margin + 3, yPosition + 15);
      doc.setFont('helvetica', 'normal');
-     doc.text(formData.designation || 'N/A', margin + 3, yPosition + 19);
+     doc.text(formData.designation || rowData.fullData.MANPOWER_DESG, margin + 3, yPosition + 19);
  
      doc.setFont('helvetica', 'bold');
      doc.text('Department:', margin + 3, yPosition + 25);
@@ -1346,9 +1635,14 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px 24px' }}>
               {[
                 { label: 'Emp Name', value: formData.employeeName },
-                { label: 'Emp ID', value: formData.empId },
-                { label: 'Designation', value: formData.designation },
-                { label: 'Date of Joining', value: formData.doj ? new Date(formData.doj).toLocaleDateString() : 'Not Set' },
+                { label: 'Case ID', value: formData.empId },
+                { label: 'Designation', value: formData.designation || rowData.fullData.MANPOWER_DESG },
+         {
+  label: 'Date of Joining',
+  value: formData.doj
+    ? new Date(formData.doj).toLocaleDateString('en-GB')
+    : 'Not Set'
+},
                 { label: 'Department', value: formData.department },
                 { label: 'Site / Location', value: formData.siteLocation || 'N/A' },
               ].map(({ label, value }) => (
@@ -1381,77 +1675,214 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {documentChecklist.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      {/* Main row */}
-                      <tr style={{ background: index % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
-                        onMouseLeave={e => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#f8fafc'}
-                      >
-                        {/* S.No */}
-                        <td style={{ padding: '9px 14px', fontSize: 12, fontWeight: 700, color: '#64748b', verticalAlign: 'middle' }}>
-                          <span style={{ width: 24, height: 24, background: '#eff6ff', borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>{item.id}</span>
-                        </td>
-                        {/* Document Type */}
-                        <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {item.type === 'multiple' ? (
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', lineHeight: 1.4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{item.name}</span>
-                            ) : (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#374151', lineHeight: 1.4, letterSpacing: '0.02em' }}>{item.name}</span>
-                            )}
-                            {(item.status === '1' || item.status === 1) && <CheckCircle size={13} color="#16a34a" style={{ flexShrink: 0 }} />}
-                          </div>
-                        </td>
-                        {/* Status */}
-                        <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
-                          {item.type !== 'multiple' && <StatusBadge status={item.status} />}
-                        </td>
-                        {/* File Name */}
-                        <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
-                          {item.type !== 'multiple' && (
-                            item.fileName
-                              ? <span title={item.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{item.fileName}</span>
-                              : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
-                          )}
-                        </td>
-                        {/* Actions */}
-                        <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
-                          {item.type !== 'multiple' && renderActionButtons(item)}
-                        </td>
-                      </tr>
+              {documentChecklist.map((item, index) => (
+  <React.Fragment key={item.id}>
+    {/* Main row */}
+    <tr style={{ background: index % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+      onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+      onMouseLeave={e => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#f8fafc'}
+    >
+      {/* S.No */}
+      <td style={{ padding: '9px 14px', fontSize: 12, fontWeight: 700, color: '#64748b', verticalAlign: 'middle' }}>
+        <span style={{ width: 24, height: 24, background: '#eff6ff', borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>{item.id}</span>
+      </td>
+      {/* Document Type */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {item.type === 'multiple' ? (
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', lineHeight: 1.4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{item.name}</span>
+          ) : (
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#374151', lineHeight: 1.4, letterSpacing: '0.02em' }}>{item.name}</span>
+          )}
+          {(item.status === '1' || item.status === 1) && <CheckCircle size={13} color="#16a34a" style={{ flexShrink: 0 }} />}
+          
+       {/* Radio buttons for MEDICAL ENROLMENT FORM (id: 21) */}
+{/* {item.id === 21 && (
+  <div style={{ 
+    display: 'inline-flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    marginLeft: '12px',
+    padding: '4px 12px',
+    background: '#f1f5f9',
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0'
+  }}>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: item.fullData?.MED_STATUS === 'YES' ? 'not-allowed' : 'pointer',
+      fontWeight: 600,
+      opacity: item.fullData?.MED_STATUS === 'YES' ? 0.6 : 1
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="yes"
+        checked={item.enrollmentStatus === 'YES'}
+        disabled={item.fullData?.MED_STATUS === 'YES'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'YES' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#16a34a' }}>Yes</span>
+    </label>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: 'pointer',
+      fontWeight: 600
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="no"
+        checked={item.enrollmentStatus === 'NO'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'NO' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#dc2626' }}>No</span>
+    </label>
+  </div>
+)} */}
 
-                      {/* Sub-rows */}
-                      {item.subItems && item.subItems.map((subItem, si) => (
-                        <tr key={subItem.id}
-                          style={{ background: '#f0f4ff', borderBottom: '1px solid #e8eef8', transition: 'background 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#e0ecff'}
-                          onMouseLeave={e => e.currentTarget.style.background = '#f0f4ff'}
-                        >
-                          <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
-                            <div style={{ width: 2, height: 22, background: '#93c5fd', borderRadius: 2, margin: '0 auto' }} />
-                          </td>
-                          <td style={{ padding: '7px 14px 7px 24px', verticalAlign: 'middle' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: '#93c5fd' }}>{subItem.id.slice(-1)})</span>
-                              <span style={{ fontSize: 10.5, color: '#4b5563', fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.02em' }}>{subItem.name}</span>
-                              {(subItem.status === '1' || subItem.status === 1) && <CheckCircle size={12} color="#16a34a" style={{ flexShrink: 0 }} />}
-                            </div>
-                          </td>
-                          <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}><StatusBadge status={subItem.status} /></td>
-                          <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
-                            {subItem.fileName
-                              ? <span title={subItem.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{subItem.fileName}</span>
-                              : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
-                            }
-                          </td>
-                          <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
-                            {renderActionButtons(item, subItem, true)}
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
+
+{/* Radio buttons for MEDICAL ENROLMENT FORM (id: 21) - ONLY for JoiningReportList */}
+{ item.id === 21 && (
+  <div style={{ 
+    display: 'inline-flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    marginLeft: '12px',
+    padding: '4px 12px',
+    background: '#f1f5f9',
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0'
+  }}>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: item.fullData?.MED_STATUS === 'YES' ? 'not-allowed' : 'pointer',
+      fontWeight: 600,
+      opacity: item.fullData?.MED_STATUS === 'YES' ? 0.6 : 1
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="yes"
+        checked={item.fullData?.MED_STATUS === 'YES' || item.enrollmentStatus === 'YES'}
+        disabled={item.fullData?.MED_STATUS === 'YES'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'YES' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#16a34a' }}>Yes</span>
+    </label>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: item.fullData?.MED_STATUS === 'YES' ? 'not-allowed' : 'pointer',
+      fontWeight: 600,
+      opacity: item.fullData?.MED_STATUS === 'YES' ? 0.6 : 1
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="no"
+        checked={item.enrollmentStatus === 'NO'}
+        disabled={item.fullData?.MED_STATUS === 'YES'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'NO' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#dc2626' }}>No</span>
+    </label>
+  </div>
+)}
+        </div>
+      </td>
+      {/* Status */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && <StatusBadge status={item.status} />}
+      </td>
+      {/* File Name */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && (
+          item.fileName
+            ? <span title={item.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{item.fileName}</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+        )}
+      </td>
+      {/* Actions */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && renderActionButtons(item)}
+      </td>
+    </tr>
+
+    {/* Sub-rows */}
+    {item.subItems && item.subItems.map((subItem, si) => (
+      <tr key={subItem.id}
+        style={{ background: '#f0f4ff', borderBottom: '1px solid #e8eef8', transition: 'background 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.background = '#e0ecff'}
+        onMouseLeave={e => e.currentTarget.style.background = '#f0f4ff'}
+      >
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          <div style={{ width: 2, height: 22, background: '#93c5fd', borderRadius: 2, margin: '0 auto' }} />
+        </td>
+        <td style={{ padding: '7px 14px 7px 24px', verticalAlign: 'middle' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#93c5fd' }}>{subItem.id.slice(-1)})</span>
+            <span style={{ fontSize: 10.5, color: '#4b5563', fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.02em' }}>{subItem.name}</span>
+            {(subItem.status === '1' || subItem.status === 1) && <CheckCircle size={12} color="#16a34a" style={{ flexShrink: 0 }} />}
+          </div>
+        </td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}><StatusBadge status={subItem.status} /></td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          {subItem.fileName
+            ? <span title={subItem.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{subItem.fileName}</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+          }
+        </td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          {renderActionButtons(item, subItem, true)}
+        </td>
+      </tr>
+    ))}
+  </React.Fragment>
+))}
                 </tbody>
               </table>
             </div>

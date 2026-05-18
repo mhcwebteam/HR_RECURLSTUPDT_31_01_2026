@@ -64,9 +64,12 @@ const today = new Date().toLocaleDateString('en-IN', {
                   </div>
                   <div className="px-3 py-1.5 text-[10px] text-right min-w-[160px]">
                     <p className="font-semibold">DIR No. ASDPL-HR-F31</p>
-                  <p>Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                   <p>
+    Date: 01st Nov, 2019
+  </p>
                     <p>Rev. Version 02</p>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -102,13 +105,13 @@ const today = new Date().toLocaleDateString('en-IN', {
     joining with our
 
     organization on
-    <InputField defaultValue={today} width="120px" readOnly />
+    <InputField defaultValue={joiningDate} width="120px" readOnly />
     at
     <InputField defaultValue={rowData.location} width="100px" readOnly />
 
    
     as
-    <InputField defaultValue={rowData.department} width="170px" readOnly />
+    <InputField defaultValue={rowData?.MANPOWER_DESG} width="170px" readOnly />
   </p>
 </div>
 

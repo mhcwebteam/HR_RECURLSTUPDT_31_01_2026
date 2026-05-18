@@ -34,6 +34,9 @@ const AppointmentLetter = () => {
 
   const [joiningDates, setJoiningDates] = useState({});
 
+
+  console.log("appointmentLetterDataappointmentLetterData",appointmentLetterData);
+
   const navigate = useNavigate();
   const [Token, useToken] = useState(() => {
     const userToken = JSON.parse(localStorage.getItem('userInfo'));
@@ -131,7 +134,10 @@ const AppointmentLetter = () => {
     return result ? result + ' Rupees Only' : 'Zero Rupees Only';
   };
 
+
+
   const handleAppointmentClick = (rowData) => {
+      console.log("rowwwwwwwwwwwww",rowData);
     // Reset acceptance status when opening new appointment letter
     setAccepted(false);
     
@@ -141,7 +147,11 @@ const AppointmentLetter = () => {
       DO_App: new Date().toLocaleDateString('en-GB'),
       Name_of_the_candidate: rowData.employee_name,
       Address_of_The_CandidateP1: rowData.fullData?.current_address || 'Not Provided',
-      Designation: rowData.DESIG || rowData.MANPOWER_DESG || 'Not Specified',
+Designation:
+  rowData?.DESIG !== 'N/A'
+    ? rowData.DESIG
+    : rowData?.MANPOWER_DESG || 'Not Specified',
+
       DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
       Location: rowData.location,
       Reporting_to: rowData.fullData?.reporting_to || 'HOD',
@@ -584,7 +594,7 @@ const AppointmentLetter = () => {
       field: 'DESIG',
       headerName: 'Designation',
       flex: 1.2,
-      minWidth: 130,
+      minWidth: 140,
       renderCell: (params) => (
         <Box sx={{ color: '#374151', fontSize: '12px' }}>
           {params.value}
@@ -595,53 +605,40 @@ const AppointmentLetter = () => {
       field: 'location',
       headerName: 'Location',
       flex: 1.2,
-      minWidth: 140,
+      minWidth: 200,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
         </Box>
       ),
     },
-    {
-      field: 'joining_date',
-      headerName: 'Joining Date',
-      flex: 1,
-      minWidth: 110,
-      renderCell: (params) => {
-        const caseId = params.row.CHILD_CASEID;
-        return (
-          <TextField
-            size="small"
-            type="date"
-            value={
-              joiningDates[caseId] ??
-              (params.row.joining_date
-                ? params.row.joining_date.split('T')[0]
-                : '')
-            }
-            onChange={(e) =>
-              handleJoiningDateChange(caseId, e.target.value)
-            }
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                fontSize: '12px',
-                height: '32px',
-                '& fieldset': {
-                  borderColor: '#d1d5db',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#667eea',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#667eea',
-                },
-              },
-            }}
-          />
-        );
-      },
+  {
+    field: 'joining_date',
+    headerName: 'Joining Date',
+    flex: 1,
+    minWidth: 120,
+    renderCell: (params) => {
+      const formattedDate = params.row.joining_date
+        ? new Date(params.row.joining_date).toLocaleDateString('en-GB')
+        : '';
+  
+      return (
+        <TextField
+          size="small"
+          type="text"
+          disabled
+          value={formattedDate} // DD-MM-YYYY
+          sx={{
+            width: '100%',
+            '& .MuiOutlinedInput-root': {
+              fontSize: '12px',
+              height: '32px',
+            },
+          }}
+        />
+      );
     },
+  },
     {
       field: 'joining_status',
       headerName: 'Status',
@@ -898,7 +895,7 @@ const AppointmentLetter = () => {
 
             {/* Title */}
             <Typography variant="h5" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
-              LETTER OF APPOINTMENT AS {appointmentLetterData?.Designation?.toUpperCase()}
+              LETTER OF APPOINTMENT AS {appointmentLetterData?.Designation}
             </Typography>
 
             {/* Salutation */}

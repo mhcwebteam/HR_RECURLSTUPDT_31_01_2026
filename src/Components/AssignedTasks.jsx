@@ -15,6 +15,8 @@ const AssignedTasks = () => {
   const navigate = useNavigate();
 const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+
+  console.log("seeeeeeeeeeeeee",selectedCaseId)
   const token = useMemo(() => {
     const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
     return info?.token;

@@ -34,7 +34,7 @@ const Mediclaim = () => {
   const [openFamilyModal, setFamilyModal] = useState(false);
   const [openHistoryModal, setOpenHistoryModal] = useState(false);
   const [joiningDates, setJoiningDates] = useState({});
-  
+  const [savedRows, setSavedRows] = useState({});
 const [familyFormData, setFamilyFormData] = useState({
   spouseName: '',
   spouseDob: '', // Added spouse date of birth
@@ -160,108 +160,301 @@ const resetFamilyForm = () => {
   setFamilyFormData({
     spouseName: '',
     spouseDob: '',
+    spouseFile: null,
     daughters: [],
     sons: [],
   });
 
   setFileErrors({
-      spouse: '',
-  daughters: [],
-  sons: []
-  })
-
-
+    spouse: '',
+    daughters: [],
+    sons: []
+  });
 };
-
-// Handle Family Submit - Single API call
 const handleFamilySubmit = async () => {
+  console.log("=== handleFamilySubmit START ===");
+  console.log("selectedRow:", selectedRow);
+  console.log("familyFormData:", familyFormData);
+  
+  if (!selectedRow || !selectedRow.CHILD_CASEID) {
+    console.error("ERROR: No selected row");
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No employee selected. Please try again.',
+    });
+    return;
+  }
+  
+ const confirmResult = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to submit family details?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Submit',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        container: 'swal2-container-custom'
+      },
+      didOpen: () => {
+        // Set z-index after modal opens
+        const swalContainer = document.querySelector('.swal2-container');
+        if (swalContainer) {
+          swalContainer.style.zIndex = '9999';
+        }
+      }
+    });
+    
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
+  
+
+  
   setFamilyLoading(true);
+  console.log("familyLoading set to true");
 
   try {
     const formData = new FormData();
-
-    // Basic details
     formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
-    formData.append('employee_name', selectedRow?.employee_name || '');
-    formData.append('employee_email', selectedRow?.email || '');
-    formData.append('spouse_name', familyFormData.spouseName || '');
-    formData.append('spouse_dob', familyFormData.spouseDob || ''); // Added spouse DOB
-    formData.append('daughters_count', familyFormData.daughters.length);
-    formData.append('sons_count', familyFormData.sons.length);
-      formData.append('onBoarding', 1);
-
-    // ✅ Spouse file
+    formData.append('onBoarding', 1);
+    
+    console.log("CHILD_CASEID:", selectedRow?.CHILD_CASEID);
+    
+    // Get existing data
+    const existingSpouseName = selectedRow?.fullData?.spouse_name || '';
+    const existingSpouseDob = selectedRow?.fullData?.spouse_dob || '';
+    const existingDaughters = selectedRow?.fullData?.daughters_data || [];
+    const existingSons = selectedRow?.fullData?.sons_data || [];
+    
+    console.log("existingDaughters:", existingDaughters);
+    console.log("existingSons:", existingSons);
+    
+    // Spouse
+    if (familyFormData.spouseName && familyFormData.spouseName !== existingSpouseName) {
+      formData.append('spouse_name', familyFormData.spouseName);
+      console.log("Adding spouse_name:", familyFormData.spouseName);
+    }
+    
+    if (familyFormData.spouseDob && familyFormData.spouseDob !== existingSpouseDob) {
+      formData.append('spouse_dob', familyFormData.spouseDob);
+      console.log("Adding spouse_dob:", familyFormData.spouseDob);
+    }
+    
     if (familyFormData.spouseFile) {
       formData.append('spouseFile', familyFormData.spouseFile);
+      console.log("Adding spouseFile:", familyFormData.spouseFile.name);
     }
-
-    // Daughters
-    familyFormData.daughters.forEach((daughter, index) => {
-      formData.append(`daughter_${index + 1}_name`, daughter.name || '');
-      formData.append(`daughter_${index + 1}_dob`, daughter.dob || ''); // Added daughter DOB
-
-      if (daughter.file) {
-        formData.append(`daughter_${index + 1}_document`, daughter.file);
-      }
-    });
-
-    // Sons
-    familyFormData.sons.forEach((son, index) => {
-      formData.append(`son_${index + 1}_name`, son.name || '');
-      formData.append(`son_${index + 1}_dob`, son.dob || ''); // Added son DOB
-
-      if (son.file) {
-        formData.append(`son_${index + 1}_document`, son.file);
-      }
-    });
-
-    // ✅ Debug FormData
-    for (let pair of formData.entries()) {
-      console.log(pair[0], pair[1]);
+    
+    // Daughters - Only send if there are daughters
+    if (familyFormData.daughters && familyFormData.daughters.length > 0) {
+      console.log("Processing daughters, count:", familyFormData.daughters.length);
+      formData.append('daughters_count', familyFormData.daughters.length);
+      
+      familyFormData.daughters.forEach((daughter, index) => {
+        if (daughter.name) {
+          formData.append(`daughter_${index + 1}_name`, daughter.name);
+          formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
+          if (daughter.file) {
+            formData.append(`daughter_${index + 1}_document`, daughter.file);
+          }
+          console.log(`Added daughter ${index + 1}:`, daughter.name);
+        }
+      });
     }
-
+    
+    // Sons - Only send if there are sons
+    if (familyFormData.sons && familyFormData.sons.length > 0) {
+      console.log("Processing sons, count:", familyFormData.sons.length);
+      formData.append('sons_count', familyFormData.sons.length);
+      
+      familyFormData.sons.forEach((son, index) => {
+        if (son.name) {
+          formData.append(`son_${index + 1}_name`, son.name);
+          formData.append(`son_${index + 1}_dob`, son.dob || '');
+          if (son.file) {
+            formData.append(`son_${index + 1}_document`, son.file);
+          }
+          console.log(`Added son ${index + 1}:`, son.name);
+        }
+      });
+    }
+    
+    console.log("Making API call to:", `${API_BASE_URL}/on-board-Store`);
+    
     const response = await axiosInstance.post(
       `${API_BASE_URL}/on-board-Store`,
       formData,
       {
         headers: {
           Authorization: `Bearer ${Token.token}`,
-          // ❗ Don't manually set Content-Type (axios handles it)
         },
       }
     );
-
-if (response.data.success || response.data.message) {
-
+    
+    console.log("API Response:", response.data);
+    
+  if (response.data.success || response.data.message) {
   await Swal.fire({
     icon: 'success',
     title: 'Success!',
     text: response.data.message || 'Family details saved successfully',
     timer: 2000,
-    showConfirmButton: false
+    showConfirmButton: false,
   });
 
-  // AFTER alert completes
-  resetFamilyForm();
-  setFamilyModal(false);
-  setSelectedRow(null);
-  await joinData();
-
-    } else {
+resetFamilyForm();
+setSelectedRow(null);
+setFamilyModal(false);
+await joinData(); // after closing so re-open gets fresh data// ✅ Refresh table data so fullData is updated
+} else {
       throw new Error(response.data.message || 'Failed to save');
     }
+    
   } catch (error) {
-    console.error('FULL ERROR:', error);
-
-    Swal.fire(
-      'Error',
-      error.response?.data?.message || error.message || 'Something went wrong',
-      'error'
-    );
+    console.error("ERROR in handleFamilySubmit:", error);
+    console.error("Error response:", error.response);
+    
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.response?.data?.message || error.message || 'Something went wrong',
+    });
   } finally {
     setFamilyLoading(false);
+    console.log("familyLoading set to false");
   }
 };
+
+
+// const handleFamilySubmit = async () => {
+
+
+
+
+//      const confirmResult = await Swal.fire({
+//       title: 'Are you sure?',
+//       text: 'Do you want to submit family details?',
+//       icon: 'question',
+//       showCancelButton: true,
+//       confirmButtonText: 'Yes, Submit',
+//       cancelButtonText: 'Cancel',
+//       confirmButtonColor: '#10b981',
+//       cancelButtonColor: '#6b7280',
+//       customClass: {
+//         container: 'swal2-container-custom'
+//       },
+//       didOpen: () => {
+//         // Set z-index after modal opens
+//         const swalContainer = document.querySelector('.swal2-container');
+//         if (swalContainer) {
+//           swalContainer.style.zIndex = '9999';
+//         }
+//       }
+//     });
+    
+//     if (!confirmResult.isConfirmed) {
+//       return;
+//     }
+
+//   setFamilyLoading(true);
+
+//   try {
+//     const formData = new FormData();
+
+//     // Basic details
+//     formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
+//     formData.append('employee_name', selectedRow?.employee_name || '');
+//     formData.append('employee_email', selectedRow?.email || '');
+//     formData.append('spouse_name', familyFormData.spouseName || '');
+//     formData.append('spouse_dob', familyFormData.spouseDob || '');
+//     formData.append('daughters_count', familyFormData.daughters.length);
+//     formData.append('sons_count', familyFormData.sons.length);
+//     formData.append('onBoarding', 1);
+
+//     // Spouse file
+//     if (familyFormData.spouseFile) {
+//       formData.append('spouseFile', familyFormData.spouseFile);
+//     }
+
+//     // Daughters
+//     familyFormData.daughters.forEach((daughter, index) => {
+//       formData.append(`daughter_${index + 1}_name`, daughter.name || '');
+//       formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
+
+//       if (daughter.file) {
+//         formData.append(`daughter_${index + 1}_document`, daughter.file);
+//       }
+//     });
+
+//     // Sons
+//     familyFormData.sons.forEach((son, index) => {
+//       formData.append(`son_${index + 1}_name`, son.name || '');
+//       formData.append(`son_${index + 1}_dob`, son.dob || '');
+
+//       if (son.file) {
+//         formData.append(`son_${index + 1}_document`, son.file);
+//       }
+//     });
+
+//     const response = await axiosInstance.post(
+//       `${API_BASE_URL}/on-board-Store`,
+//       formData,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${Token.token}`,
+//         },
+//       }
+//     );
+
+//     if (response.data.success || response.data.message) {
+
+//       // ✅ Close modal
+     
+
+//       // ✅ Reset form
+//       resetFamilyForm();
+//       setSelectedRow(null);
+
+//       // ✅ Refresh table
+//       await joinData();
+
+//       // ✅ Success popup
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Success!',
+//         text:
+//           response.data.message ||
+//           'Family details saved successfully',
+//         timer: 2000,
+//         showConfirmButton: false,
+//       });
+//  setFamilyModal(false);
+//     } else {
+//       throw new Error(response.data.message || 'Failed to save');
+//     }
+
+//   } catch (error) {
+//     console.error('FULL ERROR:', error);
+
+//   await  Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text:
+//         error.response?.data?.message ||
+//         error.message ||
+//         'Something went wrong',
+//     });
+
+//   } finally {
+//     setFamilyLoading(false);
+//   }
+// };
+
+
 
 // Close Family Modal
 const handleCloseFamilyModal = () => {
@@ -326,12 +519,27 @@ const handleSpouseFileSelect = (event) => {
     setOpenDocModal(true);
   };
 
-  const handleFamilyUploadClick = (rowData) => {
-    setSelectedRow(rowData);
-    resetFamilyForm();
-    setFamilyModal(true);
-  };
+  // const handleFamilyUploadClick = (rowData) => {
+  //   setSelectedRow(rowData);
+  //   resetFamilyForm();
+  //   setFamilyModal(true);
+  // };
 
+const handleFamilyUploadClick = (rowData) => {
+  setSelectedRow(rowData);
+
+  // ✅ Always reset first
+  setFamilyFormData({
+    spouseName: '',
+    spouseDob: '',
+    spouseFile: null,
+    daughters: [],
+    sons: [],
+  });
+
+  setFileErrors({ spouse: '', daughters: [], sons: [] });
+  setFamilyModal(true);
+};
   const handleHistoryClick = (rowData) => {
     setSelectedRow(rowData);
     setOpenHistoryModal(true);
@@ -444,13 +652,16 @@ const validateFileType = (file) => {
 
       const apiData = response.data.data;
 
-      console.log("appppppppppppp",apiData);
+   
 
       const formattedRows = apiData
         .filter(item => {
-         const hasJoiningDate = item.onBoarding == "1";
-    // Condition 2: Must NOT be verified
-    const isNotVerified = item.onboarding_status !== "verified"; 
+         const hasJoiningDate = item.onBoarding == "1"  ||  item.onBoarding  == "2"
+
+  const isNotVerified = item.onboarding_status !== "verified"; 
+    // const isMedStatus = item.MED_STATUS ==  null || ""
+
+  
 
     return hasJoiningDate && isNotVerified;
   })
@@ -695,34 +906,34 @@ const validateFileType = (file) => {
         </Box>
       ),
     },
-    {
-      field: 'joining_date',
-      headerName: 'Joining Date',
-      flex: 1,
-      minWidth: 140,
-      renderCell: (params) => {
-        const caseId = params.row.CHILD_CASEID;
-        return (
-          <TextField
-            size="small"
-            type="date"
-            value={joiningDates[caseId] ?? (params.row.joining_date ? params.row.joining_date.split('T')[0] : '')}
-            onChange={(e) => handleJoiningDateChange(caseId, e.target.value)}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                fontSize: '12px',
-                height: '32px',
-                '& fieldset': { borderColor: '#d1d5db' },
-                '&:hover fieldset': { borderColor: '#667eea' },
-                '&.Mui-focused fieldset': { borderColor: '#667eea' },
-              },
-            }}
-          />
-        );
-      },
-    },
-    {
+{
+  field: 'joining_date',
+  headerName: 'Joining Date',
+  flex: 1,
+  minWidth: 110,
+  renderCell: (params) => {
+    const formattedDate = params.row.joining_date
+      ? new Date(params.row.joining_date).toLocaleDateString('en-GB')
+      : '';
+
+    return (
+      <TextField
+        size="small"
+        type="text"
+        disabled
+        value={formattedDate} // DD-MM-YYYY
+        sx={{
+          width: '100%',
+          '& .MuiOutlinedInput-root': {
+            fontSize: '12px',
+            height: '32px',
+          },
+        }}
+      />
+    );
+  },
+}
+  ,  {
       field: 'familyUpload',
       headerName: 'Family Upload',
       flex: 1.2,

@@ -1,463 +1,261 @@
 
+import React, { useState, useEffect } from 'react';
+import { X, FileText, Calendar, User, Building2, MapPin, CheckCircle2, Download, Eye, CheckCircle, Clock, XCircle, FileDown, Maximize2, Minimize2, Edit2, Edit } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
+import jsPDF from 'jspdf';
+import axios from 'axios';
+import axiosInstance from '../Config/axiosConfig';
 
+const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
 
-import React, { useState } from "react";
-import logo from "../../src/asset/imagesmy.png";
-import { X } from "lucide-react";
-import { API_BASE_URL, API_BASE_URLss } from "../Config/Config";
-import { jsPDF } from 'jspdf';
-import axiosInstance from "../Config/axiosConfig";
-import Swal from "sweetalert2";
+  console.log("doddddddddddddddddd",rowData);
 
-const MediDocUpload = ({ rowData, onClose, refreshTable }) => {
-  const [data, setData] = useState({
-    pdfBlob: null,
-    fileName: ""
+ 
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
+  const [formData, setFormData] = useState({
+    employeeName: '',
+    empId: '',
+    designation: '',
+    doj: '',
+    department: '',
+    siteLocation: ''
   });
+
+  const [uploadedDocsStatus, setUploadedDocsStatus] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewingPdf, setViewingPdf] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState({});
 
   
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
+  useEffect(() => {
+    const styleId = 'swal-z-index-fix';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `.swal2-container { z-index: 99999 !important; }`;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const existingStyle = document.getElementById(styleId);
+      if (existingStyle) existingStyle.remove();
+    };
+  }, []);
 
-  const [Token, useToken] = useState(() => {
-    const userToken = JSON.parse(localStorage.getItem('userInfo'));
-    return userToken ? userToken : null;
-  });
+  const [documentChecklist, setDocumentChecklist] = useState([
 
-const toBase64 = (url) => {
-  return new Promise((resolve) => {
-    if (!url) return resolve(null);
+    { id: 1, name: 'RESUME DULY SIGNED', apiKey: 'RESUME_UPLOAD', statusKey: 'RESUME_Status', documentIdKey: 'RESUME_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 2, name: 'CANDIDATE APPLICATION FORM', apiKey: 'candidatefile', statusKey: 'candidatefile_Status', documentIdKey: 'candidatefile_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 3, name: 'INTERVIEW EVALUATION SHEET', apiKey: 'hrEvaluationFile', statusKey: 'hr_doc_status', documentIdKey: 'hrEvalution_ID', approved: false, fileName: '', filePath: '', type: 'single' },
+    {
+      id: 4, name: 'EDUCATIONALS TESTIMONIALS', type: 'multiple',
+      subItems: [
+        { id: '4a', name: 'SSC (10th Certificate)', apiKey: '10th_certi', statusKey: 'Tenth_Status', documentIdKey: 'Tenth_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '4b', name: 'INTERMEDIATE / ITI / DIPLOMA', apiKey: 'Inter_certi', statusKey: 'Inter_Status', documentIdKey: 'Inter_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '4c', name: 'GRADUATION', apiKey: 'Gradu_certi', statusKey: 'Grad_Status', documentIdKey: 'grad_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '4d', name: 'POST GRADUATION', apiKey: 'PG_FILENAME', statusKey: 'Pg_Status', documentIdKey: 'pg_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '4e', name: 'PHD GRADUATION', apiKey: 'PHD_FILENAME', statusKey: 'PHD_Status', documentIdKey: 'PHD_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '4f', name: 'ANY OTHER CERTIFICATES (Please specify)', apiKey: 'OTHER_FILENAME', statusKey: 'OTHER_Status', documentIdKey: 'OTHER_DocId', approved: false, fileName: '', filePath: '', type: 'single' }
+      ]
+    },
+    { id: 5, name: 'DULY SIGNED OFFER LETTER', apiKey: 'offer_letter', statusKey: 'offer_letter_Status', documentIdKey: 'offer_letter_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 6, name: 'DULY SIGNED APPOINTMENT LETTER', apiKey: 'appointment_letter', statusKey: 'appointment_letter_Status', documentIdKey: 'appointment_letter_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    {
+      id: 7, name: 'EXPERIENCE / RELIEVING LETTERS', type: 'multiple',
+      subItems: [
+        { id: '7a', name: 'EXPERIENCE LETTER', apiKey: 'exp_letter', statusKey: 'exp_letter_Status', documentIdKey: 'exp_letter_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '7b', name: 'RELIEVING LETTER', apiKey: 'relieving_letter', statusKey: 'relieving_letter_Status', documentIdKey: 'relieving_letter_DocId', approved: false, fileName: '', filePath: '', type: 'single' }
+      ]
+    },
+    { id: 8, name: 'LAST 3 MONTHS PAYSLIPS', apiKey: 'payslips', statusKey: 'payslips_Status', documentIdKey: 'payslips_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 9, name: 'Bank Statements', apiKey: 'bank_statements', statusKey: 'bank_statements_Status', documentIdKey: 'bank_statements_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 10, name: 'LATEST PASSPORT SIZE COLOUR PHOTOGRAPHS (8 Nos.)', apiKey: 'photo', statusKey: 'photo_Status', documentIdKey: 'photo_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    {
+      id: 11, name: 'ID & ADDRESS PROOF (PAN & AADHAR CARD)', type: 'multiple',
+      subItems: [
+        { id: '11a', name: 'PAN CARD', apiKey: 'Pan_certi', statusKey: 'Pan_Status', documentIdKey: 'pan_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+        { id: '11b', name: 'AADHAR CARD', apiKey: 'Aadhar_certi', statusKey: 'Aadhr_Status', documentIdKey: 'Aadhar_DocId', approved: false, fileName: '', filePath: '', type: 'single' }
+      ]
+    },
+    { id: 12, name: 'JOINING REPORT', apiKey: 'joining_report', statusKey: 'joining_report_Status', documentIdKey: 'joining_report_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 13, name: 'CODE OF CONDUCT WITH ATTESTATION', apiKey: 'code_of_conduct', statusKey: 'code_of_conduct_Status', documentIdKey: 'code_of_conduct_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 14, name: 'PAYMENT OF GRATUITY FORM', apiKey: 'gratuity_form', statusKey: 'gratuity_form_Status', documentIdKey: 'gratuity_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+  
+    { id: 15, name: 'NOMINATION AND DECLARATION FORM -2 (EPFO) / ESIC FORM -1', apiKey: 'epfo_form', statusKey: 'epfo_form_Status', documentIdKey: 'epfo_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 16, name: 'DATA PROTECTION AND PRIVACY POLICY', apiKey: 'privacy_policy', statusKey: 'privacy_policy_Status', documentIdKey: 'privacy_policy_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 17, name: 'EPFO COMPOSITE DECLARATION FORM 11', apiKey: 'epfo_form_11', statusKey: 'epfo_form_11_Status', documentIdKey: 'epfo_form_11_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 18, name: 'IT DECLARATION FILLED FORM (IF APPLICABLE)', apiKey: 'it_declaration', statusKey: 'it_declaration_Status', documentIdKey: 'it_declaration_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 19, name: 'MEDICAL REPORTS (CBP, CUE & ABO Typing)', apiKey: 'medical_reports', statusKey: 'medical_reports_Status', documentIdKey: 'medical_reports_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+    { id: 20, name: 'UAN Document', apiKey: 'UAN_FILE', statusKey: 'UAN_Status', documentIdKey: 'UAN_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+      // { id: 21, name: 'MEDICAL ENROLMENT FORM', apiKey: 'mediclaim_form', statusKey: 'mediclaim_form_Status', documentIdKey: 'mediclaim_form_DocId', approved: false, fileName: '', filePath: '', type: 'single' },
+      {
+  id: 21,
+  name: 'MEDICAL ENROLMENT FORM',
+  apiKey: 'mediclaim_form',
+  statusKey: 'mediclaim_form_Status',
+  documentIdKey: 'mediclaim_form_DocId',
+  approved: false,
+  fileName: '',
+  filePath: '',
+  type: 'single',
+  showEnrollmentRadio: true,  // Flag to show radio buttons
+  enrollmentStatus: ''
+       // Will store 'yes' or 'no'
+}
+  ]);
 
-    // Use plain fetch — NO axios, NO auth headers, NO crossOrigin
-    fetch(url, {
-      method: 'GET',
-      headers: {}, // ✅ empty headers — no Authorization added
-      referrerPolicy: 'no-referrer',
-    })
-      .then(res => res.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      })
-      .catch(() => {
-        // Final fallback — Image tag without crossOrigin
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg'));
-          } catch {
-            resolve(null);
+  const handleEditUpload = (item, subItem = null) => {
+  const inputId = subItem ? `file-${item.id}-${subItem.id}` : `file-${item.id}`;
+  const fileInput = document.getElementById(inputId);
+  
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.click();
+  } else {
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = '.pdf,.jpg,.jpeg,.png';
+    tempInput.style.display = 'none';
+    document.body.appendChild(tempInput);
+    
+    tempInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Get the existing document ID before uploading new file
+        const latestItem = documentChecklist.find(i => i.id === item.id);
+        const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+        const existingDocumentId = targetItem?.documentId; // Preserve existing ID
+        
+        // Store the file with existing document ID
+        const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
+        setUploadedFiles(prev => ({ 
+          ...prev, 
+          [fileKey]: { 
+            file: file, 
+            existingDocumentId: existingDocumentId  // Save existing ID
+          } 
+        }));
+        setUploadedDocsStatus(prev => ({ ...prev, [fileKey]: true }));
+        
+        // Update UI
+        const updatedChecklist = documentChecklist.map(docItem => {
+          if (docItem.id === item.id) {
+            if (subItem && docItem.subItems) {
+              const updatedSubItems = docItem.subItems.map(sub =>
+                sub.id === subItem.id
+                  ? { 
+                      ...sub, 
+                      fileName: file.name, 
+                      filePath: URL.createObjectURL(file), 
+                      status: '0',
+                      approved: false,
+                      documentId: existingDocumentId  // Keep existing ID
+                    }
+                  : sub
+              );
+              return { ...docItem, subItems: updatedSubItems };
+            }
+            return { 
+              ...docItem, 
+              fileName: file.name, 
+              filePath: URL.createObjectURL(file), 
+              status: '0',
+              approved: false,
+              documentId: existingDocumentId  // Keep existing ID
+            };
           }
-        };
-        img.onerror = () => resolve(null);
-        img.src = url;
-      });
-  });
-};
-
-
-const toBase64ViaAxios = async (url) => {
-  if (!url) return null;
-  try {
-    const response = await axiosInstance.get(url, {
-      responseType: 'blob',
-    });
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(response.data);
-    });
-  } catch (err) {
-    console.error('Image fetch failed:', err);
-    return null;
+          return docItem;
+        });
+        setDocumentChecklist(updatedChecklist);
+        
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'File Selected!',
+          text: `${file.name} has been selected. Click Submit to save changes.`,
+          timer: 2000, 
+          showConfirmButton: false 
+        });
+      }
+      document.body.removeChild(tempInput);
+    };
+    
+    tempInput.click();
   }
 };
 
-  const cleanUrl = (url) => {
-    if (!url) return null;
-    return url.replace(/([^:]\/)\/+/g, "$1").trim();
-  };
 
-  const getImageUrl = (type, childIndex = null) => {
-    const base = API_BASE_URLss;
-    const build = (path) => {
-      if (!path) return null;
-      return `${base}/${path}`.replace(/([^:]\/)\/+/g, "$1");
-    };
 
-    if (type === 'employee') {
-      return build(rowData?.fullData?.documents?.photo);
-    }
-    if (type === 'spouse') {
-      return build(rowData?.fullData?.documents?.spouse_document);
-    }
-    if (type === 'child') {
-      const children = getOrderedChildren();
-      if (children?.[childIndex]) {
-        const child = children[childIndex];
-        return build(rowData?.fullData?.documents?.[child.docKey]);
-      }
-    }
-    return null;
-  };
+    const ignoreDocs = Report == 'JoiningReportList'
+  ? ['appointment_letter', 'mediclaim_form']
+  : [];
 
-  const formatDate = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
+const isAllVerified = documentChecklist?.every((item) => {
+  // Ignore appointment_letter only for JoiningReportList
+  if (ignoreDocs.includes(item.apiKey)) return true;
 
-  const getOrderedChildren = () => {
-    const daughters = rowData?.fullData?.daughters_data || [];
-    const sons = rowData?.fullData?.sons_data || [];
-    const allChildren = [];
-    
-    daughters.forEach((daughter, index) => {
-      allChildren.push({
-        ...daughter,
-        type: 'daughter',
-        order: index + 1,
-        docKey: `daughter_${index + 1}_document`
-      });
-    });
-    
-    sons.forEach((son, index) => {
-      allChildren.push({
-        ...son,
-        type: 'son',
-        order: index + 1,
-        docKey: `son_${index + 1}_document`
-      });
-    });
-    
-    return allChildren;
-  };
-
-  const getChildDocument = (childIndex) => {
-    const children = getOrderedChildren();
-    if (children[childIndex]) {
-      const child = children[childIndex];
-      const docPath = rowData?.fullData?.documents?.[child.docKey];
-      return docPath ? `${API_BASE_URLss}/${docPath}` : null;
-    }
-    return null;
-  };
-
-  const getChildName = (childIndex) => {
-    const children = getOrderedChildren();
-    return children[childIndex]?.name || '-';
-  };
-
-  const getChildDOB = (childIndex) => {
-    const children = getOrderedChildren();
-    return children[childIndex]?.dob || null;
-  };
-
-  // Generate PDF and return blob (without downloading)
-  const generatePDFBlob = async () => {
-    try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 10;
-
-      const addBorder = (x, y, width, height) => {
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.1);
-        doc.rect(x, y, width, height);
-      };
-
-  const addImageToPDF = async (imageUrl, x, y, w, h) => {
-  if (!imageUrl) return false;
-  try {
-    const imgData = await toBase64ViaAxios(imageUrl); // ✅ changed
-    if (imgData) {
-      doc.addImage(imgData, "JPEG", x, y, w, h);
+  // Medical Enrollment Form validation (id: 21)
+  if (item.id === 21) {
+    // Check if MED_STATUS is already 'YES' from API (already filled)
+    if (item.fullData?.MED_STATUS === 'YES') {
       return true;
     }
-    return false;
-  } catch (err) {
-    console.error("Image error:", err);
-    return false;
+    // Otherwise, must select Yes/No option
+    if (!item.enrollmentStatus) return false;
+    return true;
   }
-};
 
-      // HEADER SECTION
-      addBorder(10, yPos, pageWidth - 20, 45);
-      addBorder(10, yPos, 30, 45);
-      
-      try {
-        const logoImg = await fetch(logo).then(res => res.blob());
-        const reader = new FileReader();
-        const logoDataUrl = await new Promise((resolve) => {
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(logoImg);
-        });
-        doc.addImage(logoDataUrl, 'PNG', 12, yPos + 2, 26, 40);
-      } catch (err) {
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        doc.text('LOGO', 20, yPos + 22, { align: 'center' });
-      }
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('MY HOME CONSTRUCTIONS PVT. LTD.', 45, yPos + 8);
-      doc.setFontSize(9);
-      doc.text('Mediclaim Data Enrolment Form', 45, yPos + 16);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.text('DIR No. ASDPL-HR-F31', pageWidth - 35, yPos + 5);
-      doc.text(`Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageWidth - 35, yPos + 10);
-      doc.text('Rev. Version 02', pageWidth - 35, yPos + 15);
-      
-      yPos += 50;
+  // Multiple documents
+  if (item.type === "multiple" && item.subItems) {
+    return item.subItems.every(sub => sub.status === "1");
+  }
 
-      // EMPLOYEE INFORMATION TABLE
-      const employeeData = [
-        { sno: 1, label: "Name of the employee", value: rowData?.employee_name?.toUpperCase() || rowData?.fullData?.name?.toUpperCase() || '-' },
-        { sno: 2, label: "Emp. ID", value: rowData?.child_caseid || rowData?.CHILD_CASEID || '-' },
-        { sno: 3, label: "Designation", value: rowData?.DESIG?.toUpperCase() || '-' },
-        { sno: 4, label: "Department", value: rowData?.fullData?.DEPT?.toUpperCase() || '-' },
-        { sno: 5, label: "Location", value: rowData?.fullData?.PLANT?.toUpperCase() || '-' },
-        { sno: 6, label: "Gender", value: rowData?.fullData?.GENDER?.toUpperCase() || '-' }
-      ];
-      
-      addBorder(10, yPos, pageWidth - 20, employeeData.length * 7);
-      
-      employeeData.forEach((item, idx) => {
-        const rowY = yPos + (idx * 7);
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(10, rowY, 10, 7);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text(item.sno.toString(), 15, rowY + 5);
-        doc.rect(20, rowY, 70, 7);
-        doc.text(item.label, 25, rowY + 5);
-        doc.rect(90, rowY, pageWidth - 100, 7);
-        doc.setFont('helvetica', 'bold');
-        doc.text(item.value, 95, rowY + 5);
-      });
-      
-      yPos += employeeData.length * 7 + 5;
+  // Single document
+  return item.status === "1";
+});
 
-      // FAMILY DETAILS SECTION
-      const children = getOrderedChildren();
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('FAMILY DETAILS', 15, yPos);
-      yPos += 5;
-      
-      const colWidths = [40, 40, 60, 60];
-      const headers = ['Emp Name', 'Spouse Name', 'Child 1', 'Child 2'];
-      let currentX = 10;
-      
-      headers.forEach((header, idx) => {
-        doc.rect(currentX, yPos, colWidths[idx], 8);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.text(header, currentX + 2, yPos + 5);
-        currentX += colWidths[idx];
+  const handleSubmit = async () => {
+
+    const formData = new FormData();
+    formData.append('CHILD_CASEID', rowData?.CHILD_CASEID);
+       formData.append('MEDICAL_ENROLLMENT_STATUS', medicalItem.enrollmentStatus);
+     { Report  == "JoiningReportList"  ? formData.append('onBoarding', 3) : formData.append('onBoarding', 4)};
+
+  const medicalItem = documentChecklist.find(item => item.id === 21);
+
+      if (medicalItem && medicalItem.fullData?.MED_STATUS !== 'YES') {
+    // If MED_STATUS is not already YES from API, user must select Yes/No
+    if (!medicalItem.enrollmentStatus) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Medical Enrollment Required',
+        text: 'Please select Yes or No for Medical Enrollment Form before submitting.',
+        confirmButtonColor: '#f59e0b'
       });
-      
-      yPos += 8;
-      
-      currentX = 10;
-      const nameValues = [
-        rowData?.fullData?.name || rowData?.employee_name || '-',
-        rowData?.fullData?.spouse_name || '-',
-        children[0]?.name ? `${children[0].name} (${children[0].type === 'daughter' ? 'Daughter' : 'Son'})` : '-',
-        children[1]?.name ? `${children[1].name} (${children[1].type === 'daughter' ? 'Daughter' : 'Son'})` : '-'
-      ];
-      
-      nameValues.forEach((value, idx) => {
-        doc.rect(currentX, yPos, colWidths[idx], 6);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        const textLines = doc.splitTextToSize(value, colWidths[idx] - 4);
-        doc.text(textLines, currentX + 2, yPos + 4);
-        currentX += colWidths[idx];
-      });
-      
-      yPos += 6;
-      
-      const imagePositions = [
-        { type: 'employee', index: null, x: 10, y: yPos, width: colWidths[0], height: 25, label: 'Employee Photo' },
-        { type: 'spouse', index: null, x: 50, y: yPos, width: colWidths[1], height: 25, label: 'Spouse Photo' },
-        { type: 'child', index: 0, x: 90, y: yPos, width: colWidths[2], height: 25, label: 'Child 1 Photo' },
-        { type: 'child', index: 1, x: 150, y: yPos, width: colWidths[3], height: 25, label: 'Child 2 Photo' }
-      ];
-      
-      for (const imgPos of imagePositions) {
-        doc.rect(imgPos.x, imgPos.y, imgPos.width, imgPos.height);
-        const imageUrl = getImageUrl(imgPos.type, imgPos.index);
-        const imageAdded = await addImageToPDF(imageUrl, imgPos.x + 2, imgPos.y + 2, imgPos.width - 4, imgPos.height - 4);
-        
-        if (!imageAdded) {
-          doc.setFontSize(6);
-          doc.setFont('helvetica', 'italic');
-          doc.text(imgPos.label, imgPos.x + 2, imgPos.y + 4);
-          doc.text('(No Image Available)', imgPos.x + 2, imgPos.y + 12);
-        }
-      }
-      
-      yPos += 25;
-      
-      currentX = 10;
-      const dobValues = [
-        rowData?.fullData?.dob ? formatDate(rowData.fullData.dob) : '-',
-        rowData?.fullData?.spouse_dob ? formatDate(rowData.fullData.spouse_dob) : '-',
-        getChildDOB(0) ? formatDate(getChildDOB(0)) : '-',
-        getChildDOB(1) ? formatDate(getChildDOB(1)) : '-'
-      ];
-      
-      dobValues.forEach((value, idx) => {
-        doc.rect(currentX, yPos, colWidths[idx], 7);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.text('DOB:', currentX + 2, yPos + 4);
-        doc.setFont('helvetica', 'normal');
-        doc.text(value, currentX + 10, yPos + 4);
-        currentX += colWidths[idx];
-      });
-      
-      yPos += 12;
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Instructions:', 15, yPos);
-      yPos += 5;
-      
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      const instructions = [
-        'A. Write the names in BLOCK LETTERS in the box.',
-        'B. Date of birth should be in the (DD/MM/YYYY) format',
-        'C. In case of un-married self only applicable'
-      ];
-      
-      instructions.forEach(instruction => {
-        doc.text(instruction, 15, yPos);
-        yPos += 5;
-      });
-      
-      yPos += 3;
-      
-      doc.setFontSize(8);
-      doc.text('I hereby declare that the particulars stated above are true to best of my knowledge.', 15, yPos);
-      yPos += 10;
-      
-      doc.setFontSize(7);
-      doc.text('Employee Signature:', 15, yPos);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 255);
-      doc.text(rowData?.employee_name || '_______________', 15, yPos + 5);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.text('HR Dept.', pageWidth / 2 - 15, yPos + 2.5);
-      
-      const currentDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-      doc.text('Date:', pageWidth - 45, yPos + 2.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 255);
-      doc.text(currentDate, pageWidth - 35, yPos + 2.5);
-      
-      const footerY = pageHeight - 10;
-      doc.setFontSize(6);
-      doc.setTextColor(128, 128, 128);
-      doc.setFont('helvetica', 'italic');
-      doc.text('This is a computer-generated document. No signature is required.', pageWidth / 2, footerY, { align: 'center' });
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, footerY - 4, { align: 'center' });
-      
-      return doc.output('blob');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw error;
+      return;
     }
-  };
-
-  // Preview PDF - opens in new tab
-  const handlePreviewPDF = async () => {
-    setIsPreviewLoading(true);
-    try {
-      const pdfBlob = await generatePDFBlob();
-      const fileName = `Mediclaim_Form_${rowData?.CHILD_CASEID || Date.now()}.pdf`;
-      const url = URL.createObjectURL(pdfBlob);
-      
-      // Open in new tab for preview
-      window.open(url, '_blank');
-      
-      // Store in state
-      setData({
-        pdfBlob: pdfBlob,
-        fileName: fileName
-      });
-      
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error previewing PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to preview PDF: ' + error.message,
-        confirmButtonColor: '#ef4444'
-      });
-    } finally {
-      setIsPreviewLoading(false);
-    }
-  };
-
-  // Download PDF
-  const handleDownloadPDF = async () => {
-    try {
-      const pdfBlob = await generatePDFBlob();
-      const fileName = `Mediclaim_Form_${rowData?.CHILD_CASEID || Date.now()}.pdf`;
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      setData({
-        pdfBlob: pdfBlob,
-        fileName: fileName
-      });
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to download PDF: ' + error.message,
-        confirmButtonColor: '#ef4444'
-      });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
     
-    // Show confirmation dialog before submitting
-    const confirmResult = await Swal.fire({
+    // If user selects "Yes", they need to upload the document
+    if (medicalItem.enrollmentStatus === 'YES') {
+      // Check if the document is uploaded
+      const hasFile = medicalItem.filePath;
+      const isUploaded = medicalItem.status == "1";
+
+      
+      if (!hasFile && !isUploaded) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Document Required',
+          text: 'Please upload the Medical Enrollment Form document when selecting "Yes".',
+          confirmButtonColor: '#dc2626'
+        });
+        return;
+      }
+    }
+  }
+
+       const confirmResult = await Swal.fire({
     title: 'Are you sure?',
     text: 'Do you want to verify and submit this form?',
     icon: 'question',
@@ -481,403 +279,1540 @@ const toBase64ViaAxios = async (url) => {
   if (!confirmResult.isConfirmed) {
     return;
   }
-    
-    setIsSubmitting(true);
-    
-    try {
-      let pdfBlob = data.pdfBlob;
-      let fileName = data.fileName;
-      
-      // Generate PDF if not already generated
-      if (!pdfBlob) {
-        pdfBlob = await generatePDFBlob();
-        fileName = `Mediclaim_Form_${rowData?.CHILD_CASEID || Date.now()}.pdf`;
-      }
-      
-      const formData = new FormData();
-      formData.append('CHILD_CASEID', rowData?.CHILD_CASEID);
-      formData.append('onboarding_status', "verified");
-      formData.append("mediclaim_form", pdfBlob, fileName);
-          formData.append("onBoarding", 2);
-      const response = await axiosInstance.post(
-        `${API_BASE_URL}/on-board-Store`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${Token.token}`,
-          },
-        }
-      );
-      
-      if (response.data.success) {
-        await Swal.fire({
-          icon: "success",
-          title: "Success!",
-          text: response?.data?.message || "Form submitted successfully",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-        
-        // Refresh the table if function provided
-        if (refreshTable && typeof refreshTable === 'function') {
-          await refreshTable();
-        }
-        
-        // Clear form data and close modal
-        setData({ pdfBlob: null, fileName: "" });
-        setPreviewUrl(null);
-        setShowPreview(false);
-        
-        // Close the modal after successful submission
-        setTimeout(() => {
-          onClose();
-        }, 500);
-      } else {
-        throw new Error(response?.data?.message || "Submission failed");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.response?.data?.message || error.message || "API request failed",
-        confirmButtonColor: "#ef4444",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const handleClose = () => {
-    // Clear all data before closing
-    setData({ pdfBlob: null, fileName: "" });
-    setPreviewUrl(null);
-    setShowPreview(false);
+    const response = await axiosInstance.post(`${API_BASE_URL}/on-board-Store`, formData, {
+      headers: { Authorization: `Bearer ${userToken.token}` },
+    });
+    if (response.data.success) {
+      await Swal.fire({ icon: "success", title: "Success!", text: response?.data?.message || "Form submitted successfully", timer: 2000, showConfirmButton: false });
+      if (refreshTable) await refreshTable();
+     
+    }
     onClose();
   };
 
-  const children = getOrderedChildren();
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-5xl font-serif rounded-lg shadow-xl overflow-y-auto max-h-[90vh] p-6">
-        {/* Close button in top-right */}
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition"
-          >
-            <X size={20} />
-          </button>
-        </div>
 
-        {/* Header */}
-        <div className="border border-gray-400">
-          <div className="border-2 border-black mb-4 relative">
-            <div className="flex justify-between items-start">
-              <div className="flex items-stretch w-full">
-                <div className="border-r-2 border-black px-3 py-2 flex items-center justify-center min-w-[80px]">
-                  <img
-                    src={logo}
-                    alt="My Home Group"
-                    className="w-18 h-18 object-contain"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col">
-                  <div className="border-b border-black px-3 py-1.5 text-center">
-                    <p className="text-sm font-bold tracking-wide">
-                      MY HOME CONSTRUCTIONS PVT. LTD.
-                    </p>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-1 px-3 py-1.5 flex items-center justify-center border-r border-black">
-                      <p className="text-xs font-bold tracking-wider">
-                        Mediclaim Data Enrolment Form
-                      </p>
-                    </div>
-                    <div className="px-3 py-1.5 text-[10px] text-right min-w-[160px]">
-                      <p className="font-semibold">DIR No. ASDPL-HR-F31</p>
-                      <p>
-                        Date:{" "}
-                        {new Date().toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                      <p>Rev. Version 02</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <table className="w-full text-xs border-collapse">
-            <tbody>
-              {[
-                {
-                  label: "Name of the employee",
-                  value: rowData?.employee_name?.toUpperCase() || rowData?.fullData?.name?.toUpperCase(),
-                },
-                {
-                  label: "Emp. ID",
-                  value: rowData?.child_caseid || rowData?.CHILD_CASEID,
-                },
-                {
-                  label: "Designation",
-                  value: rowData?.DESIG?.toUpperCase(),
-                },
-                {
-                  label: "Department",
-                  value: rowData?.fullData?.DEPT?.toUpperCase(),
-                },
-                {
-                  label: "Location",
-                  value: rowData?.fullData?.PLANT?.toUpperCase(),
-                },
-                {
-                  label: "Gender",
-                  value: rowData?.fullData?.GENDER?.toUpperCase(),
-                },
-              ].map((item, index) => (
-                <tr key={index} className="border-t border-gray-400">
-                  <td className="border-r border-gray-400 w-10 p-2 text-center">
-                    {index + 1}
-                  </td>
-                  <td className="border-r border-gray-400 p-2 w-1/3">
-                    {item.label}
-                  </td>
-                  <td className="p-2 font-semibold">
-                    {item.value || "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Family Details Section */}
-        <div className="border border-gray-400 mt-6">
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-gray-400">
-                <th className="border-r border-gray-400 p-2">Emp Name</th>
-                <th className="border-r border-gray-400 p-2">Spouse Name</th>
-                <th className="border-r border-gray-400 p-2">Child 1</th>
-                <th className="p-2">Child 2</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Names Row */}
-              <tr className="border-t border-gray-400">
-                <td className="border-r border-gray-400 p-2">
-                  {rowData?.fullData?.name || rowData?.employee_name || '-'}
-                </td>
-                <td className="border-r border-gray-400 p-2">
-                  {rowData?.fullData?.spouse_name || '-'}
-                </td>
-                <td className="border-r border-gray-400 p-2">
-                  {children[0]?.name ? `${children[0].name} (${children[0].type === 'daughter' ? 'Daughter' : 'Son'})` : '-'}
-                </td>
-                <td className="p-2">
-                  {children[1]?.name ? `${children[1].name} (${children[1].type === 'daughter' ? 'Daughter' : 'Son'})` : '-'}
-                </td>
-               </tr>
-
-              {/* Photos Row */}
-              <tr className="border-t border-gray-400">
-                <td className="border-r border-gray-400 p-6 text-center">
-                  {rowData?.fullData?.documents?.photo ? (
-                   <img
-  src={`${API_BASE_URLss}/${rowData.fullData.documents.photo}`}
-  alt="Employee Photo"
-  referrerPolicy="no-referrer"
-  crossOrigin={undefined}
-  className="mx-auto object-cover"
-  style={{ width: "120px", height: "120px" }}
-/>
-                  ) : (
-                    <p className="text-gray-600 text-sm">
-                      Paste Photo here <br />
-                      (passport size / stamp size)
-                    </p>
-                  )}
-                </td>
-                <td className="border-r border-gray-400 p-6 text-center">
-                  {rowData?.fullData?.documents?.spouse_document ? (
-                    <img
-                      src={`${API_BASE_URLss}/${rowData.fullData.documents.spouse_document}`}
-                      alt="Spouse Photo"
-                      className="mx-auto object-cover"
-                      style={{ width: "120px", height: "120px" }}
-                    />
-                  ) : (
-                    <p className="text-gray-600 text-sm">No Spouse Photo</p>
-                  )}
-                </td>
-                <td className="border-r border-gray-400 p-6 text-center">
-                  {getChildDocument(0) ? (
-                    <img
-                      src={getChildDocument(0)}
-                      alt={`Child 1`}
-                      className="mx-auto object-cover"
-                      style={{ width: "120px", height: "120px" }}
-                    />
-                  ) : (
-                    <p className="text-gray-600 text-sm">No Child Photo</p>
-                  )}
-                </td>
-                <td className="p-6 text-center">
-                  {getChildDocument(1) ? (
-                    <img
-                      src={getChildDocument(1)}
-                      alt={`Child 2`}
-                      className="mx-auto object-cover"
-                      style={{ width: "120px", height: "120px" }}
-                    />
-                  ) : (
-                    <p className="text-gray-600 text-sm">No Child Photo</p>
-                  )}
-                </td>
-               </tr>
-
-              {/* DOB Row */}
-              <tr className="border-t border-gray-400">
-                <td className="border-r border-gray-400 p-2">
-                  <p className="text-xs mb-1">Date of Birth</p>
-                  {rowData?.fullData?.dob ? (
-                    <p className="text-sm">{formatDate(rowData.fullData.dob)}</p>
-                  ) : (
-                    <div className="bg-gray-200 h-6 rounded-full"></div>
-                  )}
-                </td>
-                <td className="border-r border-gray-400 p-2">
-                  <p className="text-xs mb-1">Date of Birth</p>
-                  {rowData?.fullData?.spouse_dob ? (
-                    <p className="text-sm">{formatDate(rowData.fullData.spouse_dob)}</p>
-                  ) : (
-                    <div className="bg-gray-200 h-6 rounded-full"></div>
-                  )}
-                </td>
-                <td className="border-r border-gray-400 p-2">
-                  <p className="text-xs mb-1">Date of Birth</p>
-                  {getChildDOB(0) ? (
-                    <p className="text-sm">{formatDate(getChildDOB(0))}</p>
-                  ) : (
-                    <div className="bg-gray-200 h-6 rounded-full"></div>
-                  )}
-                </td>
-                <td className="p-2">
-                  <p className="text-xs mb-1">Date of Birth</p>
-                  {getChildDOB(1) ? (
-                    <p className="text-sm">{formatDate(getChildDOB(1))}</p>
-                  ) : (
-                    <div className="bg-gray-200 h-6 rounded-full"></div>
-                  )}
-                </td>
-               </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Instructions */}
-        <div className="text-xs mt-6 space-y-1">
-          <p>A. Write the names in BLOCK LETTERS in the box.</p>
-          <p>B. Date of birth should be in the (DD/MM/YYYY) format</p>
-          <p>C. In case of un-married self only applicable</p>
-        </div>
-
-        {/* Declaration */}
-        <div className="text-xs mt-4">
-          <p>
-            I hereby declare that the particulars stated above are true to best
-            of my knowledge.
-          </p>
-        </div>
-
-        {/* Signature Section */}
-        <div className="flex justify-between items-center mt-8 text-xs">
-          <div>
-            <div className="h-6 w-40 mb-1"></div>
-            <span className="text-blue-700">{rowData?.employee_name}</span>
-            <p>Employee Signature</p>
-          </div>
-          <div>
-            <p className="font-semibold">HR Dept.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-6 w-36"></div>
-            <p className="text-xs">Date</p>
-            <span className="text-blue-700 text-sm font-medium">
-              {new Date().toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end mt-6 gap-3 border-t pt-4">
-          <button
-            onClick={handleClose}
-            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
-          >
-            Close
-          </button>
+useEffect(() => {
+  if (rowData && rowData.fullData) {
+    const employeeData = rowData.fullData;
+    setFormData({
+      employeeName: employeeData.name || rowData.employee_name || '',
+      empId: employeeData.child_caseid || rowData.CHILD_CASEID || '',
+      designation: employeeData.MANPOWER_DESG || employeeData.designation || rowData.department || '',
+      doj: employeeData.joiningDate || rowData.joining_date || '',
+      department: employeeData.DEPT || rowData.department || '',
+      siteLocation: employeeData.PLANT || rowData.location || ''
+    });
+    
+    const normalizeFileUrl = (path) => {
+      if (!path || typeof path !== 'string') return '';
+      if (path.startsWith('http')) return path;
+      return `${API_BASE_URLss}${path}`;
+    };
+    
+    // 👇 Complete mapping for all documents
+    const getDocSubmitKey = (apiKey) => {
+      const specialMappings = {
+        // Education Documents
+        '10th_certi': '10TH_FILENAME_documents_submit',
+        'Inter_certi': 'INTER_FILENAME_documents_submit',
+        'Gradu_certi': 'BTECH_FILENAME_documents_submit',
+        'PG_FILENAME': 'PG_FILENAME_documents_submit',
+        'PHD_FILENAME': 'PHD_FILENAME_documents_submit',
+        'OTHER_FILENAME': 'OTHER_FILENAME_documents_submit',
+        
+        // ID Proofs
+        'Aadhar_certi': 'AADHAR_PATH_documents_submit',
+        'Pan_certi': 'PAN_PATH_documents_submit',
+        
+        // Photos
+        'photo': 'PHOTO_documents_submit',
+        
+        // Offer & Appointment
+        'offer_letter': 'offer_letter_documents_submit',
+        'appointment_letter': 'appointment_letter_documents_submit',
+        
+        // Experience Letters
+        'exp_letter': 'exp_letter_documents_submit',
+        'relieving_letter': 'relieving_letter_documents_submit',
+        
+        // Financial Documents
+        'payslips': 'payslips_documents_submit',
+        'bank_statements': 'bank_statements_documents_submit',
+        
+        // Other Documents
+        'RESUME_UPLOAD': 'RESUME_UPLOAD_documents_submit',
+        'candidatefile': 'candidatefile_documents_submit',
+        'UAN_FILE': 'UAN_FILE_documents_submit',
+        'joining_report': 'joining_report_documents_submit',
+        'code_of_conduct': 'code_of_conduct_documents_submit',
+        'gratuity_form': 'gratuity_form_documents_submit',
+        'epfo_form': 'epfo_form_documents_submit',
+        'privacy_policy': 'privacy_policy_documents_submit',
+        'epfo_form_11': 'epfo_form_11_documents_submit',
+        'it_declaration': 'it_declaration_documents_submit',
+        'medical_reports': 'medical_reports_documents_submit',
+        'mediclaim_form': 'mediclaim_form_documents_submit'
+      };
+      
+      return specialMappings[apiKey] || `${apiKey}_documents_submit`;
+    };
+    
+    if (employeeData.documents || employeeData) {
+      const updatedChecklist = documentChecklist.map(item => {
+        // Handle Medical Enrollment Form (id: 21) - Set enrollmentStatus from MED_STATUS
+        if (item.id === 21) {
+          return {
+            ...item,
+            fullData: employeeData, // Store fullData for access to MED_STATUS
+            enrollmentStatus: employeeData.MED_STATUS === 'YES' ? 'YES' : (employeeData.MED_STATUS === 'NO' ? 'NO' : ''),
+            // Also set file info if document exists
+            fileName: employeeData.documents?.mediclaim_form ? employeeData.documents.mediclaim_form.split('/').pop() : '',
+            filePath: employeeData.documents?.mediclaim_form ? normalizeFileUrl(employeeData.documents.mediclaim_form) : '',
+            status: employeeData.documents?.mediclaim_form_Status || '0'
+          };
+        }
+        
+        if (item.type === 'single') {
+          const apiDoc = employeeData.documents[item.apiKey] || employeeData[item.apiKey];
+          const status = item.statusKey ? employeeData.documents[item.statusKey] || employeeData[item.statusKey] : null;
+          const documentId = item.documentIdKey ? employeeData.documents[item.documentIdKey] || employeeData[item.documentIdKey] : null;
           
+          // 👇 Get the correct submit key
+          const docSubmitKey = getDocSubmitKey(item.apiKey);
+          const docSubmitValue = employeeData.documents?.[docSubmitKey] || null;
+          
+          console.log('Document:', item.name, 'API Key:', item.apiKey, 'Submit Key:', docSubmitKey, 'Value:', docSubmitValue);
+          
+          if (apiDoc) {
+            return { 
+              ...item, 
+              fileName: apiDoc.split('/').pop() || 'Document', 
+              filePath: normalizeFileUrl(apiDoc), 
+              status, 
+              approved: status === '1' || status === 1, 
+              documentId, 
+              verificationId: employeeData.Verification_Id,
+              docSubmitValue
+            };
+          }
+          return { ...item, docSubmitValue };
+        }
+        
+        if (item.subItems && Array.isArray(item.subItems)) {
+          const updatedSubItems = item.subItems.map(subItem => {
+            const apiDoc = employeeData?.documents?.[subItem.apiKey];
+            const status = subItem.statusKey ? employeeData?.documents?.[subItem.statusKey] : null;
+            const documentId = subItem.documentIdKey ? employeeData?.documents?.[subItem.documentIdKey] : null;
+            
+            // 👇 Use mapping for sub-items
+            const docSubmitKey = getDocSubmitKey(subItem.apiKey);
+            const docSubmitValue = employeeData.documents?.[docSubmitKey] || null;
+            
+            if (apiDoc) {
+              return { 
+                ...subItem, 
+                fileName: apiDoc.split('/').pop() || 'Document', 
+                filePath: normalizeFileUrl(apiDoc), 
+                status, 
+                approved: status === '1' || status === 1, 
+                documentId, 
+                verificationId: employeeData.Verification_Id,
+                docSubmitValue
+              };
+            }
+            return { ...subItem, docSubmitValue };
+          });
+          return { ...item, subItems: updatedSubItems };
+        }
+        return item;
+      });
+      setDocumentChecklist(updatedChecklist);
+    }
+  }
+}, [rowData]);
+
+  const StatusBadge = ({ status }) => {
+    if (status === '1' || status === 1) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#dcfce7', borderRadius: '9999px', border: '1px solid #bbf7d0' }}>
+          <CheckCircle size={12} color="#16a34a" />
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#15803d', letterSpacing: '0.02em' }}>Verified</span>
+        </span>
+      );
+    } else if (status === '0' || status === 0) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#fef9c3', borderRadius: '9999px', border: '1px solid #fde68a' }}>
+          <Clock size={12} color="#b45309" />
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#92400e', letterSpacing: '0.02em' }}>Pending</span>
+        </span>
+      );
+    } else {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#f3f4f6', borderRadius: '9999px', border: '1px solid #e5e7eb' }}>
+          <span style={{ fontSize: '11px', color: '#9ca3af', letterSpacing: '0.02em' }}>Not Uploaded</span>
+        </span>
+      );
+    }
+  };
+
+const handleFileUpload = (itemId, file, subItemId = null) => {
+  if (file) {
+    // For new uploads (no existing document)
+    const updatedChecklist = documentChecklist.map(item => {
+      if (item.id === itemId) {
+        if (subItemId && item.subItems) {
+          const updatedSubItems = item.subItems.map(subItem =>
+            subItem.id === subItemId
+              ? { ...subItem, fileName: file.name, filePath: URL.createObjectURL(file), status: '0', approved: false }
+              : subItem
+          );
+          return { ...item, subItems: updatedSubItems };
+        }
+        return { ...item, fileName: file.name, filePath: URL.createObjectURL(file), status: '0', approved: false };
+      }
+      return item;
+    });
+    setDocumentChecklist(updatedChecklist);
+
+    const fileKey = subItemId ? `${itemId}-${subItemId}` : itemId;
+    setUploadedFiles(prev => ({ ...prev, [fileKey]: file })); // Store just the file for new uploads
+    setUploadedDocsStatus(prev => ({ ...prev, [fileKey]: true }));
+    
+    Swal.fire({ 
+      icon: 'success', 
+      title: 'File Uploaded!',
+      text: `${file.name} has been uploaded. Click Submit to save.`,
+      timer: 2000, 
+      showConfirmButton: false 
+    });
+  }
+};
+
+
+
+const handleSubmitDocument = async (item, subItem = null) => {
+  if (isSubmitting) return;
+
+  try {
+    setIsSubmitting(true);
+
+    const childCaseId = rowData?.fullData?.CHILD_CASEID || rowData?.CHILD_CASEID;
+
+    if (!childCaseId) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'CHILD_CASEID is missing.'
+      });
+      return;
+    }
+
+    const targetItem = subItem || item;
+    const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
+    const uploadedData = uploadedFiles[fileKey];
+    
+    // Check if it's an edit (has existing document ID) or new upload
+    const isEdit = uploadedData?.existingDocumentId;
+    const uploadedFile = isEdit ? uploadedData.file : uploadedData;
+    const existingDocumentId = uploadedData?.existingDocumentId;
+
+    if (!uploadedFile) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'No File',
+        text: `Please upload ${targetItem.name} first.`
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Submitting...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const formData = new FormData();
+    formData.append('CHILD_CASEID', childCaseId);
+    formData.append(targetItem.apiKey, uploadedFile);
+    formData.append('onBoarding', 2);
+    
+    // CRITICAL: Send the existing document ID to backend for update
+    if (isEdit && existingDocumentId) {
+      formData.append('DOCUMENT_ID', existingDocumentId);
+      formData.append('IS_UPDATE', 'true');
+      console.log('Updating existing document ID:', existingDocumentId);
+    }
+
+    const response = await axiosInstance.post(
+      `/on-board-Store`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    if (response.data.success) {
+      // For edits, ALWAYS use the existing document ID
+      // For new uploads, get from response or use temporary
+      const newDocumentId = isEdit 
+        ? existingDocumentId  // Keep the same ID for updates
+        : (response?.data?.document_id || targetItem.documentId || `temp_${Date.now()}`);
+      
+      const verificationId = rowData?.fullData?.Verification_Id || null;
+
+      console.log('Document saved with ID:', newDocumentId, 'Is Edit:', isEdit);
+        if (refreshTable) {
+        await refreshTable();
+      }
+
+      // Update local state
+      setDocumentChecklist(prevChecklist => {
+        return prevChecklist.map(docItem => {
+          if (docItem.id === item.id) {
+            if (subItem && docItem.subItems) {
+              return {
+                ...docItem,
+                subItems: docItem.subItems.map(sub =>
+                  sub.id === subItem.id
+                    ? {
+                        ...sub,
+                        status: '0',  // Reset to pending after update (needs re-approval)
+                        approved: false,
+                        documentId: newDocumentId,  // Keep same ID for edits
+                        verificationId: verificationId,
+                        fileName: uploadedFile.name,
+                        filePath: URL.createObjectURL(uploadedFile)
+                      }
+                    : sub
+                )
+              };
+            }
+            return {
+              ...docItem,
+              status: '0',  // Reset to pending after update
+              approved: false,
+              documentId: newDocumentId,  // Keep same ID for edits
+              verificationId: verificationId,
+              fileName: uploadedFile.name,
+              filePath: URL.createObjectURL(uploadedFile)
+            };
+          }
+          return docItem;
+        });
+      });
+
+      setUploadedDocsStatus(prev => ({
+        ...prev,
+        [fileKey]: 'submitted'
+      }));
+
+      // Clear the uploaded file from state
+      setUploadedFiles(prev => {
+        const newState = { ...prev };
+        delete newState[fileKey];
+        return newState;
+      });
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `${targetItem.name} ${isEdit ? 'updated' : 'submitted'} successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Optional: Refresh parent table to get latest data
+    
+    }
+  } catch (error) {
+    console.error('Error submitting document:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Submission Failed',
+      text: error.response?.data?.message || error.message
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+}; 
+
+  
+
+  const handleViewDocument = (filePath) => { if (filePath) window.open(filePath, '_blank'); };
+  const handleViewPdfInline = (filePath, fileName) => { if (filePath) setViewingPdf({ filePath, fileName }); };
+  const handleClosePdfViewer = () => setViewingPdf(null);
+  const handleDownloadDocument = (filePath, fileName) => {
+    if (filePath) {
+      const link = document.createElement('a');
+      link.href = filePath;
+      link.download = fileName || 'document.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+
+  const handleApproveDocument = async (item, subItem = null) => {
+  const latestItem = documentChecklist.find(i => i.id === item.id);
+
+  const targetItem = subItem
+    ? latestItem?.subItems?.find(s => s.id === subItem.id)
+    : latestItem;
+
+  if (!targetItem) return;
+
+  // FIXED VALUES
+  const documentId =
+    targetItem?.documentId ||
+    targetItem?.fullData?.documents?.mediclaim_form_DocId;
+
+  const verificationId =
+    targetItem?.verificationId ||
+    targetItem?.fullData?.Verification_Id;
+
+  const documentName = targetItem?.name;
+
+
+  const latest =
+    latestItem?.apiKey == "hrEvaluationFile"
+      ? "hr_evolution"
+      : "";
+
+  // VALIDATION
+  if (!documentId || !verificationId) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Cannot Approve',
+      html: `<p>Document ID or Verification ID is missing. Please submit the document first.</p>`,
+      confirmButtonColor: '#f59e0b'
+    });
+
+    return;
+  }
+
+  // CONFIRM
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Approve ${documentName}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Yes, Approve',
+    cancelButtonText: 'No'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+
+    // API CALL
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/verify-Doc-Status`,
+      {
+        Verification_Id: verificationId,
+        Document_Id: documentId,
+        doc_type: latest
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${userToken.token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // UPDATE UI
+    setDocumentChecklist(prev =>
+      prev.map(docItem => {
+
+        if (docItem.id === item.id) {
+
+          // SUB ITEMS
+          if (subItem && docItem.subItems) {
+            return {
+              ...docItem,
+              subItems: docItem.subItems.map(sub =>
+                sub.id === subItem.id
+                  ? {
+                      ...sub,
+                      status: '1',
+                      approved: true
+                    }
+                  : sub
+              )
+            };
+          }
+
+          // NORMAL ITEMS
+          return {
+            ...docItem,
+            status: '1',
+            approved: true
+          };
+        }
+
+        return docItem;
+      })
+    );
+
+    // STATUS UPDATE
+    setUploadedDocsStatus(prev => ({
+      ...prev,
+      [subItem ? subItem.id : item.id]: 'approved'
+    }));
+
+    // REFRESH TABLE
+    if (refreshTable) {
+      await refreshTable();
+    }
+
+    // SUCCESS
+    await Swal.fire({
+      icon: 'success',
+      title: 'Approved!',
+      text: 'Document approved successfully.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch (error) {
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text:
+        error.response?.data?.message ||
+        'Something went wrong.'
+    });
+
+  }
+};
+
+// const handleApproveDocument = async (item, subItem = null) => {
+//   const latestItem = documentChecklist.find(i => i.id === item.id);
+//   const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+
+
+//   if (!targetItem) return;
+//   const { documentId, verificationId, name: documentName } = targetItem;
+
+//   console.log("verification_id",verificationId, "akkkkkkkkk","dcooooooooooo",documentId)
+
+//   const latest = latestItem?.apiKey == "hrEvaluationFile" ? "hr_evolution" : "";
+//   if (!documentId || !verificationId) {
+//     await Swal.fire({ icon: 'warning', title: 'Cannot Approve', html: `<p>Document ID or Verification ID is missing. Please submit the document first.</p>`, confirmButtonColor: '#f59e0b' });
+//     return;
+//   }
+//   const result = await Swal.fire({ title: 'Are you sure?', text: `Approve ${documentName}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#16a34a', cancelButtonColor: '#dc2626', confirmButtonText: 'Yes, Approve', cancelButtonText: 'No' });
+//   if (!result.isConfirmed) return;
+//   try {
+//     const response = await axiosInstance.post(`${API_BASE_URL}/verify-Doc-Status`, 
+//       { Verification_Id: verificationId, Document_Id: documentId, doc_type: latest }, 
+//       { headers: { Authorization: `Bearer ${userToken.token}`, 
+//       'Content-Type': 'application/json' } });
+
+//     setDocumentChecklist(prev => prev.map(docItem => {
+//       if (docItem.id === item.id) {
+//         if (subItem && docItem.subItems) return { ...docItem, subItems: docItem.subItems.map(sub => sub.id === subItem.id ? { ...sub, status: '1', approved: true } : sub) };
+//         return { ...docItem, status: '1', approved: true };
+//       }
+//       return docItem;
+//     }));
+//     setUploadedDocsStatus(prev => ({ ...prev, [subItem ? subItem.id : item.id]: 'approved' }));
+    
+//     // IMPORTANT: Refresh the parent table data after successful approval
+//     if (refreshTable) {
+//       await refreshTable();
+//     }
+    
+//     await Swal.fire({ icon: 'success', title: 'Approved!', text: 'Document approved successfully.', timer: 2000, showConfirmButton: false });
+//   } catch (error) {
+//     Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Something went wrong.' });
+//   }
+// };
+
+  // ─── Shared icon size for ALL action buttons ───
+  const ICON_SIZE = 13;
+
+  // ─── Shared button styles ───
+  const btnBase = { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', letterSpacing: '0.02em', transition: 'all 0.15s' };
+  const btnView = { ...btnBase, background: '#eff6ff', color: '#1d4ed8' };
+  const btnPreview = { ...btnBase, background: '#f5f3ff', color: '#6d28d9' };
+   const btnEdit = { ...btnBase, background: '#f5f3ff', color: '#b7b942' };
+  const btnDownload = { ...btnBase, background: '#f0fdf4', color: '#15803d' };
+  const btnSubmit = { ...btnBase, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff' };
+  const btnApprove = { ...btnBase, background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff' };
+  const btnUpload = { ...btnBase, background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer' };
+
+const renderActionButtons = (item, subItem = null, isSubRow = false) => {
+  const latestItem = documentChecklist.find(i => i.id === item.id);
+  const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+  const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
+  const isUploaded = uploadedDocsStatus[fileKey] === true;
+  const isSubmittedStatus = uploadedDocsStatus[fileKey] === 'submitted';
+  const hasFile = targetItem?.filePath;
+  const isApproved = targetItem?.status === '1' || targetItem?.status === 1;
+  const isPending = targetItem?.status === '0' || targetItem?.status === 0;
+  
+  // Special handling for Medical Enrollment Form (id: 21)
+  if (item.id === 21) {
+    const medStatus = targetItem?.fullData?.MED_STATUS;
+
+      const mediclaimStatus =
+    targetItem?.status ||
+    targetItem?.fullData?.documents?.mediclaim_form_Status;
+
+  const isMediclaimApproved =
+    mediclaimStatus === '1' ||
+    mediclaimStatus === 1;
+    
+    // If MED_STATUS is "YES" from API - show view/preview/download only (no edit/submit/approve)
+    if (medStatus === 'YES') {
+    return (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+    
+    {hasFile && (
+      <>
+        <button
+          style={btnView}
+          onClick={() => handleViewDocument(targetItem.filePath)}
+        >
+          <Eye size={ICON_SIZE} /> View
+        </button>
+
+        <button
+          style={btnPreview}
+          onClick={() =>
+            handleViewPdfInline(
+              targetItem.filePath,
+              targetItem.fileName
+            )
+          }
+        >
+          <FileText size={ICON_SIZE} /> Preview
+        </button>
+
+        <button
+          style={btnDownload}
+          onClick={() =>
+            handleDownloadDocument(
+              targetItem.filePath,
+              targetItem.fileName
+            )
+          }
+        >
+          <Download size={ICON_SIZE} /> Download
+        </button>
+
+        {/* SHOW APPROVE ONLY IF NOT APPROVED */}
+        {!isMediclaimApproved && (
           <button
-            onClick={handleDownloadPDF}
-            className="px-5 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition shadow"
+            style={btnApprove}
+            onClick={() => handleApproveDocument(item, subItem)}
           >
+            <CheckCircle2 size={ICON_SIZE} /> Approve
+          </button>
+        )}
+
+        {/* SHOW APPROVED TAG */}
+        {isMediclaimApproved && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 8px',
+              background: '#dcfce7',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              color: '#15803d',
+              fontWeight: 600
+            }}
+          >
+            <CheckCircle size={ICON_SIZE} /> Approved
+          </span>
+        )}
+      </>
+    )}
+  </div>
+);
+    }
+    
+    return null; // Return null to show no action buttons for Medical Enrollment Form when not YES
+  }
+  
+  // Normal document handling for other documents
+  if (hasFile) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+        <button style={btnView} onClick={() => handleViewDocument(targetItem.filePath)}>
+          <Eye size={ICON_SIZE} /> View
+        </button>
+        <button style={btnPreview} onClick={() => handleViewPdfInline(targetItem.filePath, targetItem.fileName)}>
+          <FileText size={ICON_SIZE} /> Preview
+        </button>
+   
+        {isPending && (
+          <button style={btnEdit} onClick={() => handleEditUpload(item, subItem)}>
+            <Edit size={ICON_SIZE} /> Edit
+          </button>
+        )}
+        
+        <button style={btnDownload} onClick={() => handleDownloadDocument(targetItem.filePath, targetItem.fileName)}>
+          <Download size={ICON_SIZE} /> Download
+        </button>
+        
+        {isUploaded && !isSubmittedStatus && (
+          <button style={btnSubmit} onClick={() => handleSubmitDocument(item, subItem)} disabled={isSubmitting}>
+            <CheckCircle2 size={ICON_SIZE} /> {isSubmitting ? 'Saving...' : 'Submit'}
+          </button>
+        )}
+        
+        {isPending && !isUploaded && (
+          <button style={btnApprove} onClick={() => handleApproveDocument(item, subItem)}>
+            <CheckCircle2 size={ICON_SIZE} /> Approve
+          </button>
+        )}
+        
+        {isApproved && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#dcfce7', borderRadius: '9999px', fontSize: '11px', color: '#15803d', fontWeight: 600 }}>
+            <CheckCircle size={ICON_SIZE} /> Approved
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const inputId = subItem ? `file-${item.id}-${subItem.id}` : `file-${item.id}`;
+  return (
+    <div>
+      <input type="file" id={inputId} onChange={(e) => handleFileUpload(item.id, e.target.files[0], subItem?.id)} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" />
+      <label htmlFor={inputId} style={btnUpload}>
+        <Download size={ICON_SIZE} style={{ transform: 'rotate(180deg)' }} /> Upload
+      </label>
+    </div>
+  );
+};
+
+// const renderActionButtons = (item, subItem = null, isSubRow = false) => {
+//   const latestItem = documentChecklist.find(i => i.id === item.id);
+//   const targetItem = subItem ? latestItem?.subItems?.find(s => s.id === subItem.id) : latestItem;
+//   const fileKey = subItem ? `${item.id}-${subItem.id}` : item.id;
+//   const isUploaded = uploadedDocsStatus[fileKey] === true;
+//   const isSubmittedStatus = uploadedDocsStatus[fileKey] === 'submitted';
+//   const hasFile = targetItem?.filePath;
+//   const isApproved = targetItem?.status === '1' || targetItem?.status === 1;
+//   const isPending = targetItem?.status === '0' || targetItem?.status === 0;
+  
+
+
+  
+//   if (hasFile) {
+//     return (
+//       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+//         <button style={btnView} onClick={() => handleViewDocument(targetItem.filePath)}>
+//           <Eye size={ICON_SIZE} /> View
+//         </button>
+//         <button style={btnPreview} onClick={() => handleViewPdfInline(targetItem.filePath, targetItem.fileName)}>
+//           <FileText size={ICON_SIZE} /> Preview
+//         </button>
+   
+//         {  isPending && (
+//           <button style={btnEdit} onClick={() => handleEditUpload(item, subItem)}>
+//             <Edit size={ICON_SIZE} /> Edit
+//           </button>
+//         )}
+        
+//         <button style={btnDownload} onClick={() => handleDownloadDocument(targetItem.filePath, targetItem.fileName)}>
+//           <Download size={ICON_SIZE} /> Download
+//         </button>
+        
+//         {isUploaded && !isSubmittedStatus && (
+//           <button style={btnSubmit} onClick={() => handleSubmitDocument(item, subItem)} disabled={isSubmitting}>
+//             <CheckCircle2 size={ICON_SIZE} /> {isSubmitting ? 'Saving...' : 'Submit'}
+//           </button>
+//         )}
+        
+//         {isPending && !isUploaded && (
+//           <button style={btnApprove} onClick={() => handleApproveDocument(item, subItem)}>
+//             <CheckCircle2 size={ICON_SIZE} /> Approve
+//           </button>
+//         )}
+        
+//         {isApproved && (
+//           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#dcfce7', borderRadius: '9999px', fontSize: '11px', color: '#15803d', fontWeight: 600 }}>
+//             <CheckCircle size={ICON_SIZE} /> Approved
+//           </span>
+//         )}
+//       </div>
+//     );
+//   }
+
+//   const inputId = subItem ? `file-${item.id}-${subItem.id}` : `file-${item.id}`;
+//   return (
+//     <div>
+//       <input type="file" id={inputId} onChange={(e) => handleFileUpload(item.id, e.target.files[0], subItem?.id)} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" />
+//       <label htmlFor={inputId} style={btnUpload}>
+//         <Download size={ICON_SIZE} style={{ transform: 'rotate(180deg)' }} /> Upload
+//       </label>
+//     </div>
+//   );
+// };
+  // PDF Generation functions with improved visibility
+  const generatePDFPreview = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let yPosition = 20;
+
+    const checkPageBreak = (requiredSpace) => {
+      if (yPosition + requiredSpace > pageHeight - margin) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
+      }
+      return false;
+    };
+
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 18, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('MY HOME CONSTRUCTIONS PVT. LTD.', pageWidth / 2, 8, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Employee Document Checklist', pageWidth / 2, 14, { align: 'center' });
+
+    yPosition = 26;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFillColor(243, 244, 246);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 7, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EMPLOYEE INFORMATION', margin + 3, yPosition + 4.5);
+
+    yPosition += 10;
+
+    doc.setDrawColor(147, 197, 253);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 32);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+
+    doc.text('Employee Name:', margin + 3, yPosition + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.employeeName || 'N/A', margin + 3, yPosition + 9);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Designation:', margin + 3, yPosition + 15);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.designation || 'N/A', margin + 3, yPosition + 19);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Department:', margin + 3, yPosition + 25);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.department || 'N/A', margin + 3, yPosition + 29);
+
+    const midX = pageWidth / 2 + 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Employee ID:', midX, yPosition + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.empId || 'N/A', midX, yPosition + 9);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date of Joining:', midX, yPosition + 15);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.doj ? new Date(formData.doj).toLocaleDateString() : 'N/A', midX, yPosition + 19);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Site/Location:', midX, yPosition + 25);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.siteLocation || 'N/A', midX, yPosition + 29);
+
+    yPosition += 38;
+
+    doc.setFillColor(243, 244, 246);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 7, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('DOCUMENT CHECKLIST', margin + 3, yPosition + 4.5);
+
+    yPosition += 10;
+
+    doc.setFillColor(60, 60, 60);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 6, 'F');
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 6);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('S.No', margin + 3, yPosition + 4);
+    doc.text('Document Type', margin + 20, yPosition + 4);
+    doc.text('Status', pageWidth - margin - 50, yPosition + 4);
+
+    yPosition += 6;
+
+    doc.setFont('helvetica', 'normal');
+    let rowCount = 0;
+    const maxWidth = pageWidth - margin - 80;
+
+    documentChecklist.forEach((item) => {
+      checkPageBreak(10);
+
+      let status = 'Not Uploaded';
+      let statusColor = [100, 100, 100];
+      let statusBgColor = [240, 240, 240];
+
+      if (item.status === '1' || item.status === 1) {
+        status = '✓ Verified';
+        statusColor = [0, 128, 0];
+        statusBgColor = [220, 252, 231];
+      } else if (item.status === '0' || item.status === 0) {
+        status = '⏱ Pending';
+        statusColor = [180, 83, 9];
+        statusBgColor = [254, 243, 199];
+      }
+
+      if (rowCount % 2 === 0) {
+        doc.setFillColor(249, 250, 251);
+        doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5, 'F');
+      }
+
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(item.id.toString(), margin + 3, yPosition + 3);
+
+      doc.setFont('helvetica', 'normal');
+      const documentName = doc.splitTextToSize(item.name, maxWidth);
+      doc.text(documentName[0], margin + 20, yPosition + 3);
+
+      const statusX = pageWidth - margin - 48;
+      const statusY = yPosition - 1;
+      doc.setFillColor(...statusBgColor);
+      doc.rect(statusX - 2, statusY, 46, 5, 'F');
+
+      doc.setTextColor(...statusColor);
+      doc.setFont('helvetica', 'bold');
+      doc.text(status, statusX, yPosition + 3);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+
+      yPosition += 5;
+      rowCount++;
+
+      if (item.subItems && item.subItems.length > 0) {
+        item.subItems.forEach((subItem) => {
+          checkPageBreak(10);
+
+          let subStatus = 'Not Uploaded';
+          let subStatusColor = [100, 100, 100];
+          let subStatusBgColor = [240, 240, 240];
+
+          if (subItem.status === '1' || subItem.status === 1) {
+            subStatus = '✓ Verified';
+            subStatusColor = [0, 128, 0];
+            subStatusBgColor = [220, 252, 231];
+          } else if (subItem.status === '0' || subItem.status === 0) {
+            subStatus = '⏱ Pending';
+            subStatusColor = [180, 83, 9];
+            subStatusBgColor = [254, 243, 199];
+          }
+
+          if (rowCount % 2 === 0) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5, 'F');
+          }
+
+          doc.setDrawColor(180, 180, 180);
+          doc.setLineWidth(0.2);
+          doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5);
+
+          doc.setTextColor(70, 70, 70);
+          doc.setFontSize(6);
+          const subDocName = doc.splitTextToSize(`   ${subItem.id.slice(-1)}) ${subItem.name}`, maxWidth);
+          doc.text(subDocName[0], margin + 20, yPosition + 3);
+
+          const subStatusX = pageWidth - margin - 48;
+          const subStatusY = yPosition - 1;
+          doc.setFillColor(...subStatusBgColor);
+          doc.rect(subStatusX - 2, subStatusY, 46, 5, 'F');
+
+          doc.setTextColor(...subStatusColor);
+          doc.setFont('helvetica', 'bold');
+          doc.text(subStatus, subStatusX, yPosition + 3);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+
+          yPosition += 5;
+          rowCount++;
+        });
+      }
+    });
+
+    const totalPages = doc.internal.pages.length - 1;
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        `Page ${i} of ${totalPages}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+      doc.text(
+        `Generated on: ${new Date().toLocaleString()}`,
+        margin,
+        pageHeight - 10
+      );
+    }
+
+    const pdfBlob = doc.output('bloburl');
+    window.open(pdfBlob, '_blank');
+  };
+
+   const handleDownloadPDF = () => {
+     const doc = new jsPDF();
+     const pageWidth = doc.internal.pageSize.getWidth();
+     const pageHeight = doc.internal.pageSize.getHeight();
+     const margin = 15;
+     let yPosition = 20;
+ 
+     const checkPageBreak = (requiredSpace) => {
+       if (yPosition + requiredSpace > pageHeight - margin) {
+         doc.addPage();
+         yPosition = 20;
+         return true;
+       }
+       return false;
+     };
+ 
+     doc.setFillColor(37, 99, 235);
+     doc.rect(0, 0, pageWidth, 18, 'F');
+     doc.setTextColor(255, 255, 255);
+     doc.setFontSize(16);
+     doc.setFont('helvetica', 'bold');
+     doc.text('MY HOME CONSTRUCTIONS PVT. LTD.', pageWidth / 2, 8, { align: 'center' });
+     doc.setFontSize(8);
+     doc.setFont('helvetica', 'normal');
+     doc.text('Employee Document Checklist', pageWidth / 2, 14, { align: 'center' });
+ 
+     yPosition = 26;
+ 
+     doc.setTextColor(0, 0, 0);
+     doc.setFillColor(243, 244, 246);
+     doc.rect(margin, yPosition, pageWidth - 2 * margin, 7, 'F');
+     doc.setFontSize(11);
+     doc.setFont('helvetica', 'bold');
+     doc.text('EMPLOYEE INFORMATION', margin + 3, yPosition + 4.5);
+ 
+     yPosition += 10;
+ 
+     doc.setDrawColor(147, 197, 253);
+     doc.setLineWidth(0.2);
+     doc.rect(margin, yPosition, pageWidth - 2 * margin, 32);
+ 
+     doc.setFontSize(8);
+     doc.setFont('helvetica', 'bold');
+ 
+     doc.text('Employee Name:', margin + 3, yPosition + 5);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.employeeName || 'N/A', margin + 3, yPosition + 9);
+ 
+     doc.setFont('helvetica', 'bold');
+     doc.text('Designation:', margin + 3, yPosition + 15);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.designation || 'N/A', margin + 3, yPosition + 19);
+ 
+     doc.setFont('helvetica', 'bold');
+     doc.text('Department:', margin + 3, yPosition + 25);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.department || 'N/A', margin + 3, yPosition + 29);
+ 
+     const midX = pageWidth / 2 + 5;
+     doc.setFont('helvetica', 'bold');
+     doc.text('Employee ID:', midX, yPosition + 5);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.empId || 'N/A', midX, yPosition + 9);
+ 
+     doc.setFont('helvetica', 'bold');
+     doc.text('Date of Joining:', midX, yPosition + 15);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.doj ? new Date(formData.doj).toLocaleDateString() : 'N/A', midX, yPosition + 19);
+ 
+     doc.setFont('helvetica', 'bold');
+     doc.text('Site/Location:', midX, yPosition + 25);
+     doc.setFont('helvetica', 'normal');
+     doc.text(formData.siteLocation || 'N/A', midX, yPosition + 29);
+ 
+     yPosition += 38;
+ 
+     doc.setFillColor(243, 244, 246);
+     doc.rect(margin, yPosition, pageWidth - 2 * margin, 7, 'F');
+     doc.setFontSize(11);
+     doc.setFont('helvetica', 'bold');
+     doc.setTextColor(0, 0, 0);
+     doc.text('DOCUMENT CHECKLIST', margin + 3, yPosition + 4.5);
+ 
+     yPosition += 10;
+ 
+     doc.setFillColor(60, 60, 60);
+     doc.rect(margin, yPosition, pageWidth - 2 * margin, 6, 'F');
+     doc.setDrawColor(0, 0, 0);
+     doc.setLineWidth(0.3);
+     doc.rect(margin, yPosition, pageWidth - 2 * margin, 6);
+ 
+     doc.setFontSize(9);
+     doc.setFont('helvetica', 'bold');
+     doc.setTextColor(255, 255, 255);
+     doc.text('S.No', margin + 3, yPosition + 4);
+     doc.text('Document Type', margin + 20, yPosition + 4);
+     doc.text('Status', pageWidth - margin - 50, yPosition + 4);
+ 
+     yPosition += 6;
+ 
+     doc.setFont('helvetica', 'normal');
+     let rowCount = 0;
+     const maxWidth = pageWidth - margin - 80;
+ 
+     documentChecklist.forEach((item) => {
+       checkPageBreak(10);
+ 
+       let status = 'Not Uploaded';
+       let statusColor = [100, 100, 100];
+       let statusBgColor = [240, 240, 240];
+ 
+       if (item.status === '1' || item.status === 1) {
+         status = '✓ Verified';
+         statusColor = [0, 128, 0];
+         statusBgColor = [220, 252, 231];
+       } else if (item.status === '0' || item.status === 0) {
+         status = '⏱ Pending';
+         statusColor = [180, 83, 9];
+         statusBgColor = [254, 243, 199];
+       }
+ 
+       if (rowCount % 2 === 0) {
+         doc.setFillColor(249, 250, 251);
+         doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5, 'F');
+       }
+ 
+       doc.setDrawColor(180, 180, 180);
+       doc.setLineWidth(0.2);
+       doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5);
+ 
+       doc.setTextColor(0, 0, 0);
+       doc.setFontSize(7);
+       doc.setFont('helvetica', 'bold');
+       doc.text(item.id.toString(), margin + 3, yPosition + 3);
+ 
+       doc.setFont('helvetica', 'normal');
+       const documentName = doc.splitTextToSize(item.name, maxWidth);
+       doc.text(documentName[0], margin + 20, yPosition + 3);
+ 
+       const statusX = pageWidth - margin - 48;
+       const statusY = yPosition - 1;
+       doc.setFillColor(...statusBgColor);
+       doc.rect(statusX - 2, statusY, 46, 5, 'F');
+ 
+       doc.setTextColor(...statusColor);
+       doc.setFont('helvetica', 'bold');
+       doc.text(status, statusX, yPosition + 3);
+       doc.setFont('helvetica', 'normal');
+       doc.setTextColor(0, 0, 0);
+ 
+       yPosition += 5;
+       rowCount++;
+ 
+       if (item.subItems && item.subItems.length > 0) {
+         item.subItems.forEach((subItem) => {
+           checkPageBreak(10);
+ 
+           let subStatus = 'Not Uploaded';
+           let subStatusColor = [100, 100, 100];
+           let subStatusBgColor = [240, 240, 240];
+ 
+           if (subItem.status === '1' || subItem.status === 1) {
+             subStatus = '✓ Verified';
+             subStatusColor = [0, 128, 0];
+             subStatusBgColor = [220, 252, 231];
+           } else if (subItem.status === '0' || subItem.status === 0) {
+             subStatus = '⏱ Pending';
+             subStatusColor = [180, 83, 9];
+             subStatusBgColor = [254, 243, 199];
+           }
+ 
+           if (rowCount % 2 === 0) {
+             doc.setFillColor(249, 250, 251);
+             doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5, 'F');
+           }
+ 
+           doc.setDrawColor(180, 180, 180);
+           doc.setLineWidth(0.2);
+           doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, 5);
+ 
+           doc.setTextColor(70, 70, 70);
+           doc.setFontSize(6);
+           const subDocName = doc.splitTextToSize(`   ${subItem.id.slice(-1)}) ${subItem.name}`, maxWidth);
+           doc.text(subDocName[0], margin + 20, yPosition + 3);
+ 
+           const subStatusX = pageWidth - margin - 48;
+           const subStatusY = yPosition - 1;
+           doc.setFillColor(...subStatusBgColor);
+           doc.rect(subStatusX - 2, subStatusY, 46, 5, 'F');
+ 
+           doc.setTextColor(...subStatusColor);
+           doc.setFont('helvetica', 'bold');
+           doc.text(subStatus, subStatusX, yPosition + 3);
+           doc.setFont('helvetica', 'normal');
+           doc.setTextColor(0, 0, 0);
+ 
+           yPosition += 5;
+           rowCount++;
+         });
+       }
+     });
+ 
+     const totalPages = doc.internal.pages.length - 1;
+     for (let i = 1; i <= totalPages; i++) {
+       doc.setPage(i);
+       doc.setFontSize(7);
+       doc.setTextColor(128, 128, 128);
+       doc.text(
+         `Page ${i} of ${totalPages}`,
+         pageWidth / 2,
+         pageHeight - 10,
+         { align: 'center' }
+       );
+       doc.text(
+         `Generated on: ${new Date().toLocaleString()}`,
+         margin,
+         pageHeight - 10
+       );
+     }
+ 
+     doc.save(`Employee_Documents_${formData.empId}_${new Date().toISOString().split('T')[0]}.pdf`);
+   };
+
+  // ─── Column width map ───
+  const colWidths = { sno: 52, docType: '30%', status: 120, fileName: '22%', actions: '28%' };
+
+ const PdfViewer = ({ document, onClose }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-6xl h-5/6 flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className="text-lg font-semibold">{document.fileName}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        <div className="flex-1 p-4">
+          <iframe
+            src={document.filePath}
+            title={document.fileName}
+            className="w-full h-full border-0"
+          />
+        </div>
+        <div className="p-4 border-t flex justify-between">
+          <button
+            onClick={() => handleDownloadDocument(document.filePath, document.fileName)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            <Download size={18} />
             Download PDF
           </button>
-
           <button
-            onClick={handlePreviewPDF}
-            disabled={isPreviewLoading}
-            className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
           >
-            {isPreviewLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading...
-              </span>
-            ) : (
-              'Preview PDF'
-            )}
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </span>
-            ) : (
-              'Verify & Submit'
-            )}
+            Close Viewer
           </button>
         </div>
       </div>
     </div>
   );
+  // ─── Modal sizing ───
+  const modalStyle = isFullscreen
+    ? { position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, display: 'flex', flexDirection: 'column', background: '#fff' }
+    : { position: 'relative', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '92vh', width: '100%', maxWidth: 1400, margin: '0 auto', background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' };
+
+  return (
+    <>
+      <div style={modalStyle}>
+
+        {/* ─── HEADER ─── */}
+        <div style={{ background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%)', color: '#fff', padding: '14px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 42, height: 42, background: 'rgba(255,255,255,0.18)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(255,255,255,0.3)' }}>
+              <Building2 size={22} color="#fff" />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: '0.03em', textTransform: 'uppercase' }}>My Home Constructions Pvt. Ltd.</h2>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2, letterSpacing: '0.04em' }}>
+                Employee Onboarding Documents &nbsp;•&nbsp; ID: {formData.empId}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={() => setIsFullscreen(f => !f)}
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+            {/* Close */}
+            <button
+              onClick={onClose}
+              title="Close"
+              style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.5)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* ─── SCROLLABLE CONTENT ─── */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px', background: '#f8fafc' }}>
+
+          {/* Employee Info Card */}
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <User size={15} color="#2563eb" />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#1e3a8a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Employee Information</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px 24px' }}>
+              {[
+                { label: 'Emp Name', value: formData.employeeName },
+                { label: 'Case ID', value: formData.empId },
+                { label: 'Designation', value: formData.designation },
+                { label: 'Date of Joining', value: formData.doj ? new Date(formData.doj).toLocaleDateString() : 'Not Set' },
+                { label: 'Department', value: formData.department },
+                { label: 'Site / Location', value: formData.siteLocation || 'N/A' },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', minWidth: 90, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}:</span>
+                  <span style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, background: '#f1f5f9', borderRadius: 5, padding: '2px 8px', flex: 1 }}>{value || '—'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Documents Table */}
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: colWidths.sno }} />
+                  <col style={{ width: colWidths.docType }} />
+                  <col style={{ width: colWidths.status }} />
+                  <col style={{ width: colWidths.fileName }} />
+                  <col style={{ width: colWidths.actions }} />
+                </colgroup>
+                <thead>
+                  <tr style={{ background: 'linear-gradient(to right, #1e3a8a, #1d4ed8)' }}>
+                    {['S.No', 'Document Type', 'Status', 'File Name', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', borderBottom: '2px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+              {documentChecklist.map((item, index) => (
+  <React.Fragment key={item.id}>
+    {/* Main row */}
+    <tr style={{ background: index % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+      onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+      onMouseLeave={e => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#f8fafc'}
+    >
+      {/* S.No */}
+      <td style={{ padding: '9px 14px', fontSize: 12, fontWeight: 700, color: '#64748b', verticalAlign: 'middle' }}>
+        <span style={{ width: 24, height: 24, background: '#eff6ff', borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>{item.id}</span>
+      </td>
+      {/* Document Type */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {item.type === 'multiple' ? (
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', lineHeight: 1.4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{item.name}</span>
+          ) : (
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#374151', lineHeight: 1.4, letterSpacing: '0.02em' }}>{item.name}</span>
+          )}
+          {(item.status === '1' || item.status === 1) && <CheckCircle size={13} color="#16a34a" style={{ flexShrink: 0 }} />}
+          
+       {/* Radio buttons for MEDICAL ENROLMENT FORM (id: 21) */}
+{item.id === 21 && (
+  <div style={{ 
+    display: 'inline-flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    marginLeft: '12px',
+    padding: '4px 12px',
+    background: '#f1f5f9',
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0'
+  }}>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: item.fullData?.MED_STATUS === 'YES' ? 'not-allowed' : 'pointer',
+      fontWeight: 600,
+      opacity: item.fullData?.MED_STATUS === 'YES' ? 0.6 : 1
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="yes"
+        checked={item.enrollmentStatus === 'YES'}
+        disabled={item.fullData?.MED_STATUS === 'YES'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'YES' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#16a34a' }}>Yes</span>
+    </label>
+    <label style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      gap: '6px', 
+      fontSize: '11px', 
+      cursor: 'pointer',
+      fontWeight: 600
+    }}>
+      <input
+        type="radio"
+        name={`enrollment_${item.id}`}
+        value="no"
+        checked={item.enrollmentStatus === 'NO'}
+        onChange={(e) => {
+          const updatedChecklist = documentChecklist.map(docItem =>
+            docItem.id === item.id
+              ? { ...docItem, enrollmentStatus: 'NO' }
+              : docItem
+          );
+          setDocumentChecklist(updatedChecklist);
+        }}
+        style={{ margin: 0, cursor: 'pointer' }}
+      />
+      <span style={{ color: '#dc2626' }}>No</span>
+    </label>
+  </div>
+)}
+        </div>
+      </td>
+      {/* Status */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && <StatusBadge status={item.status} />}
+      </td>
+      {/* File Name */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && (
+          item.fileName
+            ? <span title={item.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{item.fileName}</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+        )}
+      </td>
+      {/* Actions */}
+      <td style={{ padding: '9px 14px', verticalAlign: 'middle' }}>
+        {item.type !== 'multiple' && renderActionButtons(item)}
+      </td>
+    </tr>
+
+    {/* Sub-rows */}
+    {item.subItems && item.subItems.map((subItem, si) => (
+      <tr key={subItem.id}
+        style={{ background: '#f0f4ff', borderBottom: '1px solid #e8eef8', transition: 'background 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.background = '#e0ecff'}
+        onMouseLeave={e => e.currentTarget.style.background = '#f0f4ff'}
+      >
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          <div style={{ width: 2, height: 22, background: '#93c5fd', borderRadius: 2, margin: '0 auto' }} />
+        </td>
+        <td style={{ padding: '7px 14px 7px 24px', verticalAlign: 'middle' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#93c5fd' }}>{subItem.id.slice(-1)})</span>
+            <span style={{ fontSize: 10.5, color: '#4b5563', fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.02em' }}>{subItem.name}</span>
+            {(subItem.status === '1' || subItem.status === 1) && <CheckCircle size={12} color="#16a34a" style={{ flexShrink: 0 }} />}
+          </div>
+        </td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}><StatusBadge status={subItem.status} /></td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          {subItem.fileName
+            ? <span title={subItem.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{subItem.fileName}</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+          }
+        </td>
+        <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
+          {renderActionButtons(item, subItem, true)}
+        </td>
+      </tr>
+    ))}
+  </React.Fragment>
+))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── FOOTER ─── */}
+        <div style={{ background: '#fff', padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ ...btnBase, background: '#f1f5f9', color: '#475569', padding: '8px 20px', fontSize: 13 }}>Close</button>
+          <button onClick={generatePDFPreview} style={{ ...btnBase, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: '#fff', padding: '8px 20px', fontSize: 13 }}>
+            <FileDown size={15} /> Preview PDF
+          </button>
+          <button onClick={handleDownloadPDF} style={{ ...btnBase, background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff', padding: '8px 20px', fontSize: 13 }}>
+            <Download size={15} /> Download PDF
+          </button>
+          {isAllVerified && (
+            <button onClick={handleSubmit} style={{ ...btnBase, background: 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', padding: '8px 22px', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(22,163,74,0.35)' }}>
+              <CheckCircle size={15} /> Verify &amp; Submit
+            </button>
+          )}
+        </div>
+      </div>
+
+      {viewingPdf && <PdfViewer document={viewingPdf} onClose={handleClosePdfViewer} />}
+    </>
+  );
 };
 
-export default MediDocUpload;
-
+export default DocUpload;
 
 
 

@@ -22,6 +22,7 @@ import axiosInstance from '../Config/axiosConfig.jsx';
 
 const JoiningReportList = () => {
   const [joiningData, setJoiningData] = useState([]);
+const [savedRows, setSavedRows] = useState({});
   const [filteredData, setFilteredData] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
@@ -48,7 +49,7 @@ const [openReportModal, setOpenReportModal] = useState(false);
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Authorization": `Bearer ${Token.token}`,
+            "Authorization": `Bearer ${Token?.token}`,
           },
         }
       );
@@ -110,10 +111,10 @@ hrEvaluationFile:item?.hrEvaluationFile,
 
 
   useEffect(() => {
-    if (Token.token) {
+    if (Token?.token) {
       joinData();
     }
-  }, [Token.token]);
+  }, [Token?.token]);
 
 
 
@@ -182,89 +183,102 @@ const handleCloseReportModal = () => {
 
 
 const handleJoiningDateChange = (caseId, value) => {
-  setJoiningDates(prev => ({
+  setJoiningDates((prev) => ({
     ...prev,
     [caseId]: value,
   }));
+
+  // 🔥 mark as not saved when user edits again
+  setSavedRows((prev) => ({
+    ...prev,
+    [caseId]: false,
+  }));
+};
+
+  const handleViewOfferLetter = async (user) => {
+
+  try {
+
+
+    const payload = {
+      CHILD_CASEID: user.CHILD_CASEID,
+       joiningDate: date_only,
+    };
+
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/join-Date-updt`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${Token.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+
+  } catch (error) {
+    console.error('Assign approver failed:', error);
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'Something went wrong',
+      text:
+        error?.response?.data?.message ||
+        'Unable to assign approver. Please try again.',
+    });
+  } finally {
+    
+  //  setOfferLetterOpen(false);
+  }
 };
 
 
 
-  const handleOfferLterEmail= async (rowData) =>
+const handleSaveJoiningDate = async (user) => {
+  try {
+    const caseId = user.CHILD_CASEID;
 
+    const payload = {
+      CHILD_CASEID: caseId,
+      joiningDate:
+        joiningDates[caseId] ||
+        (user.joining_date ? user.joining_date.split('T')[0] : ''),
+    };
 
+    await axiosInstance.post(
+      `${API_BASE_URL}/join-Date-updt`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${Token.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
 
-
-  {
-
-  
-    try
-    {
-      const confirm = await Swal.fire({
-          title: "Are you sure?",
-          text: "You want to Send this Mail",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Yes, Send",
-          cancelButtonText: "Cancel",
-          confirmButtonColor: "#2563eb",
-        });
-        if (!confirm.isConfirmed) return;
-
-
-const date_only = joiningDates
-  ? Object.values(joiningDates)[0]
-  : null;
-
-
-
-        const  payload =
-        {
-          CHILD_CASEID: rowData.CHILD_CASEID,
-          EMAIL     :rowData.email,
-          joiningDate: date_only,
-        }
-
-        
-      const ofrMailSend = await axios.post(`${API_BASE_URL}/ofr-ltr-issue-mail`,payload,
-        {
-        headers:
-        {
-           "Content-Type" :"application/json",
-           "Accept"       :"application/json",
-           "Authorization":`Bearer ${Token.token}`
-         }})
-
-     
-      if (ofrMailSend.data.message) 
-        {
-       
-
-    await Swal.fire({
+    Swal.fire({
       icon: "success",
-      title: "Success",
-      text: "Mail Sent successfully",
-      timer: 1500,
-      showConfirmButton: false,
+      title: "Saved",
+      text: "Joining date updated successfully",
     });
 
+    // ✅ mark as saved
+    setSavedRows((prev) => ({
+      ...prev,
+      [caseId]: true,
+    }));
 
-
-
-
-           
-         } else {
-           await Swal.fire("Failed", response.data.message, "error");
-         }
-       } catch (error) {
-         console.error(error);
-         await Swal.fire(
-           "Error",
-           error.response?.data?.message || "Something went wrong",
-           "error"
-         );
-       }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error?.response?.data?.message || "Update failed",
+    });
   }
+};
 
 
 
@@ -538,42 +552,62 @@ const date_only = joiningDates
   field: 'joining_date',
   headerName: 'Joining Date',
   flex: 1,
-  minWidth: 110,
+  minWidth: 200,
   renderCell: (params) => {
     const caseId = params.row.CHILD_CASEID;
 
-
-
     return (
-      <TextField
-        size="small"
-        type="date"
-        value={
-          joiningDates[caseId] ??
-          (params.row.joining_date
-            ? params.row.joining_date.split('T')[0]
-            : '')
-        }
-        onChange={(e) =>
-          handleJoiningDateChange(caseId, e.target.value)
-        }
-        sx={{
-          width: '100%',
-          '& .MuiOutlinedInput-root': {
-            fontSize: '12px',
-            height: '32px',
-            '& fieldset': {
-              borderColor: '#d1d5db',
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%' }}>
+        
+        <TextField
+          size="small"
+          type="date"
+          value={
+            joiningDates[caseId] ??
+            (params.row.joining_date
+              ? params.row.joining_date.split('T')[0]
+              : '')
+          }
+          onChange={(e) =>
+            handleJoiningDateChange(caseId, e.target.value)
+          }
+          sx={{
+            flex: 1,
+            '& .MuiOutlinedInput-root': {
+              fontSize: '12px',
+              height: '32px',
             },
-            '&:hover fieldset': {
-              borderColor: '#667eea',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#667eea',
-            },
-          },
-        }}
-      />
+          }}
+        />
+
+  <Button
+  variant="contained"
+  size="small"
+  onClick={() => handleSaveJoiningDate(params.row)}
+  sx={{
+    borderRadius: '999px',
+    height: '24px',
+    minWidth: 'unset',
+    px: '9px',
+    fontSize: '11px',
+    textTransform: 'none',
+    border: 'none',
+    boxShadow: 'none',
+    transition: 'all 0.15s',
+    background: savedRows[caseId] ? '#22c55e' : '#156ee2', // green or blue
+    '&:hover': {
+      background: savedRows[caseId] ? '#16a34a' : '#0f5bd1',
+      boxShadow: 'none',
+    },
+    '&:disabled': {
+      background: '#cbd5e1',
+      color: '#fff',
+    },
+  }}
+>
+  {savedRows[caseId] ? 'Saved' : 'Save'}
+</Button>
+      </div>
     );
   },
 },
@@ -748,40 +782,43 @@ const date_only = joiningDates
       </Paper>
 
       {/* DocUpload Modal */}
-      {openDocModal && selectedRow && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            width: '90%',
-            maxWidth: '1000px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
-          }}>
-   
-
-            <DocUpload
-              rowData={selectedRow}
-              onClose={handleCloseModal}
-            refreshTable={joinData}
-              Report = "JoiningReportList"
-            />
-          </div>
-        </div>
-      )}
+   {/* DocUpload Modal */}
+{openDocModal && selectedRow && (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    padding: '20px'
+  }}>
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      width: '90%',
+      maxWidth: '1000px',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      position: 'relative'
+    }}>
+      <DocUpload
+        rowData={selectedRow}
+        onClose={() => {
+          setOpenDocModal(false);
+          // Refresh the table data when modal closes
+          joinData();
+        }}
+        refreshTable={joinData}
+        Report="JoiningReportList"
+      />
+    </div>
+  </div>
+)}
 {openReportModal && selectedRow && (
   <div style={{
     position: 'fixed',
