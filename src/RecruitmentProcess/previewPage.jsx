@@ -30,6 +30,7 @@ const PreviewPage = () => {
   const [generating, setGenerating] = useState(false);
 
   const previewData     = JSON.parse(localStorage.getItem('previewData') || '{}');
+  console.log("prevvvvvvvvvvvv",previewData);
   const formData        = previewData.formData;
   const experiences     = previewData.experiences;
   const sameAsPermanent = previewData.sameAsPermanent;

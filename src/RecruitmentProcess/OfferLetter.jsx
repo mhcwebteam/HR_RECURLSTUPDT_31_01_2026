@@ -214,6 +214,7 @@ const OfferLetter = () => {
         {
           CHILD_CASEID:rowData.CHILD_CASEID,
           EMAIL     :rowData.EMAIL,
+            hrEmail: token?.Email,
           // joiningDate: date_only,
           joiningDate: dayjs(date_only, "DD-MM-YYYY").format("YYYY-MM-DD")
         }

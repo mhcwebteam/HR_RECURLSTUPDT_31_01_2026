@@ -163,6 +163,7 @@ useEffect(() => {
   const payload2 = {
     email: email,
     child_caseId: caseId,
+    hrEmail: userToken?.Email
   }
 
   try {
@@ -196,10 +197,10 @@ useEffect(() => {
   )
 
 
-     setEmailInputs(prev => ({
-  ...prev,
-  [caseId]: ''
-}));
+ setEmailInputs(prev => ({
+      ...prev,
+      [caseId]: email
+    }));
       
   
     }

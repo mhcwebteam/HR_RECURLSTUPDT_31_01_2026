@@ -30,7 +30,7 @@ const VerifyPreviewPage = () => {
   const navigate = useNavigate();
 
   const previewData     = JSON.parse(localStorage.getItem('VerifyPreviewPage') || '{}');
-  const data            = previewData.data;
+const data = previewData?.data || previewData?.formData || {};
 
   console.log("dattttttttttttt",data);
   const sameAsPermanent = previewData.sameAsPermanent;
@@ -109,81 +109,134 @@ useEffect(() => {
   const padRows = (rows) => { const o = [...rows]; while (o.length % COLS !== 0) o.push(['', '']); return o; };
 
   /* ─── PDF ─── */
-  const handleDownloadPDF = async () => {
-    if (!previewRef.current) return;
-    setGenerating(true);
-    try {
-      const clone = previewRef.current.cloneNode(true);
-      const btn = clone.querySelector('.no-print');
-      if (btn) btn.remove();
+// Add this helper function at the top of your component, before handleDownloadPDF
+const convertImageToBase64 = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    
+    img.onerror = () => {
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+    
+    img.src = url;
+  });
+};
 
-      Object.assign(clone.style, {
-        position:   'fixed',
-        top:        '-999999px',
-        left:       '0',
-        width:      `${PDF_CONTENT_PX}px`,
-        maxWidth:   `${PDF_CONTENT_PX}px`,
-        minWidth:   `${PDF_CONTENT_PX}px`,
-        background: '#ffffff',
-        overflow:   'visible',
-        zIndex:     '-9999',
-      });
-
-      clone.querySelectorAll('td div, td').forEach(el => {
-        el.style.whiteSpace   = 'normal';
-        el.style.wordBreak    = 'break-word';
-        el.style.overflow     = 'visible';
-        el.style.textOverflow = 'unset';
-      });
-
-      document.body.appendChild(clone);
-      await new Promise(r => setTimeout(r, 450));
-
-      const canvas = await html2canvas(clone, {
-        scale:           2,
-        useCORS:         true,
-        logging:         false,
-        backgroundColor: '#ffffff',
-        width:           PDF_CONTENT_PX,
-        windowWidth:     PDF_CONTENT_PX,
-      });
-
-      document.body.removeChild(clone);
-
-      const SCALE   = 2;
-      const pageWpx = PDF_CONTENT_PX * SCALE;
-      const pageHpx = Math.round((PDF_H_MM - MARGIN_MM * 2) * MM_TO_PX) * SCALE;
-      const totalH  = canvas.height;
-      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const imgWmm  = PDF_W_MM - MARGIN_MM * 2;
-      const imgHmm  = PDF_H_MM - MARGIN_MM * 2;
-
-      let srcY = 0, pageNum = 0;
-      while (srcY < totalH) {
-        if (pageNum > 0) pdf.addPage('a4', 'portrait');
-        const sliceH = Math.min(pageHpx, totalH - srcY);
-        const slice  = document.createElement('canvas');
-        slice.width  = pageWpx;
-        slice.height = sliceH;
-        const ctx = slice.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, pageWpx, sliceH);
-        ctx.drawImage(canvas, 0, srcY, pageWpx, sliceH, 0, 0, pageWpx, sliceH);
-        const renderedHmm = imgHmm * (sliceH / pageHpx);
-        pdf.addImage(slice.toDataURL('image/png'), 'PNG', MARGIN_MM, MARGIN_MM, imgWmm, renderedHmm);
-        srcY += pageHpx;
-        pageNum++;
+// Then replace your handleDownloadPDF with this:
+const handleDownloadPDF = async () => {
+  if (!previewRef.current) return;
+  setGenerating(true);
+  
+  try {
+    // Get the already-loaded image from the actual DOM
+    const existingImg = document.querySelector('img[alt="Applicant"]');
+    let photoBase64 = null;
+    
+    if (existingImg && existingImg.complete && existingImg.naturalHeight !== 0) {
+      // Image is already loaded, capture it directly from canvas
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = existingImg.naturalWidth;
+        canvas.height = existingImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(existingImg, 0, 0);
+        photoBase64 = canvas.toDataURL('image/png');
+        console.log("Captured image from DOM successfully");
+      } catch (err) {
+        console.error('Failed to capture image from DOM:', err);
       }
-
-      const safeName = (data?.NAME || 'verification').replace(/\s+/g, '_');
-      pdf.save(`${safeName}_verification.pdf`);
-    } catch (err) {
-      console.error('PDF error:', err);
-      alert('PDF generation failed. See console.');
-    } finally {
-      setGenerating(false);
     }
-  };
+    
+    const clone = previewRef.current.cloneNode(true);
+    
+    // Replace the image src with base64 if captured
+    if (photoBase64) {
+      const imgElement = clone.querySelector('img[alt="Applicant"]');
+      if (imgElement) {
+        imgElement.src = photoBase64;
+      }
+    }
+    
+    const btn = clone.querySelector('.no-print');
+    if (btn) btn.remove();
+
+    Object.assign(clone.style, {
+      position:   'fixed',
+      top:        '-999999px',
+      left:       '0',
+      width:      `${PDF_CONTENT_PX}px`,
+      maxWidth:   `${PDF_CONTENT_PX}px`,
+      minWidth:   `${PDF_CONTENT_PX}px`,
+      background: '#ffffff',
+      overflow:   'visible',
+      zIndex:     '-9999',
+    });
+
+    clone.querySelectorAll('td div, td').forEach(el => {
+      el.style.whiteSpace   = 'normal';
+      el.style.wordBreak    = 'break-word';
+      el.style.overflow     = 'visible';
+      el.style.textOverflow = 'unset';
+    });
+
+    document.body.appendChild(clone);
+    await new Promise(r => setTimeout(r, 450));
+
+    const canvas = await html2canvas(clone, {
+      scale:           2,
+      useCORS:         false,
+      logging:         false,
+      backgroundColor: '#ffffff',
+      width:           PDF_CONTENT_PX,
+      windowWidth:     PDF_CONTENT_PX,
+    });
+
+    document.body.removeChild(clone);
+
+    const SCALE   = 2;
+    const pageWpx = PDF_CONTENT_PX * SCALE;
+    const pageHpx = Math.round((PDF_H_MM - MARGIN_MM * 2) * MM_TO_PX) * SCALE;
+    const totalH  = canvas.height;
+    const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgWmm  = PDF_W_MM - MARGIN_MM * 2;
+    const imgHmm  = PDF_H_MM - MARGIN_MM * 2;
+
+    let srcY = 0, pageNum = 0;
+    while (srcY < totalH) {
+      if (pageNum > 0) pdf.addPage('a4', 'portrait');
+      const sliceH = Math.min(pageHpx, totalH - srcY);
+      const slice  = document.createElement('canvas');
+      slice.width  = pageWpx;
+      slice.height = sliceH;
+      const ctx = slice.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageWpx, sliceH);
+      ctx.drawImage(canvas, 0, srcY, pageWpx, sliceH, 0, 0, pageWpx, sliceH);
+      const renderedHmm = imgHmm * (sliceH / pageHpx);
+      pdf.addImage(slice.toDataURL('image/png'), 'PNG', MARGIN_MM, MARGIN_MM, imgWmm, renderedHmm);
+      srcY += pageHpx;
+      pageNum++;
+    }
+
+    const safeName = (data?.NAME || 'verification').replace(/\s+/g, '_');
+    pdf.save(`${safeName}_verification.pdf`);
+  } catch (err) {
+    console.error('PDF error:', err);
+    alert('PDF generation failed. See console.');
+  } finally {
+    setGenerating(false);
+  }
+};
 
   /* ─── COMPONENTS ─── */
   const ColTable = ({ rows, theme }) => (
@@ -306,6 +359,27 @@ useEffect(() => {
     
   ];
 
+
+const getPhotoSrc = () => {
+  const img = data?.documents?.photo || data?.PHOTO;
+
+  if (!img) return null;
+
+  if (img.startsWith('http')) return img;
+
+  const base = API_BASE_URLss?.replace(/\/$/, ""); // remove trailing slash
+  const path = img.replace(/^\//, ""); 
+ 
+  console.log(base,"baseeeeeee",path);
+
+  return `${base}/${path}`;
+};
+
+const photoSrc = getPhotoSrc();
+   
+console.log(photoSrc,"ggggggggggg");
+
+
   return (
     <>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -375,8 +449,44 @@ useEffect(() => {
           <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '9px', background: '#eef2f7' }}>
 
             {/* Basic Information */}
-            <SectionCard title="Basic Information" icon="👤" theme={t.basic}>
-              <ColTable rows={basicRows} theme={t.basic} />
+             <SectionCard title="Basic Information" icon="👤" theme={t.basic}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <ColTable rows={basicRows} theme={t.basic} />
+                </div>
+                <div style={{
+                  flexShrink: 0,
+                  width: '100px',
+                  border: `1px dashed ${t.basic.border}`,
+                  borderRadius: '6px',
+                  background: t.basic.hBg,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '6px 4px',
+                }}>
+                  {photoSrc ? (
+              <img
+  src={photoSrc}
+  alt="Applicant"
+  style={{
+    width: '100px',
+    height: '120px',
+    objectFit: 'cover',
+    borderRadius: '4px',
+    border: '2px solid red'
+  }}
+/>
+                  ) : (
+                    <>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: t.basic.div, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>👤</div>
+                      <div style={{ fontSize: '7.5px', color: t.basic.icon, fontWeight: 600, textAlign: 'center' }}>No Photo</div>
+                    </>
+                  )}
+                </div>
+              </div>
             </SectionCard>
 
             {/* Addresses */}

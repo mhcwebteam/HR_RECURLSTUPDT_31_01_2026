@@ -8,7 +8,8 @@ import {
   Shield, FileSignature, Building, DollarSign, AlertCircle, Heart,
   ThumbsUp, ThumbsDown, MessageCircle, UserCheck, PenTool, Map, Flag,
   CreditCard as CreditCardIcon, Book, PhoneCall, Info,
-  Edit
+  Edit,
+  DownloadCloud
 } from 'lucide-react';
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
@@ -754,12 +755,162 @@ const handleSubmit = async () => {
   };
 
   // File Upload Field with Approve Button
-  const FileFieldWithApprove = ({ label, documentPath, documentId, fieldName }) => {
+//   const FileFieldWithApprove = ({ label, documentPath, documentId, fieldName }) => {
+//     const isApproved = approvedDocs[documentId];
+//     const isRejected = rejectedDocs[documentId];
+
+// const handleDownloadDocument = async (url, label) => {
+//     if (!url || url === 'N/A') return;
+    
+//     try {
+//       Swal.fire({
+//         title: 'Downloading...',
+//         text: 'Please wait...',
+//         allowOutsideClick: false,
+//         didOpen: () => Swal.showLoading()
+//       });
+
+//       const response = await fetch(url);
+//       const blob = await response.blob();
+//       const downloadUrl = window.URL.createObjectURL(blob);
+//       const link = document.createElement('a');
+//       link.href = downloadUrl;
+      
+//       let filename = label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+//       const ext = url.split('.').pop().split('?')[0];
+//       filename += `.${ext}`;
+      
+//       link.download = filename;
+//       document.body.appendChild(link);
+//       link.click();
+//       document.body.removeChild(link);
+//       window.URL.revokeObjectURL(downloadUrl);
+      
+//       Swal.close();
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Downloaded!',
+//         text: `${label} downloaded successfully`,
+//         timer: 1500,
+//         showConfirmButton: false
+//       });
+//     } catch (error) {
+//       Swal.close();
+//       Swal.fire({
+//         icon: 'error',
+//         title: 'Download Failed',
+//         text: 'Failed to download the file. Please try again.',
+//       });
+//     }
+//   };
+    
+
+//     return (
+//       <div style={{ marginBottom: '8px' }}>
+//         <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
+//           {label}
+//         </label>
+//         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+//           <div style={{ 
+//             flex: 1,
+//             display: 'flex',
+//             alignItems: 'center',
+//             justifyContent: 'space-between',
+//             padding: '2px 8px',
+//             height: '32px',
+//             border: `1.5px dashed ${isApproved ? '#10b981' : isRejected ? '#ef4444' : '#93c5fd'}`,
+//             borderRadius: '6px',
+//             background: '#f0f7ff',
+//           }}>
+//             <span style={{ fontSize: '8px', color: '#1e3a8a' }}>
+//               {documentPath ? '📄 Doc Available' : 'No file uploaded'}
+//             </span>
+         
+          
+//           {documentPath && (
+//             <button
+//               onClick={() => handleViewDocument(documentPath, label)}
+//               style={{
+//                 padding: '6px 10px',
+//                 background: '#dbeafe',
+//                 border: 'none',
+//                 borderRadius: '6px',
+//                 color: '#1e40af',
+//                 cursor: 'pointer',
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 gap: '4px',
+//                 fontSize: '11px',
+//                 fontWeight: '600'
+//               }}
+//             >
+//               <Eye size={14} />
+//             </button>
+//           )}</div>
+
+//           {documentId && !isApproved && !isRejected && documentPath && (
+//             <button
+//               onClick={() => handleApprove(documentId, label, documentPath)}
+//               style={{
+//                 padding: '6px 12px',
+//                 background: '#10b981',
+//                 border: 'none',
+//                 borderRadius: '6px',
+//                 color: 'white',
+//                 cursor: 'pointer',
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 gap: '4px',
+//                 fontSize: '11px',
+//                 fontWeight: '600'
+//               }}
+//             >
+//               <ThumbsUp size={14} /> Approve
+//             </button>
+//           )
+//           }
+
+//           {isApproved && (
+//             <span style={{
+//               padding: '6px 12px',
+//               background: '#d1fae5',
+//               border: '1px solid #10b981',
+//               borderRadius: '6px',
+//               color: '#047857',
+//               display: 'flex',
+//               alignItems: 'center',
+//               gap: '4px',
+//               fontSize: '11px',
+//               fontWeight: '600'
+//             }}>
+//               <CheckCircle size={14} /> Approved
+//             </span>
+//           )}
+//         </div>
+//       </div>
+//     );
+//   };
+
+const FileFieldWithApprove = ({ label, documentPath, documentId, fieldName }) => {
     const isApproved = approvedDocs[documentId];
     const isRejected = rejectedDocs[documentId];
 
+const handleDownloadDocument = (url, label) => {
+  if (!url) return;
 
-    
+  const fullUrl = url.startsWith("http")
+    ? url
+    : `${API_BASE_URLss}${url}`;
+
+  const link = document.createElement("a");
+  link.href = fullUrl;
+  link.target = "_blank";
+  link.download = label; // may work depending on server headers
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
     return (
       <div style={{ marginBottom: '8px' }}>
@@ -767,7 +918,9 @@ const handleSubmit = async () => {
           {label}
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
+
+          {/* ✅ Main box */}
+          <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
@@ -781,29 +934,60 @@ const handleSubmit = async () => {
             <span style={{ fontSize: '8px', color: '#1e3a8a' }}>
               {documentPath ? '📄 Doc Available' : 'No file uploaded'}
             </span>
-         
-          
-          {documentPath && (
-            <button
-              onClick={() => handleViewDocument(documentPath, label)}
-              style={{
-                padding: '6px 10px',
-                background: '#dbeafe',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#1e40af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <Eye size={14} />
-            </button>
-          )}</div>
 
+            {/* ✅ View + Download buttons INSIDE the box */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+
+              {/* View Button */}
+              {documentPath && (
+                <button
+                  onClick={() => handleViewDocument(documentPath, label)}
+                  title="View"
+                  style={{
+                    padding: '4px 8px',
+                    background: '#dbeafe',
+                    border: 'none',
+                    borderRadius: '5px',
+                    color: '#1e40af',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    fontSize: '10px',
+                    fontWeight: '600'
+                  }}
+                >
+                  <Eye size={13} />
+                </button>
+              )}
+
+              {/* ✅ Download Button */}
+              {documentPath && (
+                <button
+                  onClick={() => handleDownloadDocument(documentPath, label)}
+                  title="Download"
+                  style={{
+                    padding: '4px 8px',
+                    background: '#dcfce7',
+                    border: 'none',
+                    borderRadius: '5px',
+                    color: '#166534',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    fontSize: '10px',
+                    fontWeight: '600'
+                  }}
+                >
+                  <DownloadCloud size={13} />
+                </button>
+              )}
+
+            </div>
+          </div>
+
+          {/* ✅ Approve Button OUTSIDE box */}
           {documentId && !isApproved && !isRejected && documentPath && (
             <button
               onClick={() => handleApprove(documentId, label, documentPath)}
@@ -823,9 +1007,9 @@ const handleSubmit = async () => {
             >
               <ThumbsUp size={14} /> Approve
             </button>
-          )
-          }
+          )}
 
+          {/* ✅ Approved Badge */}
           {isApproved && (
             <span style={{
               padding: '6px 12px',
@@ -842,10 +1026,30 @@ const handleSubmit = async () => {
               <CheckCircle size={14} /> Approved
             </span>
           )}
+
+          {/* ✅ Rejected Badge */}
+          {isRejected && (
+            <span style={{
+              padding: '6px 12px',
+              background: '#fee2e2',
+              border: '1px solid #ef4444',
+              borderRadius: '6px',
+              color: '#b91c1c',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '11px',
+              fontWeight: '600'
+            }}>
+              <XCircle size={14} /> Rejected
+            </span>
+          )}
+
         </div>
       </div>
     );
   };
+
 
   const sectionHeading = {
     fontSize: '14px',
@@ -1226,6 +1430,7 @@ const handleSubmit = async () => {
                           label="Photo *" 
                           documentPath={data?.documents?.photo}
                           documentId={data?.documents?.photo_DocId}
+
                         />
                         
                         <FileFieldWithApprove 

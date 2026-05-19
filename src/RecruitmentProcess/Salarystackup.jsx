@@ -203,7 +203,7 @@ result = result.filter(item => item.cand_aprvl_status !== 'Accept' );
     try {
       const response = await axiosInstance.post(
         `${API_BASE_URL}/cand-aprvl-email`,
-        { case_id: row.CHILD_CASEID, email: row.EMAIL, name: row.NAME },
+        { case_id: row.CHILD_CASEID, email: row.EMAIL, name: row.NAME,   hrEmail: token?.Email },
         { headers: { Accept: "application/json", Authorization: `Bearer ${token.token}` } }
       );
 

@@ -905,7 +905,7 @@ console.log("historyhistoryhistoryhistory",history);
   field: 'DOCUMENT_UPLOAD',
   headerName: 'Interview Evalulation Form',
   flex: 1.5,
-  minWidth: 200,
+  minWidth: 210,
   sortable: false,
   filterable: false,
   renderCell: (params) => {

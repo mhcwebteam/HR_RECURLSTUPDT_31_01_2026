@@ -1203,11 +1203,23 @@ const removeExperience = async (id) => {
     } else if (!/^\S+@\S+\.\S+$/.test(formData.EMAIL)) {
       newErrors.EMAIL = "Invalid email format";
     }
-     if (!formData.PHONE_NUMBER?.trim()) {
-      newErrors.PHONE_NUMBER = "Phone Number is required";
-    } else if (formData.PHONE_NUMBER.length !== 10) {
-      newErrors.PHONE_NUMBER = "Phone number must be 10 digits";
-    }
+ if (!formData.PHONE_NUMBER?.trim()) {
+  newErrors.PHONE_NUMBER = "Phone Number is required";
+} else if (!/^\d{10}$/.test(formData.PHONE_NUMBER)) {
+  newErrors.PHONE_NUMBER = "Phone number must be exactly 10 digits";
+}
+
+if (!formData.EMER_CONTACT_NUM?.trim()) {
+  newErrors.EMER_CONTACT_NUM = "Emergency Contact is required";
+} else if (!/^\d{10}$/.test(formData.EMER_CONTACT_NUM)) {
+  newErrors.EMER_CONTACT_NUM =
+    "Emergency contact must be exactly 10 digits";
+} else if (
+  formData.PHONE_NUMBER === formData.EMER_CONTACT_NUM
+) {
+  newErrors.EMER_CONTACT_NUM =
+    "Emergency number cannot be same as phone number"
+}
      if (!formData.EMER_CONTACT_NUM?.trim()) {
       newErrors.EMER_CONTACT_NUM = "Emergency Contact is required";
     } else if (formData.EMER_CONTACT_NUM.length !== 10) {
@@ -1222,10 +1234,15 @@ if (!formData.AADHAR_NUM?.trim()) {
       newErrors.AADHAR_NUM = "Aadhaar must be 12 digits";
     }
     if (!formData.PAN_NUM?.trim()) newErrors.PAN_NUM = "PAN Number is required";   
+// UAN validation
+if (formData.UAN_NUM?.trim()) {
+  if (formData.UAN_NUM.length !== 12) {
+    newErrors.UAN_NUM = "UAN Number must be 12 digits";
+  } else if (!formData.UAN_FILE) {
+    newErrors.UAN_FILE = "UAN File is required";
+  }
+}
 
-if (!formData.UAN_NUM?.trim()) newErrors.UAN_NUM = "UAN Number is required";
-    if (formData.UAN_NUM?.length === 12 && !formData.UAN_FILE) newErrors.UAN_FILE = "UAN File is required";
-if (!formData.ESI_NUM?.trim()) newErrors.ESI_NUM = "ESI Number is required";
     if (!formData.SRC_TYPE) newErrors.SRC_TYPE = "Source is required";
     if (formData.SRC_TYPE === "reference" && !formData.SRC_REFER_NAME?.trim()) {
       newErrors.SRC_REFER_NAME = "Reference Name is required";
@@ -1273,28 +1290,28 @@ if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
     
     
     // Education
-    if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
-        if (!formData.SSC_BOARD?.trim()) newErrors.SSC_BOARD = "SSC Board is required";
-    if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC %";
-    if(!formData.SSC_PASSED_YEAR) newErrors.SSC_PASSED_YEAR = "SSC passed yr is required";
-    if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
+    // if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
+    //     if (!formData.SSC_BOARD?.trim()) newErrors.SSC_BOARD = "SSC Board is required";
+    // if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC %";
+    // if(!formData.SSC_PASSED_YEAR) newErrors.SSC_PASSED_YEAR = "SSC passed yr is required";
+    // if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
 
-    if (formData.EMP !== "Work Man") {
-      if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
-        if (!formData.INTER_BOARD?.trim()) newErrors.INTER_BOARD = "Inter Board is required";
-      if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter %";
-         if(!formData.INTER_PASSED_YEAR) newErrors.INTER_PASSED_YEAR = "Inter passed yr is required";
+    // if (formData.EMP !== "Work Man") {
+    //   if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
+    //     if (!formData.INTER_BOARD?.trim()) newErrors.INTER_BOARD = "Inter Board is required";
+    //   if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter %";
+    //      if(!formData.INTER_PASSED_YEAR) newErrors.INTER_PASSED_YEAR = "Inter passed yr is required";
 
-      if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
+    //   if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
       
 
-      if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
-           if (!formData.DEGREE_UNIVERSITY?.trim()) newErrors.DEGREE_UNIVERSITY = "Degree univ is required";
+    //   if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
+    //        if (!formData.DEGREE_UNIVERSITY?.trim()) newErrors.DEGREE_UNIVERSITY = "Degree univ is required";
 
-      if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree % ";
-       if (!formData.DEGREE_PASSED_YEAR?.trim()) newErrors.DEGREE_PASSED_YEAR = "Degree passed yr is required";
-      if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
-    }
+    //   if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree % ";
+    //    if (!formData.DEGREE_PASSED_YEAR?.trim()) newErrors.DEGREE_PASSED_YEAR = "Degree passed yr is required";
+    //   if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
+    // }
 
    
    
@@ -2135,7 +2152,7 @@ const getFileNameFromPath = (path) => {
         />
         
         <InputField 
-          label={<>UAN Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          label={<>UAN Number</>} 
           name="UAN_NUM" 
           value={formData.UAN_NUM} 
           maxLength={12} 
@@ -2163,7 +2180,7 @@ const getFileNameFromPath = (path) => {
         }
 
         <InputField 
-          label={<>ESI Number <span style={{ color: "#ef4444" }}>*</span></>} 
+          label={<>ESI Number </>} 
           name="ESI_NUM" 
           value={formData.ESI_NUM} 
           maxLength={10} 
@@ -2593,29 +2610,30 @@ const getFileNameFromPath = (path) => {
                       <tr style={{ background: '#ffffff' }}>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                            SSC (10th) <span style={{ color: '#ef4444' }}>*</span>
+                            SSC (10th)
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="text" name="SSC_SCHOOL_NAME"   ref={(el) => registerRef('SSC_SCHOOL_NAME', el)}     value={formData.SSC_SCHOOL_NAME} onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.SSC_SCHOOL_NAME ? '#ef4444' : '#93c5fd' }} />
-                     {showErrors && errors.SSC_SCHOOL_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_SCHOOL_NAME}</p>}
+                     {/* {showErrors && errors.SSC_SCHOOL_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_SCHOOL_NAME}</p>} */}
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="text" name="SSC_BOARD"  ref={(el) => registerRef('SSC_BOARD', el)}  value={formData.SSC_BOARD || ''} onChange={handleInputChange} placeholder="University/Board"    style={{ ...inputStyle, borderColor: showErrors && errors.SSC_BOARD ? '#ef4444' : '#93c5fd' }}  />
-                       {showErrors && errors.SSC_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_BOARD}</p>}
+                       {/* {showErrors && errors.SSC_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_BOARD}</p>} */}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <input type="number" name="SSC_MARKS"   ref={(el) => registerRef('SSC_MARKS', el)} value={formData.SSC_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.SSC_MARKS ? '#ef4444' : '#93c5fd' }} />
-                           {showErrors && errors.SSC_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_MARKS}</p>}
+                           {/* {showErrors && errors.SSC_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_MARKS}</p>} */}
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="date" name="SSC_PASSED_YEAR"  ref={(el) => registerRef('SSC_PASSED_YEAR', el)}   value={formData.SSC_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.SSC_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                           {showErrors && errors.SSC_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_PASSED_YEAR}</p>}
+                           {/* {showErrors && errors.SSC_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.SSC_PASSED_YEAR}</p>} */}
 
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <TableFileUpload name="10TH_FILENAME" onChange={handleFileChange} onOpenFile={openFile} 
-            isPending={isPending}   onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']} error={showErrors ? errors['10TH_FILENAME'] : ''} />
+            isPending={isPending}   onRemove={handleRemoveFile} selectedFile={formData['10TH_FILENAME']}
+             />
                         </td>
                       </tr>
 
@@ -2623,26 +2641,28 @@ const getFileNameFromPath = (path) => {
                       <tr style={{ background: '#f9f9f9' }}>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                            Intermediate/Diploma <span style={{ color: '#ef4444' }}>*</span>
+                            Intermediate/Diploma 
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="text" name="INTER_COLLEGE_NAME"   ref={(el) => registerRef('INTER_COLLEGE_NAME', el)} value={formData.INTER_COLLEGE_NAME}    onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
-                           {showErrors && errors.INTER_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_COLLEGE_NAME}</p>}
+                           {showErrors && errors.INTER_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>
+                            {/* {errors.INTER_COLLEGE_NAME} */}
+                            </p>}
                         </td>
                         <td style={{ padding: '6px' }}>
                           
                           <input type="text" name="INTER_BOARD"  ref={(el) => registerRef('INTER_BOARD', el)} value={formData.INTER_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_BOARD ? '#ef4444' : '#93c5fd' }} />
-                          {showErrors && errors.INTER_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_BOARD}</p>}
+                          {/* {showErrors && errors.INTER_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_BOARD}</p>} */}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <input type="number" name="INTER_MARKS" ref={(el) => registerRef('INTER_MARKS', el)} value={formData.INTER_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.INTER_MARKS ? '#ef4444' : '#93c5fd' }} />
-                          {showErrors && errors.INTER_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_MARKS}</p>}
+                          {/* {showErrors && errors.INTER_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_MARKS}</p>} */}
 
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="date" name="INTER_PASSED_YEAR" value={formData.INTER_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.INTER_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                           {showErrors && errors.INTER_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_PASSED_YEAR}</p>}
+                           {/* {showErrors && errors.INTER_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_PASSED_YEAR}</p>} */}
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile}  isPending={isPending} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
@@ -2653,28 +2673,28 @@ const getFileNameFromPath = (path) => {
                       <tr style={{ background: '#ffffff' }}>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                            Degree/B.Tech (UG) <span style={{ color: '#ef4444' }}>*</span>
+                            Degree/B.Tech (UG) 
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="text" name="GRAD_COLLEGE_NAME"  ref={(el) => registerRef('GRAD_COLLEGE_NAME', el)} value={formData.GRAD_COLLEGE_NAME} onChange={handleInputChange} placeholder="College" style={{ ...inputStyle, borderColor: showErrors && errors.GRAD_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
-                {showErrors && errors.GRAD_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GRAD_COLLEGE_NAME}</p>}
+                {/* {showErrors && errors.GRAD_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.GRAD_COLLEGE_NAME}</p>} */}
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="text" name="DEGREE_UNIVERSITY" ref={(el) => registerRef('DEGREE_UNIVERSITY', el)}     value={formData.DEGREE_UNIVERSITY || ''} onChange={handleInputChange} placeholder="University" style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_UNIVERSITY ? '#ef4444' : '#93c5fd' }} />
-                {showErrors && errors.DEGREE_UNIVERSITY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_UNIVERSITY}</p>}
+                {/* {showErrors && errors.DEGREE_UNIVERSITY && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_UNIVERSITY}</p>} */}
 
 
                         </td>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <input type="number" name="BTECH_MARKS"   ref={(el) => registerRef('BTECH_MARKS', el)} value={formData.BTECH_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.BTECH_MARKS ? '#ef4444' : '#93c5fd' }} />
-                {showErrors && errors.BTECH_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BTECH_MARKS}</p>}
+                {/* {showErrors && errors.BTECH_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.BTECH_MARKS}</p>} */}
 
 
                         </td>
                         <td style={{ padding: '6px' }}>
                           <input type="date" name="DEGREE_PASSED_YEAR" ref={(el) => registerRef('DEGREE_PASSED_YEAR', el)} value={formData.DEGREE_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DEGREE_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
-                {showErrors && errors.DEGREE_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_PASSED_YEAR}</p>}
+                {/* {showErrors && errors.DEGREE_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.DEGREE_PASSED_YEAR}</p>} */}
 
 
                         </td>

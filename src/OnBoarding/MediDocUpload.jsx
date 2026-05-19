@@ -225,7 +225,7 @@ const toBase64ViaAxios = async (url) => {
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.text('DIR No. ASDPL-HR-F31', pageWidth - 35, yPos + 5);
-      doc.text(`Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageWidth - 35, yPos + 10);
+doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
       doc.text('Rev. Version 02', pageWidth - 35, yPos + 15);
       
       yPos += 50;
@@ -234,7 +234,7 @@ const toBase64ViaAxios = async (url) => {
       const employeeData = [
         { sno: 1, label: "Name of the employee", value: rowData?.employee_name?.toUpperCase() || rowData?.fullData?.name?.toUpperCase() || '-' },
         { sno: 2, label: "Emp. ID", value: rowData?.child_caseid || rowData?.CHILD_CASEID || '-' },
-        { sno: 3, label: "Designation", value: rowData?.DESIG?.toUpperCase() || '-' },
+        { sno: 3, label: "Designation", value: rowData?.MANPOWER_DESG || rowData?.DESIG?.toUpperCase() || '-' },
         { sno: 4, label: "Department", value: rowData?.fullData?.DEPT?.toUpperCase() || '-' },
         { sno: 5, label: "Location", value: rowData?.fullData?.PLANT?.toUpperCase() || '-' },
         { sno: 6, label: "Gender", value: rowData?.fullData?.GENDER?.toUpperCase() || '-' }
