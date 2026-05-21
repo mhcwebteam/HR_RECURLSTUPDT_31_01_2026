@@ -302,7 +302,7 @@ useEffect(() => {
     setFormData({
       employeeName: employeeData.name || rowData.employee_name || '',
       empId: employeeData.child_caseid || rowData.CHILD_CASEID || '',
-      designation:  employeeData.designation  ||employeeData.MANPOWER_DESG || rowData.department || '',
+      designation:  employeeData.DESIG  ||employeeData.MANPOWER_DESG || rowData.department || '',
       doj: employeeData.joiningDate || rowData.joining_date || '',
       department: employeeData.DEPT || rowData.department || '',
       siteLocation: employeeData.PLANT || rowData.location || ''

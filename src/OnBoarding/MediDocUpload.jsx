@@ -562,7 +562,7 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-5xl font-serif rounded-lg shadow-xl overflow-y-auto max-h-[90vh] p-6">
+<div className="bg-white w-full max-w-5xl font-sans font-normal rounded-lg shadow-xl overflow-y-auto max-h-[90vh] p-6">
         {/* Close button in top-right */}
         <div className="flex justify-end mb-2">
           <button
@@ -645,7 +645,7 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
                   <td className="border-r border-gray-400 p-2 w-1/3">
                     {item.label}
                   </td>
-                  <td className="p-2 font-semibold">
+                  <td className="p-2">
                     {item.value || "-"}
                   </td>
                 </tr>
@@ -656,7 +656,7 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
 
         {/* Family Details Section */}
         <div className="border border-gray-400 mt-6">
-          <table className="w-full text-xs border-collapse">
+      <table className="w-full text-xs border-collapse uppercase">
             <thead>
               <tr className="border-b border-gray-400">
                 <th className="border-r border-gray-400 p-2">Emp Name</th>

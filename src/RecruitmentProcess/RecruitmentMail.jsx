@@ -36,9 +36,87 @@ const RecruitmentMail = () => {
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {})
    const [HrData,setHrData] = useState([]);
 
-  const [emailInputs, setEmailInputs] = useState({});
+
+
+  const loadSavedEmails = () => {
+    const savedEmails = localStorage.getItem(`recruitment_emails_${userToken?.Email || 'default'}`);
+    if (savedEmails) {
+      return JSON.parse(savedEmails);
+    }
+    return {};
+  };
+
+
+
+
+  const [emailInputs, setEmailInputs] = useState(() => loadSavedEmails());
   const [submitting, setSubmitting] = useState({});
 
+
+    useEffect(() => {
+      if (userToken?.Email) {
+        localStorage.setItem(
+          `recruitment_emails_${userToken.Email}`, 
+          JSON.stringify(emailInputs)
+        );
+      }
+    }, [emailInputs, userToken?.Email]);
+
+
+
+    useEffect(() => {
+      if (Array.isArray(HrData?.TaskAssignmentData)) {
+      
+    
+        const filtered = HrData.TaskAssignmentData
+    
+    
+          .filter(row => {
+       
+    
+            return (
+                 row.actionStatus == "new" && row.verifyEmail !== "sent"
+            );
+          })
+          .map((row, index) => ({
+            ...row,
+            id: row.case_id || `row_${index}`,
+          }));
+    
+        setData(filtered);
+        
+        // Preserve existing emails when setting filtered data
+        setFilteredData(prevFiltered => {
+          // If this is the first load, use the filtered data with saved emails
+          if (prevFiltered.length === 0) {
+            return filtered.map(row => ({
+              ...row,
+              // Check if we have a saved email for this case
+              savedEmail: emailInputs[row.CHILD_CASEID] || null
+            }));
+          }
+          
+          // Otherwise, merge existing emails with new data
+          const emailMap = new Map();
+          prevFiltered.forEach(row => {
+            if (row.savedEmail || emailInputs[row.CHILD_CASEID]) {
+              emailMap.set(row.CHILD_CASEID, row.savedEmail || emailInputs[row.CHILD_CASEID]);
+            }
+          });
+          
+          return filtered.map(row => ({
+            ...row,
+            savedEmail: emailMap.get(row.CHILD_CASEID) || emailInputs[row.CHILD_CASEID] || null
+          }));
+        });
+      } else {
+        setData([]);
+        setFilteredData([]);
+      }
+    
+      setLoading(false);
+    }, [HrData]);
+    
 
 
 
@@ -77,34 +155,7 @@ useEffect(() => {
 
 
 
-useEffect(() => {
-  if (Array.isArray(HrData?.TaskAssignmentData)) {
-  
 
-    const filtered = HrData.TaskAssignmentData
-
-
-      .filter(row => {
-   
-
-        return (
-             row.actionStatus == "new" && row.verifyEmail !== "sent"
-        );
-      })
-      .map((row, index) => ({
-        ...row,
-        id: row.case_id || `row_${index}`,
-      }));
-
-    setData(filtered);
-    setFilteredData(filtered);
-  } else {
-    setData([]);
-    setFilteredData([]);
-  }
-
-  setLoading(false);
-}, [HrData]);
 
 
 
@@ -124,11 +175,23 @@ useEffect(() => {
       ...prev,
       [caseId]: email
     }));
+    
+    // Also update the filteredData to reflect the email
+    setFilteredData(prev => 
+      prev.map(row => 
+        row.CHILD_CASEID === caseId 
+          ? { ...row, savedEmail: email }
+          : row
+      )
+    );
   };
 
 
 
  
+
+
+
 
 
   const handleSubmitEmail = async (caseId, rowData) => {
@@ -145,7 +208,7 @@ useEffect(() => {
 
   const result = await Swal.fire({
     title: 'Are you sure?',
-    text: `Do you want to send the  Recruitment form link to ${email}?`,
+    text: `Do you want to send the Recruitment form link to ${email}?`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, Send Email',
@@ -188,21 +251,16 @@ useEffect(() => {
         showConfirmButton: false,
       });
 
-  setFilteredData(prev =>
-    prev.map(row =>
-      row.CHILD_CASEID === caseId
-        ? { ...row, StatusTrack: "WIP", verifyEmail: "sent" }
-        : row
-    )
-  )
-
-
- setEmailInputs(prev => ({
-      ...prev,
-      [caseId]: email
-    }));
+      setFilteredData(prev =>
+        prev.map(row =>
+          row.CHILD_CASEID === caseId
+            ? { ...row, StatusTrack: "WIP", verifyEmail: "sent", savedEmail: email }
+            : row
+        )
+      );
       
-  
+      // Keep email in localStorage
+      // Already saved via useEffect
     }
   } catch (error) {
     console.error('Email send error:', error);
@@ -211,7 +269,6 @@ useEffect(() => {
     setSubmitting(prev => ({ ...prev, [caseId]: false }));
   }
 };
-
 
  
 
@@ -486,58 +543,59 @@ useEffect(() => {
   },
 },
     {
-      field: 'USER_EMAIL',
-      headerName: 'User Email',
-      flex: 1.5,
-      minWidth: 180,
-      renderCell: (params) => {
-        const currentEmail = emailInputs[params.row.CHILD_CASEID] || '';
-        return (
-          <Tooltip 
-            title={currentEmail || 'No email entered'} 
-            arrow 
-            placement="top"
-            componentsProps={{
-              tooltip: {
-                sx: {
-                  backgroundColor: '#1f2937',
-                  fontSize: '12px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  '& .MuiTooltip-arrow': {
-                    color: '#1f2937',
-                  },
-                },
-              },
-            }}
-          >
-            <TextField
-              size="small"
-              type="email"
-              placeholder="Enter email address"
-              value={currentEmail}
-              onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
-              sx={{
-                width: '100%',
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '12px',
-                  height: '32px',
-                  '& fieldset': {
-                    borderColor: '#d1d5db',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#667eea',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#667eea',
+        field: 'USER_EMAIL',
+        headerName: 'User Email',
+        flex: 1.5,
+        minWidth: 180,
+        renderCell: (params) => {
+          // Use saved email from emailInputs or from row data
+          const currentEmail = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+          return (
+            <Tooltip 
+              title={currentEmail || 'No email entered'} 
+              arrow 
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: '#1f2937',
+                    fontSize: '12px',
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    '& .MuiTooltip-arrow': {
+                      color: '#1f2937',
+                    },
                   },
                 },
               }}
-            />
-          </Tooltip>
-        );
+            >
+              <TextField
+                size="small"
+                type="email"
+                placeholder="Enter email address"
+                value={currentEmail}
+                onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
+                sx={{
+                  width: '100%',
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: '12px',
+                    height: '32px',
+                    '& fieldset': {
+                      borderColor: '#d1d5db',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#667eea',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
+          );
+        },
       },
-    },
     {
       field: 'ACTIONS',
       headerName: 'Actions',
@@ -768,3 +826,9 @@ useEffect(() => {
 };
 
 export default RecruitmentMail;
+
+
+
+
+
+

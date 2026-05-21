@@ -107,11 +107,11 @@ const today = new Date().toLocaleDateString('en-IN', {
     organization on
     <InputField defaultValue={joiningDate} width="120px" readOnly />
     at
-    <InputField defaultValue={rowData.location} width="100px" readOnly />
+    <InputField defaultValue={rowData.location} width="300px" readOnly />
 
    
     as
-    <InputField defaultValue={rowData?.MANPOWER_DESG} width="170px" readOnly />
+    <InputField defaultValue= {  rowData.DESIG || rowData?.MANPOWER_DESG} width="170px" readOnly />
   </p>
 </div>
 

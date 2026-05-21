@@ -1,323 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
-import { 
-  User, Mail, Phone, Briefcase, GraduationCap, FileUp, Send, 
-  X, Eye, Download, FileText, Check, CheckCircle, XCircle, Clock, 
-  Maximize2, ChevronUp, ChevronDown, Calendar, MapPin, IdCard, 
-  FileCheck, Hash, Home, BookOpen, Award, Globe, Users, CreditCard, 
-  Shield, FileSignature, Building, DollarSign, AlertCircle, Heart,
-  ThumbsUp, ThumbsDown, MessageCircle, UserCheck, PenTool, Map, Flag,
-  CreditCard as CreditCardIcon, Book, PhoneCall, Info,
-  Edit
-} from 'lucide-react';
-import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../Config/axiosConfig';
-import dayjs from 'dayjs';
-import { generateVerificationPDF } from '../../src/RecruitmentProcess/utils/generateVerificationPDF'
+import { useLocation, useNavigate } from "react-router-dom";
+import Swal from 'sweetalert2';
+import { DataGrid } from '@mui/x-data-grid';
+import { Box, Paper, Modal, IconButton, Typography, Button, CircularProgress, TextField, InputAdornment, Tooltip } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import 'sweetalert2/dist/sweetalert2.min.css';
+import SearchIcon from '@mui/icons-material/Search';
+import { Doughnut } from 'react-chartjs-2';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaChartPie } from 'react-icons/fa';
+import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
+import DataFlow from "../Components/DataFlow.jsx"
 
+import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../Config/Config.jsx';
 
-const VerificationDetailsModal = ({ open, onClose, data, onStatusChange, refersh }) => {
+import ManPowerView from '../Components/ManPowerView.jsx';
+import axiosInstance from '../Config/axiosConfig.jsx';
 
- 
-  const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {});
-  const [remarks, setRemarks] = useState('');
-  const [viewingDoc, setViewingDoc] = useState(null);
-  const [viewingDocName, setViewingDocName] = useState('');
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [approvedDocs, setApprovedDocs] = useState({});
-  const [rejectedDocs, setRejectedDocs] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [sameAsPermanent, setSameAsPermanent] = useState(data?.address_status == 'YES');
-const navigate = useNavigate();
-  // Section collapse states
-  const [openSections, setOpenSections] = useState({
-    basicInfo: true,
-    education: false,
-    experience: false
-  });
+ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
-  
+const RecruitmentMail = () => {
+  const [searchText, setSearchText] = useState('');
+  const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [manpowerOpen, setManPowerOpen] = useState(false);
+  const [processCaseId, setProcessAndCaseIdData] = useState('');
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
+  const [selectedRowData, setSelectedRowData] = useState(null);
+  const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {})
+  const [HrData, setHrData] = useState([]);
 
-  const formatDate = (dateStr) => {
-  if (!dateStr) return null;
+  // Load saved emails from localStorage on component mount
+  const loadSavedEmails = () => {
+    const savedEmails = localStorage.getItem(`recruitment_emails_${userToken?.Email || 'default'}`);
+    if (savedEmails) {
+      return JSON.parse(savedEmails);
+    }
+    return {};
+  };
 
-  let [day, month, year] = dateStr.split('-');
+  const [emailInputs, setEmailInputs] = useState(() => loadSavedEmails());
+  const [submitting, setSubmitting] = useState({});
 
-  // ✅ Ensure 2-digit format
-  day = day.padStart(2, '0');
-  month = month.padStart(2, '0');
-
-  return new Date(`${year}-${month}-${day}`);
-};
-
-
+  // Save emails to localStorage whenever emailInputs changes
   useEffect(() => {
-    setSameAsPermanent(data?.address_status == 'YES');
-    
-    // Initialize approved/rejected docs from existing statuses
-    const initialApproved = {};
-    const initialRejected = {};
-    
-    if (data?.documents) {
-      // Map document IDs to their status
-      const docStatusMap = {
-        Aadhar_DocId: 'Aadhr_Status',
-        pan_DocId: 'Pan_Status',
-        photo_DocId: 'photo_Status',
-        RESUME_DocId: 'RESUME_Status',
-        UAN_DocId: 'UAN_Status',
-        Tenth_DocId: 'Tenth_Status',
-        Inter_DocId: 'Inter_Status',
-        grad_DocId: 'Grad_Status',
-        pg_DocId: 'Pg_Status',
-        PHD_DocId: 'PHD_Status',
-        OTHER_DocId: 'OTHER_Status',
-       
-offer_letter_DocId: 'OFFER_Status',
-       
-exp_letter_DocId: 'EXP_Status',
-       
-bank_statements_DocId: 'BANK_Status',
-       
-payslips_DocId: 'PAY_Status',
-       relieving_letter_DocId: 'REL_Status'
-
-      };
-      
-      Object.entries(docStatusMap).forEach(([docIdKey, statusKey]) => {
-        if (data.documents[docIdKey]) {
-          const docId = data.documents[docIdKey];
-          const status = data.documents[statusKey];
-          if (status == "1" || status == 1) {
-            initialApproved[docId] = true;
-          } else if (status === "2" || status === 2) {
-            initialRejected[docId] = true;
-          }
-        }
-      });
+    if (userToken?.Email) {
+      localStorage.setItem(
+        `recruitment_emails_${userToken.Email}`, 
+        JSON.stringify(emailInputs)
+      );
     }
+  }, [emailInputs, userToken?.Email]);
 
-   
-    
-    setApprovedDocs(initialApproved);
-    setRejectedDocs(initialRejected);
-  }, [data]);
+useEffect(() => {
+  if (!userToken?.token) return;
 
-  const toggleSection = (section) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const handleViewDocument = (url, name) => {
-    if (url && url !== 'N/A' && url !== null) {
- const fullUrl = url.startsWith('http')
-  ? url
-  : `${API_BASE_URLss}${url}`;
-  
-      setViewingDoc(fullUrl);
-      setViewingDocName(name);
-    }
-  };
-
-  const handleApprove = async (documentId, title, documentPath, type = 'document', expId = null) => {
-    const result = await Swal.fire({
-      title: 'Approve Document?',
-      text: `Are you sure you want to approve ${title}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#16a34a',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, Approve',
-      cancelButtonText: 'Cancel'
-    });
-
-    if (!result.isConfirmed) return;
-
+  const Recuritment = async () => {
     try {
-      let payload = {};
+
       
-      if (type == 'document') {
-        payload.Document_Id = documentId;
-        payload.Verification_Id = data?.Verification_Id;
-      } else if (type === 'payslip') {
-        payload.EMP_PAYSLIP_ID = documentId;
-        payload.PAYSLIP_STATUS = "1";
-      } else if (type === 'experience') {
-        payload.EMP_COMP_ID = expId;
-        
-        if (title.includes('Bank Statement')) {
-          payload.BANK_STATEMENT_DOC_STATUS = "1";
-        } else if (title.includes('Offer Letter')) {
-          payload.OFFER_LETTER_STATUS = "1";
-        } else if (title.includes('Relieving Letter')) {
-          payload.RELIEV_DOC_STATUS = "1";
-        } else if (title.includes('Experience Letter')) {
-          payload.EXPERIENCE_DOC_STATUS = "1";
-        }
-      }
-
-      setApprovedDocs(prev => ({ ...prev, [documentId]: true }));
-      setRejectedDocs(prev => {
-        const newState = { ...prev };
-        delete newState[documentId];
-        return newState;
-      });
-
-      await axiosInstance.post(`${API_BASE_URL}/verify-Doc-Status`, payload, {
-        headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Approved!',
-        text: `${title} has been approved.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-    } catch (error) {
-      console.error("Approval error:", error);
-      setApprovedDocs(prev => {
-        const newState = { ...prev };
-        delete newState[documentId];
-        return newState;
-      });
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to approve document. Please try again.',
-      });
-    }
-  };
-
-  const handleReject = async () => {
-    if (!remarks || remarks.trim() === "") {
-      return Swal.fire({
-        icon: "warning",
-        title: "Remarks Required",
-        text: "Please enter rejection remarks.",
-      });
-    }
-
-    const result = await Swal.fire({
-      title: "Reject Verification?",
-      text: "Are you sure you want to reject this verification?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, Reject",
-      cancelButtonText: "Cancel"
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      const payload = {
-        CHILD_CASEID: data?.CHILD_CASEID,
-        remarks,
-        RevisionTrackStatus: "Verification",
-      deletecase: "01"
-      };
-
-      const response = await axiosInstance.post(
-        `${API_BASE_URL}/delete-verification-case`,
-        payload,
+      const response = await axiosInstance.get(
+        `${API_BASE_URL}/task-Assign-GtDta`,
         {
           headers: {
-            Authorization: `Bearer ${userToken.token}`,
             "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${userToken.token}`,
           },
         }
       );
 
-      if (response.data?.success) {
-        await Swal.fire({
-          icon: 'success',
-          title: 'Rejected!',
-          text: response.data.message,
-          timer: 1500,
-          showConfirmButton: false,
-        });
 
-        if (refersh) await refersh();
-        setRemarks('');
-        onClose();
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Failed',
-          text: response.data?.message || "Something went wrong",
-        });
-      }
-    } catch (error) {
-      console.error("Reject Error:", error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || "Server error occurred",
-      });
+    
+
+      setHrData(response.data);
+      console.log("NOTE FOR APPROVAL API DATA:", response.data);
+    } catch (err) {
+      console.error("Error fetching approval data", err);
     }
   };
 
+  Recuritment();
+}, [userToken?.token]);
 
 
-  const handleEditClick = async () => {
+useEffect(() => {
+  if (Array.isArray(HrData?.TaskAssignmentData)) {
   
-  if (!remarks || remarks.trim() === "") {
-    return Swal.fire({
-      icon: "warning",
-      title: "Remarks Required",
-      text: "Please enter remarks to click on edit btn.",
+
+    const filtered = HrData.TaskAssignmentData
+
+
+      .filter(row => {
+   
+
+        return (
+             row.actionStatus == "new" && row.verifyEmail !== "sent"
+        );
+      })
+      .map((row, index) => ({
+        ...row,
+        id: row.case_id || `row_${index}`,
+      }));
+
+    setData(filtered);
+    
+    // Preserve existing emails when setting filtered data
+    setFilteredData(prevFiltered => {
+      // If this is the first load, use the filtered data with saved emails
+      if (prevFiltered.length === 0) {
+        return filtered.map(row => ({
+          ...row,
+          // Check if we have a saved email for this case
+          savedEmail: emailInputs[row.CHILD_CASEID] || null
+        }));
+      }
+      
+      // Otherwise, merge existing emails with new data
+      const emailMap = new Map();
+      prevFiltered.forEach(row => {
+        if (row.savedEmail || emailInputs[row.CHILD_CASEID]) {
+          emailMap.set(row.CHILD_CASEID, row.savedEmail || emailInputs[row.CHILD_CASEID]);
+        }
+      });
+      
+      return filtered.map(row => ({
+        ...row,
+        savedEmail: emailMap.get(row.CHILD_CASEID) || emailInputs[row.CHILD_CASEID] || null
+      }));
     });
+  } else {
+    setData([]);
+    setFilteredData([]);
   }
 
+  setLoading(false);
+}, [HrData]);
+
+useEffect(() => {
+  if (!userToken.token) navigate('/');
+}, [navigate, userToken?.token]);
+
  
+
+  const handleEmailChange = (caseId, email) => {
+    setEmailInputs(prev => ({
+      ...prev,
+      [caseId]: email
+    }));
+    
+    // Also update the filteredData to reflect the email
+    setFilteredData(prev => 
+      prev.map(row => 
+        row.CHILD_CASEID === caseId 
+          ? { ...row, savedEmail: email }
+          : row
+      )
+    );
+  };
+
+  const handleSubmitEmail = async (caseId, rowData) => {
+  const email = emailInputs[caseId];
+  if (!email) {
+    Swal.fire('Error', 'Please enter email', 'error');
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    Swal.fire('Error', 'Please enter a valid email address', 'error');
+    return;
+  }
+
   const result = await Swal.fire({
-    title: "Edit Verification?",
-    text: "Are you sure you want to update this verification Details?",
-    icon: "warning",
+    title: 'Are you sure?',
+    text: `Do you want to send the Recruitment form link to ${email}?`,
+    icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: "#2563eb",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, Edit",
-    cancelButtonText: "Cancel"
+    confirmButtonText: 'Yes, Send Email',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#6b7280',
   });
 
- 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) {
+    return;
+  }
 
+  setSubmitting(prev => ({ ...prev, [caseId]: true }));
 
- 
-   // ✅ LOADING POPUP
-   Swal.fire({
-     title: "Processing...",
-     text: "Updating the recruitment form, please wait...",
-     allowOutsideClick: false,
-     allowEscapeKey: false,
-     didOpen: () => {
-       Swal.showLoading();
-     }
-   });
+  const payload2 = {
+    email: email,
+    child_caseId: caseId,
+    hrEmail: userToken?.Email
+  }
 
   try {
-    const payload = {
-      child_caseId: data?.CHILD_CASEID,
-      email: data?.EMAIL,
-      Status_Edit: "Edit"
-    };
-
     const response = await axiosInstance.post(
       `${API_BASE_URL}/emp-email`,
-      payload,
+      payload2,
       {
         headers: {
           Authorization: `Bearer ${userToken.token}`,
@@ -327,1743 +213,563 @@ payslips_DocId: 'PAY_Status',
       }
     );
 
-    console.log("Success:", response.data);
-
-  
-    Swal.fire({
-      icon: "success",
-      title: "Success",
-      text: "Edit request sent successfully!",
-      timer: 2000,
-      showConfirmButton: false
-    });
-if (refersh) await refersh();
-        setRemarks('');
-        onClose();
-  } catch (error) {
-    console.error("Error:", error);
-
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text:
-        error.response?.data?.message ||
-        "Failed to process edit request.",
-    });
-  }
-};
-
-  // const handleSubmit = async () => {
-
-  //        const pdfBlob = await generateVerificationPDF(data, sameAsPermanent);
-  //   console.log(pdfBlob,"pdddddddddddddd")
-  //   // Create FormData to send PDF
-  //   const formData = new FormData();
-  //   formData.append('verification_pdf', pdfBlob, `verification_${data?.CHILD_CASEID}_${Date.now()}.pdf`);
-  //   const hasApproved = Object.values(approvedDocs).some(status => status === true);
-    
-  //   if (!hasApproved) {
-  //     return Swal.fire({
-  //       title: "Approval Required",
-  //       text: "Please approve at least one document before submitting!",
-  //       icon: "warning",
-  //       confirmButtonColor: "#3085d6",
-  //     });
-  //   }
-
-
-
-  //   const result = await Swal.fire({
-  //     title: "Submit Verification?",
-  //     text: "Are you sure you want to submit this verification?",
-  //     icon: "question",
-  //     showCancelButton: true,
-  //     confirmButtonColor: "#10b981",
-  //     cancelButtonColor: "#6b7280",
-  //     confirmButtonText: "Yes, Submit",
-  //     cancelButtonText: "Cancel"
-  //   });
-
-  //   if (!result.isConfirmed) return;
-
-
-
-  //   setLoading(true);
-  //   try {
-  //     const payload = {
-  //       child_caseId: data?.CHILD_CASEID,
-  //       remarks,
-  //       fileData: pdfBlob,
-  //     };
-      
-  //     const response ="" 
-  //     await axiosInstance.post(`${API_BASE_URL}/verify-update`, payload, {
-  //       headers: {
-  //         Authorization: `Bearer ${userToken.token}`,
-  //         'Content-Type': 'application/json',
-  //       },
-  //     }
-    
-  //   );
-
-  //     if (response.data) {
-  //       await Swal.fire({
-  //         icon: 'success',
-  //         title: 'Success!',
-  //         text: 'Verification submitted successfully!',
-  //         timer: 1500,
-  //         showConfirmButton: false,
-  //       });
-
-  //       if (refersh) await refersh();
-  //       setRemarks('');
-  //       onClose();
-  //     }
-  //   } catch (error) {
-  //     console.error('Error submitting form:', error);
-  //     Swal.fire({
-  //       title: 'Error!',
-  //       text: 'Failed to submit verification. Please try again.',
-  //       icon: 'error',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-const handleSubmit = async () => {
-  const hasApproved = Object.values(approvedDocs).some(status => status === true);
-  
-  if (!hasApproved) {
-    return Swal.fire({
-      title: "Approval Required",
-      text: "Please approve at least one document before submitting!",
-      icon: "warning",
-      confirmButtonColor: "#3085d6",
-    });
-  }
-
-  const result = await Swal.fire({
-    title: "Submit Verification?",
-    text: "Are you sure you want to submit this verification?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonColor: "#10b981",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, Submit",
-    cancelButtonText: "Cancel"
-  });
-
-  if (!result.isConfirmed) return;
-
-  setLoading(true);
-  
-  Swal.fire({
-    title: 'Loading...',
-    text: 'Please wait...',
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  try {
-    console.log("Data passed to PDF:", data);
-    console.log("sameAsPermanent:", sameAsPermanent);
-    
-    // Generate PDF blob
-    const pdfBlob = await generateVerificationPDF(data, sameAsPermanent);
-    
-    console.log("PDF Blob size:", pdfBlob?.size);
-    console.log("PDF Blob type:", pdfBlob?.type);
-    
-    // Check if blob is valid
-    if (!pdfBlob || pdfBlob.size === 0) {
-      throw new Error("Generated PDF is empty");
-    }
-    
-    // Create FormData
-    const formData = new FormData();
-    formData.append('fileData', pdfBlob, `verification_${data?.CHILD_CASEID}_${Date.now()}.pdf`);
-    formData.append('child_caseId', data?.CHILD_CASEID);
-    formData.append('remarks', remarks);
-    formData.append('document_type', 'candidatefile');
-    
-    // Send to backend
-    const response = await axiosInstance.post(`${API_BASE_URL}/verify-update`, formData, {
-      headers: {
-        Authorization: `Bearer ${userToken.token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    Swal.close();
-
     if (response.data) {
-      await Swal.fire({
-        icon: 'success',
+      Swal.fire({
         title: 'Success!',
-        text: 'Verification submitted successfully!',
+        icon: "success",
+        text: 'Recruitment form link sent to employee email!',
         timer: 1500,
         showConfirmButton: false,
       });
 
-      if (refersh) await refersh();
-      setRemarks('');
-      onClose();
+      setFilteredData(prev =>
+        prev.map(row =>
+          row.CHILD_CASEID === caseId
+            ? { ...row, StatusTrack: "WIP", verifyEmail: "sent", savedEmail: email }
+            : row
+        )
+      );
+      
+      // Keep email in localStorage
+      // Already saved via useEffect
     }
   } catch (error) {
-    console.error('Error:', error);
-    Swal.close();
-    Swal.fire({
-      title: 'Error!',
-      text: error.message || 'Failed to submit verification. Please try again.',
-      icon: 'error',
-    });
+    console.error('Email send error:', error);
+    Swal.fire('Error', 'Failed to send email', 'error');
   } finally {
-    setLoading(false);
+    setSubmitting(prev => ({ ...prev, [caseId]: false }));
   }
 };
 
-  const DocumentViewer = ({ url, name, onClose }) => {
-    if (!url) return null;
-    const isPDF = url.toLowerCase().endsWith('.pdf');
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleOpenManpower = async (rowData, type) => {
+    setSelectedRowData(rowData);
+    setProcessAndCaseIdData({
+      processname: rowData.PROCESSNAME,
+      caseId: row.CASEID,
+      type: type
+    });
+    setManPowerOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setManPowerOpen(false);
+    setSelectedRowData(null);
+  };
+
+  const statusCounts = useMemo(() => {
+    const counts = {
+      total: filteredData.length,
+      completed: 0,
+      pending: 0,
+      rejected: 0
+    };
+    filteredData.forEach(row => {
+      const status = row.ACTION_STATUS?.toLowerCase();
+      if (status === 'completed') {
+        counts.completed++;
+      } else if (status === 'pending' || status === 'to_do') {
+        counts.pending++;
+      } else if (status === 'rejected') {
+        counts.rejected++;
+      }
+    });
+    return counts;
+  }, [filteredData]);
+
+
+   const hasTypePlant = HrData?.TaskAssignmentData?.some(row => row.TYPE_PLANT);
+
+  const recCycle = HrData?.TaskAssignmentData?.some(row => row.RECRUIT_CYCLE);
+
+  const columns = [
+    {
+      field: 'SNO',
+      headerName: 'S.NO',
+      flex: 0.5,
+      minWidth: 50,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 600, color: '#374151' }}>
+          {params.api.getAllRowIds().indexOf(params.id) + 1}
+        </Box>
+      ),
+    },
+
+          {
+      field: 'CHILD_CASEID',
+      headerName: 'Case ID',
+      flex: 1,
+      minWidth: 100,
+      renderCell: (params) => (
+        <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+
+        ...(hasTypePlant
+    ? [{
+        field: 'TYPE_PLANT',
+        headerName: 'Type Plant',
+        flex: 1.2,
+            minWidth: 80,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+  // ✅ MUST be array
+  ...(recCycle
+    ? [{
+        field: 'RECRUIT_CYCLE',
+        headerName: 'Emp Level',
+        flex: 1.2,
+            minWidth: 120,
+        renderCell: (params) => (
+          <Box sx={{ color: '#374151' }}>
+            {params.value}
+          </Box>
+        ),
+      }]
+    : []),
+
+        {
+                field: 'CUR_REV_ID',
+                headerName: 'Rev ID',
+                flex: 1,
+                minWidth: 60,
+                renderCell: (params) => (
+                    <Box sx={{ color: '#374151' }}>
+                       {params.value || "00"} 
+                    </Box>
+                ),
+            },
+
+    {
+      field: 'PLANT',
+      headerName: 'Plant',
+      flex: 1.2,
+      minWidth: 200,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+{
+  field: 'DEPT',
+  headerName: 'Dept',
+  flex: 1,
+  minWidth: 140,
+  renderCell: (params) => {
+    const groupCode = params.row.GROUP_CODE;
+    const dept = params.value;
 
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
-              {name}
-            </h3>
-            <button onClick={onClose} className="p-2 hover:bg-white rounded-lg">
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto p-4 bg-gray-100">
-            {isPDF ? (
-              <iframe src={url} className="w-full h-full min-h-[600px] border-0 rounded-lg" title={name} />
+      <Box sx={{ color: '#374151', fontWeight: 500 }}>
+        {groupCode ? `${groupCode} - ${dept}` : dept}
+      </Box>
+    );
+  },
+},
+
+  {
+  field: 'MANPOWER_DESG',
+  headerName: 'Desig/Position',
+  flex: 1.2,
+  minWidth: 130,
+  renderCell: (params) => {
+    const subCode = params.row.SUB_CODE;
+    const value = params.value || 'N/A';
+
+    return (
+      <Box
+        sx={{
+          color: '#374151',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}
+      >
+        {subCode ? `${subCode} - ${value}` : value}
+      </Box>
+    );
+  },
+},
+
+    {
+      field: 'RAISER',
+      headerName: 'Raiser',
+      flex: 1,
+      minWidth: 90,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: 'RAISER_DATE',
+      headerName: 'Raiser Dt',
+      flex: 1,
+      minWidth: 80,
+     renderCell: (params) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+
+    const [day, month, year] = parts;
+
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  };
+
+  return (
+    <Box sx={{ color: '#6b7280' }}>
+      {formatDate(params.value)}
+    </Box>
+  );
+}
+    },
+    
+    {
+      field: 'ACTION_STATUS',
+      headerName: 'Status',
+      flex: 0.8,
+      minWidth: 90,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          sx={{
+            background: '#10b981',
+            color: 'white',
+            fontSize: '11px',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            textTransform: 'capitalize',
+            fontWeight: 600,
+            minWidth: 'auto',
+            boxShadow: 'none',
+            '&:hover': {
+              background: '#059669',
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Shortlisted
+        </Button>
+      ),
+    },
+    {
+  field: 'verifyEmail',
+  headerName: 'Mail Status',
+  flex: 0.8,
+  minWidth: 120,
+  renderCell: (params) => {
+    const status = params.row.StatusTrack;
+
+    return (
+      <Button
+        variant="contained"
+        size="small"
+        sx={{
+          background: status == "WIP" ? '#10b981' : '#522952',
+          color: 'white',
+          fontSize: '11px',
+          padding: '3px 10px',
+          borderRadius: '4px',
+          textTransform: 'capitalize',
+          fontWeight: 600,
+          minWidth: 'auto',
+          boxShadow: 'none',
+        }}
+      >
+        {status ? 'Email Sent' : 'Pending'}
+      </Button>
+    );
+  },
+},
+    {
+      field: 'USER_EMAIL',
+      headerName: 'User Email',
+      flex: 1.5,
+      minWidth: 180,
+      renderCell: (params) => {
+        // Use saved email from emailInputs or from row data
+        const currentEmail = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+        return (
+          <Tooltip 
+            title={currentEmail || 'No email entered'} 
+            arrow 
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: '#1f2937',
+                  fontSize: '12px',
+                  padding: '6px 10px',
+                  borderRadius: '4px',
+                  '& .MuiTooltip-arrow': {
+                    color: '#1f2937',
+                  },
+                },
+              },
+            }}
+          >
+            <TextField
+              size="small"
+              type="email"
+              placeholder="Enter email address"
+              value={currentEmail}
+              onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '12px',
+                  height: '32px',
+                  '& fieldset': {
+                    borderColor: '#d1d5db',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#667eea',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                  },
+                },
+              }}
+            />
+          </Tooltip>
+        );
+      },
+    },
+    {
+      field: 'ACTIONS',
+      headerName: 'Actions',
+      flex: 1,
+      minWidth: 110,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => {
+        const isSubmitting = submitting[params.row.CHILD_CASEID] || false;
+        const email = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+        return (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => handleSubmitEmail(params.row.CHILD_CASEID, params.row)}
+            disabled={isSubmitting || !email}
+            sx={{
+              background: isSubmitting
+                ? '#9ca3af'
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              fontSize: '10px',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              textTransform: 'capitalize',
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+              minWidth: '90px',
+              '&:hover': {
+                background: isSubmitting
+                  ? '#9ca3af'
+                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                transform: isSubmitting ? 'none' : 'translateY(-1px)',
+                boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+              },
+              '&:disabled': {
+                background: '#9ca3af',
+                color: '#e5e7eb',
+              }
+            }}
+          >
+            {isSubmitting ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CircularProgress size={12} sx={{ color: 'white' }} />
+                Sending...
+              </Box>
             ) : (
-              <img src={url} alt={name} className="max-w-full h-auto mx-auto rounded-lg" />
+              'Send Email'
             )}
-          </div>
-        </div>
-      </div>
-    );
+          </Button>
+        );
+      },
+    },
+  ];
+
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '90%',
+    maxWidth: '1200px',
+    bgcolor: '#ffffff',
+    border: 'none',
+    borderRadius: '16px',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    p: 0,
+    maxHeight: '80vh',
+    overflow: 'hidden'
   };
 
-  // Custom Input Field with Approve Button
-  const FieldWithApprove = ({ label, value, documentId, documentPath, fieldName, icon: Icon }) => {
-    const isApproved = approvedDocs[documentId];
-
-  
-    const isRejected = rejectedDocs[documentId];
-
-    return (
-      <div style={{ position: 'relative', marginBottom: '8px' }}>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-          {label}
-        </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '2px 8px',
-            height: '32px',
-            border: `1.5px solid ${isApproved ? '#10b981' : isRejected ? '#ef4444' : '#93c5fd'}`,
-            borderRadius: '6px',
-            background: '#f9f9f9',
-          }}>
-            {Icon && <Icon size={14} color="#1e40af" />}
-            <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '500' }}>
-              {value || 'N/A'}
-            </span>
-          </div>
-          
-          {documentPath && (
-            <button
-              onClick={() => handleViewDocument(documentPath, label)}
-              style={{
-                padding: '6px 10px',
-                background: '#dbeafe',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#1e40af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <Eye size={14} /> View
-            </button>
-          )}
-
-          {documentId && !isApproved && !isRejected && (
-            <button
-              onClick={() => handleApprove(documentId, label, documentPath)}
-              style={{
-                padding: '6px 12px',
-                background: '#10b981',
-                border: 'none',
-                borderRadius: '6px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <ThumbsUp size={14} /> Approve
-            </button>
-          )}
-
-          {isApproved && (
-            <span style={{
-              padding: '6px 12px',
-              background: '#d1fae5',
-              border: '1px solid #10b981',
-              borderRadius: '6px',
-              color: '#047857',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              <CheckCircle size={14} /> Approved
-            </span>
-          )}
-
-          {isRejected && (
-            <span style={{
-              padding: '6px 12px',
-              background: '#fee2e2',
-              border: '1px solid #ef4444',
-              borderRadius: '6px',
-              color: '#b91c1c',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              <XCircle size={14} /> Rejected
-            </span>
-          )}
-        </div>
-      </div>
-    );
+  const handleBack = () => {
+    navigate('/');
   };
 
-  // Select Field with Approve Button
-  const SelectFieldWithApprove = ({ label, value, documentId, documentPath, fieldName, icon: Icon }) => {
-    const isApproved = approvedDocs[documentId];
-    const isRejected = rejectedDocs[documentId];
+  return (
+    <Box sx={{
+      maxWidth: "1400px",
+      margin: "0 auto",
+      padding: "12px",
+    }}>
+     
+        <Box sx={{
+          width: "100%",
+          borderRadius: "10px",
+          overflow: "hidden",
+          border: "1px solid #dfe5f1ff",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+        }}>
+          <DataGrid
+            rows={filteredData}
+            columns={columns}
+            getRowId={(row) => row.task_assignment_id}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            pageSizeOptions={[10, 20, 50]}
+            rowHeight={40}
+            loading={loading}
+            columnHeaderHeight={40}
+            slots={{
+              loadingOverlay: () => (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50px',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    zIndex: 10,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                    <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
+                      Loading...
+                    </Typography>
+                  </Box>
+                </Box>
+              ),
+            }}
+            sx={{
+              border: "none",
+              "& .MuiDataGrid-columnHeaders": {
+                borderBottom: "2px solid #e2e8f0",
+              },
+              "& .MuiDataGrid-columnHeader": {
+                fontWeight: 600,
+                fontSize: "13px",
+                color: "#1e293b",
+                backgroundColor: "rgba(188, 198, 238, 0.5)",
+                borderRight: "1px solid #e2e8f0",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid #f1f5f9",
+                borderRight: "1px solid #f1f5f9",
+                fontSize: "12px",
+                color: "#374151",
+                padding: "0 8px",
+                display: "flex",
+                alignItems: "center",
+              },
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "#f0f9ff",
+                cursor: "pointer",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                minHeight: "48px",
+              },
+            }}
+          />
+        </Box>
+     
 
-    return (
-      <div style={{ marginBottom: '8px' }}>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-          {label}
-        </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ 
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '2px 8px',
-            height: '32px',
-            border: `1.5px solid ${isApproved ? '#10b981' : isRejected ? '#ef4444' : '#93c5fd'}`,
-            borderRadius: '6px',
-            background: '#f9f9f9',
-          }}>
-            {Icon && <Icon size={14} color="#1e40af" />}
-            <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '500' }}>
-              {value || 'N/A'}
-            </span>
-          </div>
-          
-          {documentPath && (
-            <button
-              onClick={() => handleViewDocument(documentPath, label)}
-              style={{
-                padding: '6px 10px',
-                background: '#dbeafe',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#1e40af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <Eye size={14} /> View
-            </button>
-          )}
-
-          {documentId && !isApproved && !isRejected && (
-            <button
-              onClick={() => handleApprove(documentId, label, documentPath)}
-              style={{
-                padding: '6px 12px',
-                background: '#10b981',
-                border: 'none',
-                borderRadius: '6px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              <ThumbsUp size={14} /> Approve
-            </button>
-          )}
-
-          {isApproved && (
-            <span style={{
-              padding: '6px 12px',
-              background: '#d1fae5',
-              border: '1px solid #10b981',
-              borderRadius: '6px',
-              color: '#047857',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              <CheckCircle size={14} /> Approved
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // File Upload Field with Approve Button
-//   const FileFieldWithApprove = ({ label, documentPath, documentId, fieldName }) => {
-//     const isApproved = approvedDocs[documentId];
-//     const isRejected = rejectedDocs[documentId];
-
-// const handleDownloadDocument = async (url, label) => {
-//     if (!url || url === 'N/A') return;
-    
-//     try {
-//       Swal.fire({
-//         title: 'Downloading...',
-//         text: 'Please wait...',
-//         allowOutsideClick: false,
-//         didOpen: () => Swal.showLoading()
-//       });
-
-//       const response = await fetch(url);
-//       const blob = await response.blob();
-//       const downloadUrl = window.URL.createObjectURL(blob);
-//       const link = document.createElement('a');
-//       link.href = downloadUrl;
-      
-//       let filename = label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-//       const ext = url.split('.').pop().split('?')[0];
-//       filename += `.${ext}`;
-      
-//       link.download = filename;
-//       document.body.appendChild(link);
-//       link.click();
-//       document.body.removeChild(link);
-//       window.URL.revokeObjectURL(downloadUrl);
-      
-//       Swal.close();
-//       Swal.fire({
-//         icon: 'success',
-//         title: 'Downloaded!',
-//         text: `${label} downloaded successfully`,
-//         timer: 1500,
-//         showConfirmButton: false
-//       });
-//     } catch (error) {
-//       Swal.close();
-//       Swal.fire({
-//         icon: 'error',
-//         title: 'Download Failed',
-//         text: 'Failed to download the file. Please try again.',
-//       });
-//     }
-//   };
-    
-
-//     return (
-//       <div style={{ marginBottom: '8px' }}>
-//         <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-//           {label}
-//         </label>
-//         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-//           <div style={{ 
-//             flex: 1,
-//             display: 'flex',
-//             alignItems: 'center',
-//             justifyContent: 'space-between',
-//             padding: '2px 8px',
-//             height: '32px',
-//             border: `1.5px dashed ${isApproved ? '#10b981' : isRejected ? '#ef4444' : '#93c5fd'}`,
-//             borderRadius: '6px',
-//             background: '#f0f7ff',
-//           }}>
-//             <span style={{ fontSize: '8px', color: '#1e3a8a' }}>
-//               {documentPath ? '📄 Doc Available' : 'No file uploaded'}
-//             </span>
-         
-          
-//           {documentPath && (
-//             <button
-//               onClick={() => handleViewDocument(documentPath, label)}
-//               style={{
-//                 padding: '6px 10px',
-//                 background: '#dbeafe',
-//                 border: 'none',
-//                 borderRadius: '6px',
-//                 color: '#1e40af',
-//                 cursor: 'pointer',
-//                 display: 'flex',
-//                 alignItems: 'center',
-//                 gap: '4px',
-//                 fontSize: '11px',
-//                 fontWeight: '600'
-//               }}
-//             >
-//               <Eye size={14} />
-//             </button>
-//           )}</div>
-
-//           {documentId && !isApproved && !isRejected && documentPath && (
-//             <button
-//               onClick={() => handleApprove(documentId, label, documentPath)}
-//               style={{
-//                 padding: '6px 12px',
-//                 background: '#10b981',
-//                 border: 'none',
-//                 borderRadius: '6px',
-//                 color: 'white',
-//                 cursor: 'pointer',
-//                 display: 'flex',
-//                 alignItems: 'center',
-//                 gap: '4px',
-//                 fontSize: '11px',
-//                 fontWeight: '600'
-//               }}
-//             >
-//               <ThumbsUp size={14} /> Approve
-//             </button>
-//           )
-//           }
-
-//           {isApproved && (
-//             <span style={{
-//               padding: '6px 12px',
-//               background: '#d1fae5',
-//               border: '1px solid #10b981',
-//               borderRadius: '6px',
-//               color: '#047857',
-//               display: 'flex',
-//               alignItems: 'center',
-//               gap: '4px',
-//               fontSize: '11px',
-//               fontWeight: '600'
-//             }}>
-//               <CheckCircle size={14} /> Approved
-//             </span>
-//           )}
-//         </div>
-//       </div>
-//     );
-//   };
-
-const FileFieldWithApprove = ({ label, documentPath, documentId, fieldName }) => {
-    const isApproved = approvedDocs[documentId];
-    const isRejected = rejectedDocs[documentId];
-
-const handleDownloadDocument = async (url, label) => {
-  if (!url || url === 'N/A') return;
-
-  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URLss}${url}`;
-  
-  let ext = fullUrl.split('.').pop().split('?')[0].toLowerCase();
-  if (!ext || ext.length > 5) ext = 'file';
-
-  const filename = label.replace(/[^a-z0-9]/gi, '_').toLowerCase() + `.${ext}`;
-
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
-  const isPDF = ext === 'pdf';
-
-  try {
-    Swal.fire({
-      title: 'Downloading...',
-      text: 'Please wait...',
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    if (isImage) {
-      // ✅ Canvas trick — converts image to blob without CORS issue
-      const img = new Image();
-      img.crossOrigin = 'anonymous'; // request CORS headers from server
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = fullUrl + '?t=' + Date.now(); // cache-bust
-      });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      // ✅ Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
-
-        Swal.close();
-        Swal.fire({
-          icon: 'success',
-          title: 'Downloaded!',
-          text: `${label} downloaded successfully`,
-          timer: 1500,
-          showConfirmButton: false
-        });
-      }, `image/${ext === 'jpg' ? 'jpeg' : ext}`);
-
-    } else if (isPDF) {
-      // ✅ For PDF — open in new tab (only option without backend for PDFs)
-      Swal.close();
-      window.open(fullUrl, '_blank');
-      Swal.fire({
-        icon: 'info',
-        title: 'PDF Opened',
-        text: 'Use Ctrl+S or browser menu to save the PDF.',
-        timer: 3000,
-        showConfirmButton: false
-      });
-
-    } else {
-      // ✅ Other files — direct link attempt
-      const link = document.createElement('a');
-      link.href = fullUrl;
-      link.download = filename;
-      link.target = '_blank';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      Swal.close();
-    }
-
-  } catch (error) {
-    console.error('Download error:', error);
-    Swal.close();
-
-    // ✅ Final fallback — just open in new tab
-    Swal.fire({
-      icon: 'warning',
-      title: 'Auto-download failed',
-      text: 'Opening in new tab — use Ctrl+S to save manually.',
-      timer: 2500,
-      showConfirmButton: false
-    });
-    setTimeout(() => window.open(fullUrl, '_blank'), 1000);
-  }
-};
-
-    return (
-      <div style={{ marginBottom: '8px' }}>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#1e40af', marginBottom: '2px' }}>
-          {label}
-        </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-
-          {/* ✅ Main box */}
-          <div style={{
-            flex: 1,
+      {/* Manpower Modal */}
+      <Modal open={manpowerOpen} onClose={handleCloseModal}>
+        <Box sx={modalStyle}>
+          <Box sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '2px 8px',
-            height: '32px',
-            border: `1.5px dashed ${isApproved ? '#10b981' : isRejected ? '#ef4444' : '#93c5fd'}`,
-            borderRadius: '6px',
-            background: '#f0f7ff',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px',
           }}>
-            <span style={{ fontSize: '8px', color: '#1e3a8a' }}>
-              {documentPath ? '📄 Doc Available' : 'No file uploaded'}
-            </span>
-
-            {/* ✅ View + Download buttons INSIDE the box */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-
-              {/* View Button */}
-              {documentPath && (
-                <button
-                  onClick={() => handleViewDocument(documentPath, label)}
-                  title="View"
-                  style={{
-                    padding: '4px 8px',
-                    background: '#dbeafe',
-                    border: 'none',
-                    borderRadius: '5px',
-                    color: '#1e40af',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}
-                >
-                  <Eye size={13} />
-                </button>
-              )}
-
-              {/* ✅ Download Button */}
-              {documentPath && (
-                <button
-                  onClick={() => handleDownloadDocument(documentPath, label)}
-                  title="Download"
-                  style={{
-                    padding: '4px 8px',
-                    background: '#dcfce7',
-                    border: 'none',
-                    borderRadius: '5px',
-                    color: '#166534',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}
-                >
-                  <Download size={13} />
-                </button>
-              )}
-
-            </div>
-          </div>
-
-          {/* ✅ Approve Button OUTSIDE box */}
-          {documentId && !isApproved && !isRejected && documentPath && (
-            <button
-              onClick={() => handleApprove(documentId, label, documentPath)}
-              style={{
-                padding: '6px 12px',
-                background: '#10b981',
-                border: 'none',
-                borderRadius: '6px',
+            <Typography variant="h6" sx={{
+              fontWeight: 600,
+              fontSize: '16px',
+              flex: 1,
+              textAlign: 'center',
+            }}>
+              Case ID: {selectedRowData?.CASEID} | Process: {selectedRowData?.PROCESSNAME}
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseModal}
+              sx={{
                 color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '600'
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                ml: 1,
               }}
             >
-              <ThumbsUp size={14} /> Approve
-            </button>
-          )}
-
-          {/* ✅ Approved Badge */}
-          {isApproved && (
-            <span style={{
-              padding: '6px 12px',
-              background: '#d1fae5',
-              border: '1px solid #10b981',
-              borderRadius: '6px',
-              color: '#047857',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              <CheckCircle size={14} /> Approved
-            </span>
-          )}
-
-          {/* ✅ Rejected Badge */}
-          {isRejected && (
-            <span style={{
-              padding: '6px 12px',
-              background: '#fee2e2',
-              border: '1px solid #ef4444',
-              borderRadius: '6px',
-              color: '#b91c1c',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              <XCircle size={14} /> Rejected
-            </span>
-          )}
-
-        </div>
-      </div>
-    );
-  };
-
-
-  const sectionHeading = {
-    fontSize: '14px',
-    fontWeight: 'bold',
-    marginBottom: '8px',
-    color: '#1e40af',
-    borderBottom: '2px solid #dbeafe',
-    paddingBottom: '6px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
-  };
-
-  if (!open) return null;
-
-  return (
-    <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className={`bg-white rounded-2xl ${isMaximized ? 'w-full h-full' : 'max-w-7xl w-full max-h-[90vh]'} overflow-hidden shadow-2xl flex flex-col`}>
-          
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-4 flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-bold">{data?.NAME || 'N/A'}</h2>
-              <p className="text-blue-100 text-sm">
-                {data?.EMAIL || 'N/A'} | {data?.PHONE_NUMBER || 'N/A'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 hover:bg-blue-500 rounded-lg">
-                <Maximize2 size={18} />
-              </button>
-              <button onClick={onClose} className="p-2 hover:bg-blue-500 rounded-lg">
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable Content - EXACT Recruitment Form UI */}
-          <div className="overflow-y-auto flex-1 p-6 bg-gray-50">
-            <div style={{
-              maxWidth: '100%',
-              width: '100%',
-              margin: '0 auto',
-              padding: '8px',
-              borderRadius: '10px',
-              boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
-              border: '3px solid #87b5ee',
-              background: 'linear-gradient(to bottom right, #eff6ff, #dbeafe, #eff6ff)'
-            }}>
-              
-              {/* ================= BASIC INFORMATION ================= */}
-              <div style={{
-                background: 'linear-gradient(160deg, #fafafa 0%, #ffffff 40%, #ffffff 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(30,64,175,0.08)',
-                padding: '8px',
-                border: '1.5px solid rgba(147,197,253,0.6)',
-                marginBottom: '8px',
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-                  background: 'linear-gradient(90deg, #1e40af 0%, #2563eb 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%)',
-                }} />
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <h2 style={{
-                    ...sectionHeading,
-                    margin: 0,
-                    fontSize: '13px',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    background: 'linear-gradient(90deg, #1e3a8a, #1d4ed8, #0284c7)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                  }}>
-                    <User size={16} />
-                    Basic Information
-                  </h2>
-                  <button onClick={() => toggleSection('basicInfo')} style={{
-                    background: 'linear-gradient(135deg, #1e40af, #2563eb)',
-                    border: 'none', color: '#fff', borderRadius: '6px',
-                    width: '20px', height: '20px', fontSize: '9px', fontWeight: '700',
-                    cursor: 'pointer'
-                  }}>
-                    {openSections.basicInfo ? '▲' : '▼'}
-                  </button>
-                </div>
-
-                {openSections.basicInfo && (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px' }}>
-                      
-                      {/* Row 1: Case Info */}
-                      <FieldWithApprove 
-                        label="Child Case ID" 
-                        value={data?.CHILD_CASEID} 
-                        icon={Hash}
-                      />
-                      <FieldWithApprove 
-                        label="Plant" 
-                        value={data?.PLANT} 
-                        icon={Building}
-                      />
-                      <FieldWithApprove 
-                        label="Department" 
-                        value={data?.DEPT} 
-                        icon={Briefcase}
-                      />
-                      <FieldWithApprove 
-                        label="Name *" 
-                        value={data?.NAME} 
-                        icon={User}
-                      />
-
-                      {/* Row 2: Personal Info */}
-                      <SelectFieldWithApprove 
-                        label="Gender *" 
-                        value={data?.GENDER} 
-                        icon={Users}
-                      />
-                      
-                      <SelectFieldWithApprove 
-                        label="Marital Status *" 
-                        value={data?.MARITAL_STATUS} 
-                        icon={Heart}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="Languages Known *" 
-                        value={data?.LANG_KNOWN} 
-                        icon={Globe}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="Mother Tongue *" 
-                        value={data?.MOTHER_TONGUE} 
-                        icon={Book}
-                      />
-
-                      {/* Row 3: Contact Info */}
-                      {/* <FieldWithApprove 
-                        label="Email *" 
-                        value={data?.EMAIL} 
-                        icon={Mail}
-                        
-                      /> */}
-                      
-                      <FieldWithApprove 
-                        label="Phone Number *" 
-                        value={data?.PHONE_NUMBER} 
-                        icon={Phone}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="Emergency Contact *" 
-                        value={data?.EMER_CONTACT_NUM} 
-                        icon={PhoneCall}
-                      />
-
-                      {/* Row 4: DOB & Age */}
-                      <FieldWithApprove 
-                        label="DOB (as per original) *" 
-                        value={data?.ORIGINAL_DOB} 
-                        icon={Calendar}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="DOB (as per Aadhar) *" 
-                        value={data?.DOB_ASPER_ADHAR} 
-
-                        icon={Calendar}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="Age" 
-                        value={data?.AGE} 
-                        icon={Award}
-                      />
-
-                      <FieldWithApprove 
-                        label="Highest Qualification *" 
-                        value={data?.HIGHEST_QUA} 
-                        icon={GraduationCap}
-                      />
-
-                      {/* Row 5: ID Numbers */}
-                      <FieldWithApprove 
-                        label="Aadhaar Number *" 
-                        value={data?.AADHAR_NUMBER} 
-              
-                        icon={IdCard}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="PAN Number *" 
-                        value={data?.PAN_NUM} 
-                        icon={CreditCard}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="UAN Number *" 
-                        value={data?.UAN_NUM} 
-                 
-                        icon={Shield}
-                      />
-                      
-                      <FieldWithApprove 
-                        label="ESI Number *" 
-                        value={data?.ESI_NUM} 
-                        icon={CreditCardIcon}
-                      />
-
-                      {/* Row 6: Source Info */}
-                      <SelectFieldWithApprove 
-                        label="Source *" 
-                        value={data?.SRC_TYPE} 
-                        icon={Info}
-                      />
-                      
-                      {data?.SRC_TYPE === "reference" && (
-                        <>
-                          <FieldWithApprove 
-                            label="Reference Name *" 
-                            value={data?.SRC_REFER_NAME} 
-                            icon={UserCheck}
-                          />
-                          <FieldWithApprove 
-                            label="Reference Dept *" 
-                            value={data?.SRC_REFER_DEPT} 
-                            icon={Building}
-                          />
-                        </>
-                      )}
-
-                      {/* Row 7: Blood Group */}
-                      <SelectFieldWithApprove 
-                        label="Blood Group" 
-                        value={data?.BLOOD_GROUP} 
-                        icon={Heart}
-                      />
-
-                      {/* Row 8: Passport & License */}
-                      <FieldWithApprove 
-                        label="Passport Number" 
-                        value={data?.PASSPORT_NUMBER} 
-                        documentId={data?.documents?.PASSPORT_DocId}
-                        documentPath={data?.documents?.PASSPORT_FILE}
-                        icon={FileSignature}
-                      />
-                      
-                      {data?.PASSPORT_NUMBER && (
-                        <FieldWithApprove 
-                          label="Passport Expiry Date *" 
-                          value={data?.PASSPORT_EXPIRY} 
-                          icon={Calendar}
-                        />
-                      )}
-
-                      <FieldWithApprove 
-                        label="Driving Licence Number" 
-                        value={data?.DRIVING_LICENSE} 
-                        documentId={data?.documents?.LICENSE_DocId}
-                        documentPath={data?.documents?.LICENSE_FILE}
-                        icon={IdCard}
-                      />
-                      
-                      {data?.DRIVING_LICENSE && (
-                        <FieldWithApprove 
-                          label="Driving Licence Expiry *" 
-                          value={data?.DRIVING_LICENSE_EXPIRY} 
-                          icon={Calendar}
-                        />
-                      )}
-
-                       <FieldWithApprove 
-                          label="Total Experince *" 
-                          value={data?.TOTAL_EXP} 
-                          icon={Calendar}
-                        />
-
-
-                    </div>
-
-                    {/* ADDRESS SECTION */}
-                    <div style={{ marginTop: '12px', borderTop: '1px solid rgba(147,197,253,0.45)', paddingTop: '8px' }}>
-                      
-                      {/* Permanent Address */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-                          <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px' }}>
-                            Permanent Address <span style={{ color: '#ef4444' }}>*</span>
-                          </h3>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '6px' }}>
-                          <FieldWithApprove label="H.No / Street" value={data?.HNO} icon={Home} />
-                          <FieldWithApprove label="Village / City" value={data?.CITY} icon={Map} />
-                          <FieldWithApprove label="Mandal" value={data?.MANDAL} icon={MapPin} />
-                          <FieldWithApprove label="District" value={data?.DISTRICT} icon={Flag} />
-                          <FieldWithApprove label="State" value={data?.STATE} icon={Globe} />
-                          <FieldWithApprove label="Pincode" value={data?.PINCODE} icon={Hash} />
-                        </div>
-                      </div>
-
-                      {/* Same as Permanent Radio */}
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', marginBottom: '12px' }}>
-  <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>
-    Same as Permanent Address?
-  </span>
-
-  <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-    <input type="radio" checked={sameAsPermanent} readOnly /> Yes
-  </label>
-
-  <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-    <input type="radio" checked={!sameAsPermanent} readOnly /> No
-  </label>
-</div>
-
-                      {/* Present Address */}
-                      {!sameAsPermanent && (
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-                            <h3 style={{ fontSize: '11px', fontWeight: '700', color: '#1d4ed8', padding: '2px 10px', background: 'rgba(37,99,235,0.10)', border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: '20px' }}>
-                              Present Address <span style={{ color: '#ef4444' }}>*</span>
-                            </h3>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '6px' }}>
-                            <FieldWithApprove label="H.No / Street" value={data?.PRESENT_HNO} icon={Home} />
-                            <FieldWithApprove label="Village / City" value={data?.PRESENT_CITY} icon={Map} />
-                            <FieldWithApprove label="Mandal" value={data?.PRESENT_MANDAL} icon={MapPin} />
-                            <FieldWithApprove label="District" value={data?.PRESENT_DISTRICT} icon={Flag} />
-                            <FieldWithApprove label="State" value={data?.PRESENT_STATE} icon={Globe} />
-                            <FieldWithApprove label="Pincode" value={data?.PRESENT_PINCODE} icon={Hash} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* DOCUMENT UPLOADS SECTION */}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '8px',
-                      background: 'linear-gradient(135deg, #ffffff, #f0f7ff)',
-                      borderRadius: '8px',
-                      border: '1.5px dashed #71acef',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <FileUp size={13} color="#0f3f8b" />
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#0f3f8b', textTransform: 'uppercase' }}>
-                          Document Uploads
-                        </span>
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                        <FileFieldWithApprove 
-                          label="Aadhaar Card *" 
-                          documentPath={data?.documents?.Aadhar_certi}
-                          documentId={data?.documents?.Aadhar_DocId}
-                        />
-                        
-                        <FileFieldWithApprove 
-                          label="Resume with Sign *" 
-                          documentPath={data?.documents?.RESUME_UPLOAD}
-                          documentId={data?.documents?.RESUME_DocId}
-                        />
-                        
-                        <FileFieldWithApprove 
-                          label="PAN Card *" 
-                          documentPath={data?.documents?.Pan_certi}
-                          documentId={data?.documents?.pan_DocId}
-                        />
-                        
-                        <FileFieldWithApprove 
-                          label="Photo *" 
-                          documentPath={data?.documents?.photo}
-                          documentId={data?.documents?.photo_DocId}
-
-                        />
-                        
-                        <FileFieldWithApprove 
-                          label="UAN Document" 
-                          documentPath={data?.documents?.UAN_FILE}
-                          documentId={data?.documents?.UAN_DocId}
-                        />
-
-
-                          
-
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* ================= EDUCATION DETAILS ================= */}
-              <div style={{
-                background: '#f8fbff',
-                borderRadius: '10px',
-                boxShadow: '0 2px 8px rgba(30,64,175,0.08)',
-                padding: '8px',
-                border: '1px solid #dbeafe',
-                marginBottom: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <h2 style={{
-                    margin: 0,
-                    fontSize: '13px',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    color: '#1e3a8a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}>
-                    <GraduationCap size={15} />
-                    Education Details
-                  </h2>
-                  <button onClick={() => toggleSection('education')} style={{
-                    background: '#1e40af', border: 'none', color: '#fff',
-                    borderRadius: '5px', width: '20px', height: '20px',
-                    fontSize: '9px', fontWeight: '700', cursor: 'pointer'
-                  }}>
-                    {openSections.education ? '▲' : '▼'}
-                  </button>
-                </div>
-
-                {openSections.education && (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ background: 'rgb(115, 164, 244)', color: '#ffffff' }}>
-                          <th style={{ padding: '8px' }}>Qualification</th>
-                          <th style={{ padding: '8px' }}>School/College</th>
-                          <th style={{ padding: '8px' }}>University/Board</th>
-                          <th style={{ padding: '8px' }}>Per (%)</th>
-                          <th style={{ padding: '8px' }}>Passed Year</th>
-                          <th style={{ padding: '8px' }}>Certificate</th>
-                          <th style={{ padding: '8px' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* SSC */}
-                        <tr style={{ background: '#ffffff' }}>
-                          <td style={{ padding: '6px' }}>
-                            <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                              SSC (10th) *
-                            </span>
-                          </td>
-                          <td style={{ padding: '6px' }}>{data?.SSC_SCHOOL_NAME || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.SSC_BOARD || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>{data?.SSC_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.SSC_PASSED_YEAR || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>
-                            {data?.documents?.['10th_certi'] ? (
-                              <button onClick={() => handleViewDocument(data?.documents['10th_certi'], '10th Certificate')}
-                                style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                <Eye size={14} />
-                              </button>
-                            ) : 'N/A'}
-                          </td>
-                          <td style={{ padding: '6px' }}>
-                            {data?.documents?.Tenth_DocId && !approvedDocs[data.documents.Tenth_DocId] && (
-                              <button onClick={() => handleApprove(data.documents.Tenth_DocId, '10th Certificate', data.documents['10th_certi'])}
-                                style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                Approve
-                              </button>
-                            )}
-                            {data?.documents?.Tenth_DocId && approvedDocs[data.documents.Tenth_DocId] && (
-                              <span style={{ color: '#10b981', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <CheckCircle size={14} /> Approved
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-
-                        {/* Intermediate */}
-                        <tr style={{ background: '#f9f9f9' }}>
-                          <td style={{ padding: '6px' }}>
-                            <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                              Intermediate *
-                            </span>
-                          </td>
-                          <td style={{ padding: '6px' }}>{data?.INTER_COLLEGE_NAME || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.INTER_BOARD || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>{data?.INTER_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.INTER_PASSED_YEAR || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>
-                            {data?.documents?.Inter_certi ? (
-                              <button onClick={() => handleViewDocument(data.documents.Inter_certi, 'Intermediate Certificate')}
-                                style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                <Eye size={14} />
-                              </button>
-                            ) : 'N/A'}
-                          </td>
-                          <td style={{ padding: '6px' }}>
-                            {data?.documents?.Inter_DocId && !approvedDocs[data.documents.Inter_DocId] && (
-                              <button onClick={() => handleApprove(data.documents.Inter_DocId, 'Intermediate Certificate', data.documents.Inter_certi)}
-                                style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                Approve
-                              </button>
-                            )}
-                            {data?.documents?.Inter_DocId && approvedDocs[data.documents.Inter_DocId] && (
-                              <span style={{ color: '#10b981', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <CheckCircle size={14} /> Approved
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-
-                        {/* Graduation */}
-                        <tr style={{ background: '#ffffff' }}>
-                          <td style={{ padding: '6px' }}>
-                            <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                              Degree/B.Tech *
-                            </span>
-                          </td>
-                          <td style={{ padding: '6px' }}>{data?.GRAD_COLLEGE_NAME || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.DEGREE_UNIVERSITY || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>{data?.BTECH_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.DEGREE_PASSED_YEAR || 'N/A'}</td>
-                          <td style={{ padding: '6px', textAlign: 'center' }}>
-                            {data?.documents?.Gradu_certi ? (
-                              <button onClick={() => handleViewDocument(data.documents.Gradu_certi, 'Degree Certificate')}
-                                style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                <Eye size={14} />
-                              </button>
-                            ) : 'N/A'}
-                          </td>
-                          <td style={{ padding: '6px' }}>
-                            {data?.documents?.grad_DocId && !approvedDocs[data.documents.grad_DocId] && (
-                              <button onClick={() => handleApprove(data.documents.grad_DocId, 'Degree Certificate', data.documents.Gradu_certi)}
-                                style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                Approve
-                              </button>
-                            )}
-                            {data?.documents?.grad_DocId && approvedDocs[data.documents.grad_DocId] && (
-                              <span style={{ color: '#10b981', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <CheckCircle size={14} /> Approved
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-
-                        {/* PG (Optional) */}
-                        {data?.PG_COLLEGE_NAME && (
-                          <tr style={{ background: '#f9f9f9' }}>
-                            <td style={{ padding: '6px' }}>
-                              <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                                PG
-                              </span>
-                            </td>
-                            <td style={{ padding: '6px' }}>{data?.PG_COLLEGE_NAME}</td>
-                            <td style={{ padding: '6px' }}>{data?.PG_UNIVERSITY}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PG_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.PG_PASSED_YEAR}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>
-                              {data?.documents?.PG_FILENAME && (
-                                <button onClick={() => handleViewDocument(data.documents.PG_FILENAME, 'PG Certificate')}
-                                  style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                  <Eye size={14} />
-                                </button>
-                              )}
-                            </td>
-                            <td style={{ padding: '6px' }}>
-                              {data?.documents?.pg_DocId && !approvedDocs[data.documents.pg_DocId] && (
-                                <button onClick={() => handleApprove(data.documents.pg_DocId, 'PG Certificate', data.documents.PG_FILENAME)}
-                                  style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                  Approve
-                                </button>
-                              )}
-                              {data?.documents?.pg_DocId && approvedDocs[data.documents.pg_DocId] && (
-                                <span style={{ color: '#10b981', fontSize: '11px' }}>✓ Approved</span>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-
-
-                         {data?.PHD_COLLEGE_NAME && (
-                          <tr style={{ background: '#f9f9f9' }}>
-                            <td style={{ padding: '6px' }}>
-                              <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                                PHD
-                              </span>
-                            </td>
-                            <td style={{ padding: '6px' }}>{data?.PHD_COLLEGE_NAME}</td>
-                            <td style={{ padding: '6px' }}>{data?.PHD_UNIVERSITY}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PHD_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.PHD_PASSED_YEAR}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>
-                              {data?.documents?.PHD_FILENAME && (
-                                <button onClick={() => handleViewDocument(data.documents.PHD_FILENAME, 'PHD Certificate')}
-                                  style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                  <Eye size={14} />
-                                </button>
-                              )}
-                            </td>
-                            <td style={{ padding: '6px' }}>
-                              {data?.documents?.PHD_DocId && !approvedDocs[data.documents.PHD_DocId] && (
-                                <button onClick={() => handleApprove(data.documents.PHD_DocId, 'PG Certificate', data.documents.PHD_FILENAME)}
-                                  style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                  Approve
-                                </button>
-                              )}
-                              {data?.documents?.PHD_DocId && approvedDocs[data.documents.PHD_DocId] && (
-                                <span style={{ color: '#10b981', fontSize: '11px' }}>✓ Approved</span>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                        <div>
-                        {data?.OTHER_FILENAME}
-                        </div>
-
-
-                           {data?.OTHER_COLLEGE_NAME && (
-                          <tr style={{ background: '#f9f9f9' }}>
-                            <td style={{ padding: '6px' }}>
-                              <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                                Others
-                              </span>
-                            </td>
-                            <td style={{ padding: '6px' }}>{data?.OTHER_COLLEGE_NAME}</td>
-                            <td style={{ padding: '6px' }}>{data?.OTHER_UNIVERSITY}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>{data?.OTHER_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.OTHER_PASSED_YEAR}</td>
-                            <td style={{ padding: '6px', textAlign: 'center' }}>
-                              {data?.documents?.OTHER_FILENAME && (
-                                <button onClick={() => handleViewDocument(data.documents.OTHER_FILENAME, 'Others Certificate')}
-                                  style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                  <Eye size={14} />
-                                </button>
-                              )}
-                            </td>
-                            <td style={{ padding: '6px' }}>
-                              {data?.documents?.OTHER_DocId && !approvedDocs[data.documents.OTHER_DocId] && (
-                                <button onClick={() => handleApprove(data.documents.OTHER_DocId, 'PG Certificate', data.documents.OTHER_FILENAME)}
-                                  style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                  Approve
-                                </button>
-                              )}
-                              {data?.documents?.OTHER_DocId && approvedDocs[data.documents.OTHER_DocId] && (
-                                <span style={{ color: '#10b981', fontSize: '11px' }}>✓ Approved</span>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* ================= EXPERIENCE DETAILS ================= */}
-              <div style={{
-                background: 'linear-gradient(160deg, #ffffff 0%, #feffff 40%, #fbfbfb 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(30,64,175,0.08)',
-                padding: '14px',
-                border: '1.5px solid rgba(147,197,253,0.6)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h2 style={{
-                    ...sectionHeading,
-                    margin: 0,
-                    fontSize: '13px',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    background: 'linear-gradient(90deg, #1e3a8a, #1d4ed8, #0284c7)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    display: 'flex', alignItems: 'center', gap: '6px'
-                  }}>
-                    <Briefcase size={16} />
-                    Experience Details
-                  </h2>
-                  <button onClick={() => toggleSection('experience')} style={{
-                    background: 'linear-gradient(135deg, #1e40af, #2563eb)',
-                    border: 'none', color: '#fff', borderRadius: '6px',
-                    width: '22px', height: '22px', fontSize: '9px', fontWeight: '700',
-                    cursor: 'pointer'
-                  }}>
-                    {openSections.experience ? '▲' : '▼'}
-                  </button>
-                </div>
-
-                 {openSections.experience && (
-                  <>
-                  
-               <>
-  {data?.experienceData?.map((exp, index) => {
-
-  
-    const isCurrentCompany = exp.COMPANY_STAGES == "0";
-
-    return (
-      <div
-        key={index}
-        style={{
-          marginBottom: "10px",
-          padding: "10px",
-          border: "1.5px solid rgba(147,197,253,0.5)",
-          borderRadius: "10px",
-          background: isCurrentCompany ? "#f0f7ff" : "#ffffff",
-        }}
-      >
-        <div style={{ marginBottom: "8px" }}>
-          <span
-            style={{
-              padding: "2px 10px",
-              background: isCurrentCompany
-                ? "rgba(37,99,235,0.10)"
-                : "rgba(147,197,253,0.20)",
-              borderRadius: "20px",
-              fontSize: "11px",
-              fontWeight: "700",
-              color: isCurrentCompany ? "#1d4ed8" : "#3b82f6",
-            }}
-          >
-            {isCurrentCompany ? "Current Company" : "Previous Company"}
-          </span>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "8px",
-          }}
-        >
-          <FieldWithApprove
-            label="Company Name"
-            value={exp.COMPANY_NAME}
-            icon={Building}
-          />
-
-
-          <FieldWithApprove
-            label="Designation"
-            value={exp.DESIGNATION}
-            icon={Briefcase}
-          />
-          <FieldWithApprove
-            label="From Date"
-         value={exp.START_DATE ? dayjs(exp.START_DATE).format("DD/MM/YYYY") : "N/A"}
-            icon={Calendar}
-          />
-          <FieldWithApprove
-            label="To Date"
-             value={exp.END_DATE ? dayjs(exp.END_DATE).format("DD/MM/YYYY") : "N/A"}
-            icon={Calendar}
-          />
-
-        {  isCurrentCompany &&  <FieldWithApprove label="noticePeriod" value={exp.noticePeriod} icon={Clock} /> }
-       
-          
-
-
-        </div>
-
-{
-  isCurrentCompany &&
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
- <FileFieldWithApprove 
-                          label="offer letter *" 
-                          documentPath={data?.documents?.offer_letter}
-                          documentId={data?.documents?.offer_letter_DocId}
-                        />
-
-          <FileFieldWithApprove 
-                          label="Exp letter *" 
-                          documentPath={data?.documents?.exp_letter }
-                          documentId={data?.documents?.exp_letter_DocId}
-                        />
-
-
-                          <FileFieldWithApprove 
-                          label="Reliving letter *" 
-                          documentPath={data?.documents?.relieving_letter}
-                          documentId={data?.documents?.relieving_letter_DocId}
-                        />
-
-
-     <FileFieldWithApprove 
-                          label="Bank statements *" 
-                          documentPath={data?.documents?.bank_statements}
-                          documentId={data?.documents?.bank_statements_DocId}
-                        />
-
-
-                        
-     <FileFieldWithApprove 
-                          label="Pay slips *" 
-                          documentPath={data?.documents?.payslips}
-                          documentId={data?.documents?.payslips_DocId}
-                        />
-
-   
-
-
-                           
-</div>
-}
-
-
-          
-      </div>
-    );
-  })}
-</>
-
-
-
-
-                    {/* CTC Information */}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '10px',
-                      background: 'rgba(37,99,235,0.05)',
-                      borderRadius: '8px',
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                      gap: '8px'
-                    }}>
-                      <FieldWithApprove label="Current CTC" value={data?.CURRENT_CTC ? `₹${data.CURRENT_CTC}` : 'N/A'} icon={DollarSign} />
-                      <FieldWithApprove label="Expected CTC" value={data?.EXP_CTC ? `₹${data.EXP_CTC}` : 'N/A'} icon={DollarSign} />
-                 
-                    </div>
-                  </>
-                )}
-                
-              </div>
-
-              {/* ================= REMARKS SECTION ================= */}
-              <div style={{
-                marginTop: '12px',
-                padding: '12px',
-                background: '#fff',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <MessageCircle size={16} color="#4b5563" />
-                  <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Verification Remarks</h3>
-                </div>
-                <textarea
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="Add verification remarks here..."
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-      <div className="bg-white px-6 py-4 flex justify-between items-center border-t">
-  {/* Left side buttons */}
-  <div className="flex gap-3">
-    <button 
-      onClick={onClose} 
-      className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50"
-    >
-      Cancel
-    </button>
-
-
-    <button
-  onClick={handleEditClick}
-  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition"
->
-  <Edit className="w-4 h-4" />
-  Edit
-</button>
-
-
-    <button
-      onClick={() => {
-        localStorage.setItem('VerifyPreviewPage', JSON.stringify({ data, sameAsPermanent }));
-        navigate('/VerifyPreviewPage');
-      }}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-    >
-      <Eye className="w-4 h-4" />
-      Preview
-    </button>
-
-    <button 
-      onClick={handleReject} 
-      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 flex items-center gap-2"
-    >
-      <XCircle size={16} /> Reject
-    </button>
-  </div>
-
-  {/* Right side button */}
-  <div>
-    <button 
-      onClick={handleSubmit} 
-      disabled={loading}
-      className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
-    >
-      <CheckCircle size={16} /> {loading ? 'Submitting...' : 'Verify & Submit'}
-    </button>
-  </div>
-</div>
-        </div>
-      </div>
-
-      {viewingDoc && (
-        <DocumentViewer
-          url={viewingDoc}
-          name={viewingDocName}
-          onClose={() => setViewingDoc(null)}
-        />
-      )}
-    </>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Box sx={{
+            padding: '20px',
+            maxHeight: 'calc(80vh - 80px)',
+            overflowY: 'auto',
+            backgroundColor: '#f8fafc',
+          }}>
+            {processCaseId.type === "view" ? (
+              <DataFlow
+                processname={processCaseId.processname ?? ""}
+                caseId={processCaseId.caseId ?? ""}
+                mode={processCaseId.type ?? ""}
+              />
+            ) : (
+              <ManPowerView caseId={processCaseId.caseId ?? ""} />
+            )}
+          </Box>
+        </Box>
+      </Modal>
+    </Box>
   );
 };
 
-export default VerificationDetailsModal;
+export default RecruitmentMail;

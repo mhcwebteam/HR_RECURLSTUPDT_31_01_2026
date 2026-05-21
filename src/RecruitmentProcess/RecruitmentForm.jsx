@@ -20,7 +20,7 @@ const [updatedFiles, setUpdatedFiles] = useState([])
 
   // ✅ CORRECT ORDER
   const [formStatus, setFormStatus] = useState('');
-  const isPending = formStatus === 'pending' || formStatus === 'submit';
+      const isPending = formStatus === 'pending';
   const [removedFiles, setRemovedFiles] = useState([]); // ✅ NEW: Track removed files with their metadata
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",

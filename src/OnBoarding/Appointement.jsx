@@ -155,8 +155,8 @@ Designation:
       DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
       Location: rowData.location,
       Reporting_to: rowData.fullData?.reporting_to || 'HOD',
-      CTC_Lpa: rowData.offered_ctc || rowData.current_ctc || 'Not Specified',
-      CTC_in_words: convertToWords(rowData.offered_ctc || rowData.current_ctc || '0'),
+      offer_ctc: rowData?.fullData?.offer_ctc,
+      CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
       Probation: '6 months',
       Company: 'Company Name',
       email: rowData.email,
@@ -175,82 +175,120 @@ Designation:
     setAccepted(false);
   };
 
-  const generatePDF = async () => {
-    if (!accepted) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Acceptance Required',
-        text: 'Please accept the terms and conditions before downloading the appointment letter.',
-        confirmButtonColor: '#667eea',
-      });
-      return;
-    }
 
-    setIsGeneratingPDF(true);
-    
-    try {
-      const element = document.getElementById('appointment-letter-content');
-      if (!element) {
-        throw new Error('Appointment letter content not found');
+  // ── helper: finds a blank (white) pixel row near the ideal cut ──
+const findSafeBreak = (canvas, idealY, searchRange = 100) => {
+  const ctx = canvas.getContext('2d');
+
+  const isBlankRow = (y) => {
+    if (y <= 0 || y >= canvas.height) return false;
+    const pixels = ctx.getImageData(0, y, canvas.width, 1).data;
+    for (let x = 0; x < pixels.length; x += 4) {
+      if (pixels[x] < 240 || pixels[x + 1] < 240 || pixels[x + 2] < 240) {
+        return false; // found a non-white pixel → has text
       }
-
-      // Use html2canvas with better settings for quality
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      const pdf = new jsPDF({
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      });
-      
-      const imgWidth = 190; // mm (A4 width minus margins)
-      const pageHeight = 277; // mm (A4 height minus margins)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add additional pages if needed
-      while (heightLeft > 0) {
-        position = position - pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 10, position + 10, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`Appointment_Letter_${appointmentLetterData.reference_no_App}.pdf`);
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: 'Appointment letter downloaded successfully!',
-        timer: 1500,
-        showConfirmButton: false
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'PDF Generation Failed',
-        text: 'Error generating PDF. Please try again.',
-        confirmButtonColor: '#667eea',
-      });
-    } finally {
-      setIsGeneratingPDF(false);
     }
+    return true; // fully white row → safe to cut here
   };
 
+  // Search upward first (don't push content forward unnecessarily)
+  for (let y = Math.floor(idealY); y >= Math.max(0, idealY - searchRange); y--) {
+    if (isBlankRow(y)) return y;
+  }
+  // Fallback: search downward
+  for (let y = Math.floor(idealY); y <= Math.min(canvas.height, idealY + searchRange); y++) {
+    if (isBlankRow(y)) return y;
+  }
+
+  return Math.floor(idealY); // no blank row found → use ideal cut
+};
+
+const generatePDF = async () => {
+  if (!accepted) return;
+  setIsGeneratingPDF(true);
+
+  try {
+    const element = document.getElementById('appointment-letter-content');
+
+    // Temporarily unlock element height so html2canvas captures everything
+    const prev = {
+      height:    element.style.height,
+      overflow:  element.style.overflow,
+      maxHeight: element.style.maxHeight,
+    };
+    element.style.height    = 'auto';
+    element.style.overflow  = 'visible';
+    element.style.maxHeight = 'none';
+
+    const canvas = await html2canvas(element, {
+      scale:       2,
+      useCORS:     true,
+      logging:     false,
+      backgroundColor: '#ffffff',
+      windowWidth:  element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      scrollY:      0,
+    });
+
+    // Restore styles
+    element.style.height    = prev.height;
+    element.style.overflow  = prev.overflow;
+    element.style.maxHeight = prev.maxHeight;
+
+    const pdf           = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pdfWidth      = pdf.internal.pageSize.getWidth();   // 210 mm
+    const pdfHeight     = pdf.internal.pageSize.getHeight();  // 297 mm
+    const margin        = 12;
+    const printW        = pdfWidth  - margin * 2;             // 186 mm
+    const printH        = pdfHeight - margin * 2;             // 273 mm
+    const pxPerMm       = canvas.width / printW;
+    const pageHeightPx  = printH * pxPerMm;                   // canvas px per page
+
+    let srcY        = 0;
+    let isFirstPage = true;
+
+    while (srcY < canvas.height) {
+      const idealCut = srcY + pageHeightPx;
+
+      // Last page → take everything remaining
+      const cutY = idealCut >= canvas.height
+        ? canvas.height
+        : findSafeBreak(canvas, idealCut);
+
+      const slicePx = cutY - srcY;
+      if (slicePx <= 0) break; // safety guard
+
+      // Draw slice onto a temp canvas
+      const pageCanvas      = document.createElement('canvas');
+      pageCanvas.width      = canvas.width;
+      pageCanvas.height     = Math.ceil(slicePx);
+      const ctx             = pageCanvas.getContext('2d');
+      ctx.fillStyle         = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(
+        canvas,
+        0, srcY,  canvas.width, slicePx,   // source
+        0, 0,     canvas.width, slicePx    // destination
+      );
+
+      const imgData       = pageCanvas.toDataURL('image/jpeg', 0.98);
+      const sliceHeightMm = slicePx / pxPerMm;
+
+      if (!isFirstPage) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', margin, margin, printW, sliceHeightMm);
+
+      srcY        = cutY;
+      isFirstPage = false;
+    }
+
+    pdf.save(`Appointment_Letter_${appointmentLetterData?.reference_no_App}.pdf`);
+
+  } catch (error) {
+    console.error('PDF generation error:', error);
+  } finally {
+    setIsGeneratingPDF(false);
+  }
+};
 
 
 
@@ -699,11 +737,22 @@ Designation:
   };
 
   return (
-    <Box sx={{
+<Box
+
+
+
+  sx={{
+      fontFamily: "'Times New Roman', serif",
+
       maxWidth: "1400px",
-      margin: "0 auto",
-      padding: "12px",
-    }}>
+  minHeight: "297mm",
+  backgroundColor: "#fff",
+  fontSize: "12px",
+  lineHeight: 1.5,
+  overflow: "hidden",
+
+}}
+>
       <Paper sx={{
         width: '100%',
         padding: 2,
@@ -862,204 +911,272 @@ Designation:
         aria-labelledby="appointment-letter-modal"
       >
         <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '1px solid #e2e8f0' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
-              Appointment Letter
-            </Typography>
-            <IconButton onClick={handleCloseAppointmentModal} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          
-          <Box id="appointment-letter-content" sx={{ fontFamily: "'Times New Roman', serif", lineHeight: 1.6, p: 2 }}>
-            {/* Header with Reference Number */}
-            <Typography variant="body1" sx={{ textAlign: 'right', mb: 2 }}>
-              <strong>Ref No:</strong> {appointmentLetterData?.reference_no_App}
-            </Typography>
-            
-        <Typography variant="body1" sx={{ textAlign: 'right', mb: 4 }}>
-  <strong>Date:</strong>{" "}
-  {appointmentLetterData?.date
-    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
-    : ''}
-</Typography>
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '1px solid #e2e8f0' }}>
+    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+      Appointment Letter
+    </Typography>
+    <IconButton onClick={handleCloseAppointmentModal} size="small">
+      <CloseIcon />
+    </IconButton>
+  </Box>
+  
+  <Box id="appointment-letter-content" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: 1.6, p: 2 }}>
+    {/* Header with Reference Number */}
+    <Box sx={{ textAlign: 'right', mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      <strong>Ref No:</strong> {appointmentLetterData?.reference_no_App}
+    </Box>
+    
+    <Box sx={{ textAlign: 'right', mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      <strong>Date:</strong>{" "}
+      {appointmentLetterData?.date
+        ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+        : ''}
+    </Box>
 
-            {/* Recipient Address */}
-            <Typography variant="body1" sx={{ mb: 1 }}>To,</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {appointmentLetterData?.Name_of_the_candidate},
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 4 }}>
-              {appointmentLetterData?.Address_of_The_CandidateP1}
-            </Typography>
+    {/* Recipient Address */}
+    <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>To,</Box>
+    <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      {appointmentLetterData?.Name_of_the_candidate},
+    </Box>
+    <Box sx={{ mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      {appointmentLetterData?.Address_of_The_CandidateP1}
+    </Box>
 
-            {/* Title */}
-            <Typography variant="h5" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
-              LETTER OF APPOINTMENT AS {appointmentLetterData?.Designation}
-            </Typography>
+    {/* Title */}
+    <Box sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold', fontSize: '18px', fontFamily: 'Arial, sans-serif' }}>
+      LETTER OF APPOINTMENT AS {appointmentLetterData?.Designation}
+    </Box>
 
-            {/* Salutation */}
-            <Typography variant="body1" sx={{ mb: 4 }}>
-              Dear {appointmentLetterData?.Name_of_the_candidate},
-            </Typography>
+    {/* Salutation */}
+    <Box sx={{ mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      Dear {appointmentLetterData?.Name_of_the_candidate},
+    </Box>
 
-            {/* Introduction */}
-            <Typography variant="body1" sx={{ mb: 4 }}>
-              With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
-            </Typography>
+    {/* Introduction */}
+    <Box sx={{ mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
+    </Box>
 
-            {/* Terms and Conditions */}
-            <Box sx={{ mb: 4 }}>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>1. Date of Appointment:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  Your date of commencement on job is from {appointmentLetterData?.date
-    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
-    : ''}.
-                </Typography>
-              </Box>
+    {/* Terms and Conditions */}
+    <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>1. Date of Appointment:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Your date of commencement on job is from {appointmentLetterData?.date
+            ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+            : ''}.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>2. Place of Posting & Transfer:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  Your initial place of posting will be at our {appointmentLetterData?.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>2. Place of Posting & Transfer:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Your initial place of posting will be at our {appointmentLetterData?.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>3. Reporting:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  You will report to {appointmentLetterData?.Reporting_to} or any other authority assigned by Management from time to time.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>3. Reporting:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will report to {appointmentLetterData?.Reporting_to} or any other authority assigned by Management from time to time.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>4. Remuneration:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  You will be paid ₹{appointmentLetterData?.CTC_Lpa} ({appointmentLetterData?.CTC_in_words}) per annum, which will be subject to the statutory deductions as per the Company's policy and Government norms.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>4. Remuneration:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will be paid ₹{appointmentLetterData?.offer_ctc} ({appointmentLetterData?.CTC_in_words}) per annum, which will be subject to the statutory deductions as per the Company's policy and Government norms.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>5. Probation:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  You will be on probation for a period of {appointmentLetterData?.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>5. Probation:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will be on probation for a period of {appointmentLetterData?.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>6. Reference Checks:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  Your employment is subject to the obtaining or receiving satisfactory responses from the reference checks conducted by the company.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>6. Reference Checks:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Your employment is subject to the obtaining or receiving satisfactory responses from the reference checks conducted by the company.
+        </Box>
+      </Box>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>7. General:</Typography>
-                <Typography variant="body1" sx={{ pl: 2 }}>
-                  a) You will be eligible for Leaves/Weekly Offs/National & Festival Holidays as may be announced by the Company from time to time.<br />
-                  b) If at any stage, during the tenure of your services, it is found that the information furnished by you, regarding your age, educational qualifications, and previous experience is false; your services will be terminated without any notice.<br />
-                  c) You shall inform the Company about the changes in personal information, if any, like change in residential address, acquiring higher qualifications etc. from time to time.<br />
-                  d) During the period of employment with the Company, you will be in whole-time service of the Company and shall not engage or associate yourself directly / indirectly or in any other manner whatsoever.
-                </Typography>
-              </Box>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>7. General:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          a) You will be eligible for Leaves/Weekly Offs/National & Festival Holidays as may be announced by the Company from time to time.<br />
+          b) If at any stage, during the tenure of your services, it is found that the information furnished by you, regarding your age, educational qualifications, and previous experience is false; your services will be terminated without any notice.<br />
+          c) You shall inform the Company about the changes in personal information, if any, like change in residential address, acquiring higher qualifications etc. from time to time.<br />
+          d) During the period of employment with the Company, you will be in whole-time service of the Company and shall not engage or associate yourself directly / indirectly or in any other manner whatsoever.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>8. Company's Property:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will always maintain in good condition Company's property, which may be entrusted to you for official use during the course of your employment and shall return all such property to the Company prior to relinquishment of your charge, failing which the cost of the same will be recovered from you by the Company.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>9. Service Rules and Procedure:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will be governed by the service rules, regulations and such other practices, systems, policies and procedures such as office working hours. Leaves, Standing Orders and Other Service Conditions of the place of business of the Company as applicable and in force from time to time of the Company as notified and in force. Further, you shall follow in true spirit and abide by the Standard Operating Procedures of the Company.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>10. Confidential Information:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          During your period of employment, you have to maintain complete secrecy on projects which you will be working on, about clients and the Company. Any confidential information/ Data/ Drawings (Soft copy or hard copy) shall not be shared with anyone sharing of confidential information outside the Company will be considered as offense. Any breach of the above conditions will result in termination of employment with immediate effect and appropriate damages will be claimed accordingly.<br /><br />
+          You will maintain strict confidential of the information which is provided or given to your access by the Employer during the term of your employment. Any breach of the same will result in breach of the terms of employment and the employer has right to take stringent action against you which might result taking appropriate criminal action. The Employer has a right to file a civil case as well as to recover the damages caused due to such breach by the Employee.<br /><br />
+          The Employee agrees not to use or cause to be used for own benefit or for the benefit of any third parties or to disclose to any third party in any manner, directly or indirectly the information concerning to the internal organization or business structure of Employer or its customers, or the work assignments or capabilities of any officer or Employee, Proprietary Information, Customer's Confidential Information, trade secrets or any other Knowledge or information, except that which is public knowledge, or relating to the business of Employer or its customers at any time during or after Employee's terms of employment with Employer, without prior written consent of Employer.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>11. Applicability of Company Policy:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          The Company shall be entitled to make policy declarations from time to time pertaining to matters like leave entitlement, maternity leave, employees' benefits, working hours, transfer policies, etc., and may alter the same from time to time at its sole discretion. All such policy decisions of the Company shall be binding on you and shall override this Letter of Appointment to that extent.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>12. Substance Abuse:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          a) The Unauthorized possession, distribution, consumption, dispensing or misuse of substances (banned drugs, tobacco, gutka, pan masala etc.) and alcoholic beverages, are in violation of Company regulations and is prohibited.<br />
+          b) Employees violating this policy will be subject to strict disciplinary action up to and including termination of employment.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>13. Separation:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Your services are terminable by 1 month's notice or 1 month's gross salary during probation period and 2 months' notice or 2 months' gross salary in lieu on either side after completion of probation period.<br /><br />
+          a) In case of notice by you intending the desire to leave the services, the Company shall have the option to accept the resignation with immediate effect and relieve you from the services with immediate effect, earlier than the expiry of the notice period given by you.<br /><br />
+          b) No Notice is required for termination of services in case of any act of misconduct, Incompetence, poor work performance, incapability, failure to carry out reasonable instructions, redundancy, insubordination fraud theft or breach of any of the terms of employment implied or expressed on your part.<br /><br />
+          c) In case if you quit employment or remain absent from duty without any notice before the expiry of the Notice Period, in lieu of notice you shall not only forfeit your salary by way of liquidated damages, Company shall also be entitled to deduct an appropriate amount of liquidated damages from or against any money found due to You by the Company on any account whatsoever.<br /><br />
+          d) No notice period shall be required in cases where a transfer is denied, the existing assignment is completed, the project scope is reduced or modified by the concerned department, the project is handed over upon completion, or in any other situation involving suspension of work or reduction in scope.<br /><br />
+          e) Any Information furnished by you in your Bio-Data and at the time of interview is found incorrect in our enquiry in future, your candidature will automatically be cancelled and your service through this appointment will stand terminated.<br /><br />
+          f) In case you remain absent without prior permission or authorization or over stay leave for eight consecutive calendar days beyond the period of leave originally granted or subsequently extended it shall be deemed that you have vacated your employment in the company on your own accord without notice and the same shall be treated as abandonment of employment on your part.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>14. Retirement:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          You will retire on attaining the age of superannuation, which shall be 60 years, unless you are otherwise disqualified due to continued ill health, physical or mental disability.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>15. Full and Final Settlement:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          a) Handover of Charge: You shall properly hand over all the documents to your reporting manager or any other authority assigned by the company.<br /><br />
+          b) Your dues, if any, shall be cleared after receiving the Company assets, No dues certificate from the Reporting Manager's and HOD's.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>16. Jurisdiction:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          All disputes shall be subject to the exclusive jurisdiction of Courts at Ranga Reddy District, Telangana.
+        </Box>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>17. Acceptance of our offer:</Box>
+        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Please acknowledge the receipt of Appointment Order by signing and returning the duplicate copy.
+        </Box>
+      </Box>
+    </Box>
+
+    {/* Signature Section */}
+    <Box sx={{ mt: 6 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          <Box sx={{ mb: 1 }}>For {appointmentLetterData?.Company}</Box>
+          <Box sx={{ mb: 4, fontWeight: 'bold' }}>Sudeep Kumar K</Box>
+          <Box>Vice President - HR</Box>
+        </Box>
+        
+        <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          <Divider sx={{ width: 200, mb: 2 }} />
+          <Box>Signature of the Employee</Box>
+        </Box>
+      </Box>
+
+      {/* Acceptance Checkbox */}
+      <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              color="primary"
+            />
+          }
+          label={
+            <Box sx={{ fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+              I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
             </Box>
+          }
+        />
+      </Box>
 
-            {/* Signature Section */}
-            <Box sx={{ mt: 6 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="body1" sx={{ mb: 1 }}>
-                    For {appointmentLetterData?.Company}
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 4, fontWeight: 'bold' }}>
-                    Sudeep Kumar K
-                  </Typography>
-                  <Typography variant="body1">Vice President - HR</Typography>
-                </Box>
-                
-                <Box sx={{ textAlign: 'center' }}>
-                  <Divider sx={{ width: 200, mb: 2 }} />
-                  <Typography variant="body1">Signature of the Employee</Typography>
-                </Box>
-              </Box>
+      {accepted && (
+        <Alert severity="success" sx={{ mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          Terms accepted on {appointmentLetterData?.date
+            ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+            : ''}
+        </Alert>
+      )}
+    </Box>
+  </Box>
 
-              {/* Acceptance Checkbox */}
-              <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={accepted}
-                      onChange={(e) => setAccepted(e.target.checked)}
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Typography variant="body1">
-                      I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
-                    </Typography>
-                  }
-                />
-              </Box>
-
-              {accepted && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Terms accepted on   {appointmentLetterData?.date
-    ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
-    : ''}
-                </Alert>
-              )}
-            </Box>
-          </Box>
-
-       <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 flex-wrap">
-
-  {/* DOWNLOAD BUTTON (PRIMARY) */}
+  <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 flex-wrap">
+    <button
+      onClick={handleCloseAppointmentModal}
+      className="px-6 py-2.5 rounded-lg font-semibold
+      border border-indigo-500 text-indigo-600
+      hover:bg-indigo-50 hover:-translate-y-0.5
+      transition-all duration-200"
+    >
+      Close
+    </button>
 
     <button
-    onClick={handleCloseAppointmentModal}
-    className="px-6 py-2.5 rounded-lg font-semibold
-    border border-indigo-500 text-indigo-600
-    hover:bg-indigo-50 hover:-translate-y-0.5
-    transition-all duration-200"
-  >
-    Close
-  </button>
+      onClick={generatePDF}
+      disabled={!accepted || isGeneratingPDF}
+      className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
+      bg-gradient-to-r from-indigo-500 to-indigo-600
+      hover:from-indigo-600 hover:to-indigo-700
+      hover:-translate-y-0.5 transition-all duration-200
+      shadow-md hover:shadow-lg
+      disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+    >
+      <Download size={18} />
+      Appointment Letter
+    </button>
 
-
-  <button
-    onClick={generatePDF}
-    disabled={!accepted || isGeneratingPDF}
-    className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
-    bg-gradient-to-r from-indigo-500 to-indigo-600
-    hover:from-indigo-600 hover:to-indigo-700
-    hover:-translate-y-0.5 transition-all duration-200
-    shadow-md hover:shadow-lg
-    disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
-  >
-    <Download size={18} />
-      Appoinment Letter
-  </button>
-
-  {/* CLOSE BUTTON (SECONDARY) */}
-
-  {/* VERIFY & SUBMIT (SUCCESS) */}
-<button
-  onClick={handleSubmitAppointment}
-  disabled={!accepted || isGeneratingPDF}
-  className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
-  bg-gradient-to-r from-green-500 to-green-600
-  hover:from-green-600 hover:to-green-700
-  hover:-translate-y-0.5 transition-all duration-200
-  shadow-md hover:shadow-lg
-  disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
->
-  <CheckCircle2 size={18} />
-  {isGeneratingPDF ? "Processing..." : "Verify & Submit"}
-</button>
-
-</div>
-        </Box>
+    <button
+      onClick={handleSubmitAppointment}
+      disabled={!accepted || isGeneratingPDF}
+      className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-white
+      bg-gradient-to-r from-green-500 to-green-600
+      hover:from-green-600 hover:to-green-700
+      hover:-translate-y-0.5 transition-all duration-200
+      shadow-md hover:shadow-lg
+      disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+    >
+      <CheckCircle2 size={18} />
+      {isGeneratingPDF ? "Processing..." : "Verify & Submit"}
+    </button>
+  </div>
+</Box>
       </Modal>
 
 
