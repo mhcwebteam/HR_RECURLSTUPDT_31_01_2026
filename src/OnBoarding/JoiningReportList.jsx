@@ -3,7 +3,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip } from '@mui/material';
+import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip, Modal, IconButton, Divider, FormControlLabel, Checkbox, Alert, Dialog, DialogContent, DialogActions, MenuItem, CircularProgress } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,6 +19,8 @@ import Swal from 'sweetalert2';
 import { FilePen } from 'lucide-react';
 import JoiningReportForm from './JoiningReportForm.jsx';
 import axiosInstance from '../Config/axiosConfig.jsx';
+import { Close } from '@mui/icons-material';
+
 
 const JoiningReportList = () => {
   const [joiningData, setJoiningData] = useState([]);
@@ -33,12 +35,170 @@ const [savedRows, setSavedRows] = useState({});
 const [openReportModal, setOpenReportModal] = useState(false);
 
     const [joiningDates, setJoiningDates] = useState({});
+    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+const [selectedPlant, setSelectedPlant] = useState("");
+const [plants, setPlants] = useState([]);
+const [submitLoading, setSubmitLoading] = useState(false);
+
+const [formData, setFormData] = useState({
+  reporting_to: '',
+  probation: '',
+});
+
 
   const navigate = useNavigate();
   const [Token, useToken] = useState(() => {
     const userToken = JSON.parse(localStorage.getItem('userInfo'));
     return userToken ? userToken : null;
   })
+
+
+  const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+
+  const zmmPlants = async () => {
+    if (!Token?.token) return;
+
+    try {
+        const response = await axiosInstance.get(
+            `${API_BASE_URL}/zmm-plants`,
+            {
+                headers: { Authorization: `Bearer ${Token.token}` },
+            }
+        );
+
+        setPlants(response.data.data); // ✅ store data here
+
+        console.log(response.data, "plants response");
+
+    } catch (err) {
+        console.error("Error fetching plants", err);
+    }
+};
+
+    useEffect(() => {
+zmmPlants()
+    },[])
+
+
+    
+
+const resetForm = () => {
+  setFormData({
+    reporting_to: "",
+    probation: "",
+  });
+
+  setSelectedPlant("");
+  setSelectedRow(null);
+};
+const handleSubmit = async () => {
+  const selectedPlantObj = plants.find(
+    (p) => p.BUKRS === selectedPlant
+  );
+
+  if (!selectedPlantObj) {
+    Swal.fire({
+      icon: "error",
+      title: "Select plant first",
+    });
+    return;
+  }
+
+  if (!selectedRow?.CHILD_CASEID) {
+    Swal.fire({
+      icon: "error",
+      title: "Case ID missing",
+    });
+    return;
+  }
+
+  // ✅ Confirmation popup
+  const confirmResult = await Swal.fire({ 
+    title: 'Are you sure?', 
+    text: "Do you want to submit onboard details?", 
+    icon: 'question', 
+    showCancelButton: true, 
+    confirmButtonText: 'Yes, Submit', 
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#494b9b', 
+    cancelButtonColor: '#6b7280', 
+    customClass: { container: 'swal2-container-custom' },
+    didOpen: () => { 
+      const swalContainer = document.querySelector('.swal2-container'); 
+      if (swalContainer) { 
+        swalContainer.style.zIndex = '9999'; 
+      } 
+    } 
+  }); 
+  
+  if (!confirmResult.isConfirmed) { 
+    return; 
+  }
+
+  try {
+    setSubmitLoading(true);
+
+    const payload = {
+      case_id: selectedRow?.CHILD_CASEID,
+      REPORTING_TO: formData.reporting_to,
+      PROBITION: formData.probation,
+      ONBOARD_PLANT: `${selectedPlantObj.BUKRS}-${selectedPlantObj.COMP_CODE_DESC}`,
+      assigned_to: Token?.employee,
+    };
+
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/onboard-details`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${Token.token}`,
+        },
+      }
+    );
+
+    if (response.data.status) {  // ✅ Check if status is true
+      await Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: response.data.message || "Onboard details submitted successfully!",  // ✅ Fixed text
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // ✅ Reset Form
+      resetForm();
+
+      // ✅ Close Dialog
+      setDetailsDialogOpen(false);
+
+      // ✅ Refresh Table Data
+      await joinData();
+    } else {
+      throw new Error(response.data.message || "Something went wrong");
+    }
+
+  } catch (error) {
+    console.error("Submit error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error?.response?.data?.message || error.message || "Something went wrong",
+    });
+  } finally {
+    setSubmitLoading(false);
+  }
+};
+
 
   //----------------------------JoiningDataStart------------------------//
   const joinData = async () => {
@@ -87,8 +247,8 @@ SUB_POST: item?.SUB_POST,
   MANPOWER_DESG: item.MANPOWER_DESG || 'N/A',
 RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 hrEvaluationFile:item?.hrEvaluationFile,
-  
-
+   REF_NO: item?.REF_NO,
+  joining_updated_at:  item?.joining_updated_at,
     joining_status: 'Joined',
     offer_letter: item.OfferLetterFlag ?? '',
     bgv_status: item.verification_status ?? '',
@@ -97,6 +257,17 @@ hrEvaluationFile:item?.hrEvaluationFile,
     hr_owner: item.CURRENT_USER,
     created_at: item.created_at,
     fullData: item,
+      appointmentDetailsFilled: !!(
+          item.ONBOARD_PLANT && 
+          item.REPORTING_TO && 
+          item.PROBITION
+        ),
+
+           existingDetails: {
+          ONBOARD_PLANT: item.ONBOARD_PLANT || '',
+          REPORTING_TO: item.REPORTING_TO || '',
+          PROBITION: item.PROBITION || ''
+        },
   }));
 
 
@@ -281,6 +452,27 @@ const handleSaveJoiningDate = async (user) => {
 };
 
 
+const handleViewRejectedDetails = (row) => {
+  setSelectedRow(row);
+
+  setFormData({
+    reporting_to: row.existingDetails?.REPORTING_TO || '',
+    probation: row.existingDetails?.PROBITION || '',
+  });
+
+  // Also pre-select the plant if exists
+  if (row.existingDetails?.ONBOARD_PLANT) {
+    // Extract BUKRS from "2400-My Home Prop Dev Pvt Ltd"
+    const plantCode = row.existingDetails.ONBOARD_PLANT.split('-')[0];
+    setSelectedPlant(plantCode);
+  } else {
+    setSelectedPlant("");
+  }
+
+  setDetailsDialogOpen(true);
+};
+
+
 
     const hasTypePlant = filteredData?.some(row => row.TYPE_PLANT);
 
@@ -309,35 +501,85 @@ const handleSaveJoiningDate = async (user) => {
   field: 'joiningreport',
   headerName: 'Joining Report',
   flex: 0.5,
-  minWidth: 120,
+  minWidth: 160,
   sortable: false,
+
   renderCell: (params) => (
-    <Box sx={{ display: 'flex', gap: 1 }}>
-      <Button
-        size="small"
-        variant="contained"
-        startIcon={<FilePen size={13} strokeWidth={2} />}
-        onClick={() => handleReportClick(params.row)}
-        sx={{
-          fontSize: '10px',
-          padding: '4px 10px',
-          borderRadius: '8px',
-          textTransform: 'capitalize',
-          backgroundColor: '#0ea5e9',
-          fontWeight: 600,
-          boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)',
-          '&:hover': {
-            backgroundColor: '#0284c7',
-            boxShadow: '0 4px 6px rgba(14, 165, 233, 0.3)',
-            transform: 'translateY(-1px)',
-          },
-        }}
-      >
-        Click Here
-      </Button>
-    </Box>
+    <Tooltip
+      title={
+        params.row.appointmentDetailsFilled
+          ? "View Joining Report"
+          : "Please fill appointment details first"
+      }
+    >
+      <span>
+        <Button
+          size="small"
+          variant="contained"
+          onClick={() =>
+            params.row.appointmentDetailsFilled &&
+            handleReportClick(params.row)
+          }
+          disabled={!params.row.appointmentDetailsFilled}
+          sx={{
+            textTransform: 'capitalize',
+            borderRadius: '8px',
+            fontSize: '12px',
+            px: 2,
+            py: 0.5,
+            backgroundColor: params.row.appointmentDetailsFilled
+              ? '#667eea'
+              : '#cbd5e1',
+            boxShadow: 'none',
+
+            '&:hover': {
+              backgroundColor: params.row.appointmentDetailsFilled
+                ? '#5a67d8'
+                : '#cbd5e1',
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Click Here
+        </Button>
+      </span>
+    </Tooltip>
   ),
 },
+
+
+     {
+    field: 'Appoinment',
+    headerName: 'Appoinment Details',
+    flex: 0.6,
+    minWidth: 140,
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => {
+    
+  
+  
+      return (
+        <Button
+          variant="contained"
+          size="small"
+         onClick={() => handleViewRejectedDetails(params.row)}
+          sx={{
+            backgroundColor: '#3b82f6',
+            textTransform: 'capitalize',
+            fontSize: '11px',
+            padding: '3px 10px',
+            borderRadius: '6px',
+            '&:hover': {
+              backgroundColor: '#2563eb',
+            },
+          }}
+        >
+          details
+        </Button>
+      );
+    },
+  },
   
 
    {
@@ -619,15 +861,15 @@ const handleSaveJoiningDate = async (user) => {
 
     {
       field: 'joining_status',
-      headerName: 'Status',
+      headerName: 'Joining status',
       flex: 0.8,
       minWidth: 100,
       renderCell: (params) => (
         <Chip
           size="small"
-          label={params.value}
+     label = "pending"
           sx={{
-            backgroundColor: params.value === 'Joined' ? '#10b981' : '#ef4444',
+            backgroundColor: params.value === 'Pending' ?  '#ef4444' : '#10b981' ,
             color: 'white',
             fontWeight: 600,
             fontSize: '11px',
@@ -780,6 +1022,418 @@ const handleSaveJoiningDate = async (user) => {
           />
         </Box>
       </Paper>
+        <Dialog
+        open={detailsDialogOpen}
+      onClose={() => {
+  resetForm();
+  setDetailsDialogOpen(false);
+}}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 24px 60px rgba(115,93,201,0.2), 0 6px 20px rgba(0,0,0,0.08)',
+          },
+        }}
+      >
+        {/* HEADER */}
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #3b2790 0%, #735dc9 60%, #9b7fe8 100%)',
+            px: 3,
+            pt: 2.5,
+            pb: 2.8,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -28,
+              right: -28,
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.06)',
+            }}
+          />
+      
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: 'white',
+                  letterSpacing: '-0.3px',
+                }}
+              >
+                Appointment Details
+              </Typography>
+      
+            </Box>
+      
+            <IconButton
+              onClick={() => setDetailsDialogOpen(false)}
+              size="small"
+              sx={{
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                },
+              }}
+            >
+              <Close sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      
+        {/* BODY */}
+        <DialogContent sx={{ p: 3 }}>
+          {/* Plant / Company Code Dropdown - Improved */}
+          <Box sx={{ mb: 3 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 1,
+              }}
+            >
+         <Typography
+        sx={{
+          fontSize: '13px',
+          fontWeight: 600,
+          color: '#374151',
+        }}
+      >
+        Plant / Company Code{' '}
+        <span style={{ color: 'red' }}>*</span>
+      </Typography>
+              
+            </Box>
+      
+            <TextField
+              select
+              fullWidth
+              size="small"
+              value={selectedPlant}
+              onChange={(e) => setSelectedPlant(e.target.value)}
+              placeholder="Select Plant / Company"
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return (
+                      <Typography sx={{ color: '#9ca3af', fontSize: '13px' }}>
+                        Select Plant / Company 
+                      </Typography>
+                    );
+                  }
+                  const selectedItem = plants.find((item) => item.BUKRS === selected);
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: '#10b981',
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
+                        {selectedItem?.BUKRS} - {selectedItem?.COMP_CODE_DESC}
+                      </Typography>
+                    </Box>
+                  );
+                },
+                MenuProps: {
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 300,
+                      borderRadius: '12px',
+                      mt: 1,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    },
+                  },
+                },
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  backgroundColor: '#fafafa',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    backgroundColor: '#f5f3ff',
+                    '& fieldset': {
+                      borderColor: '#735dc9',
+                    },
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: '#ffffff',
+                    '& fieldset': {
+                      borderColor: '#735dc9',
+                      borderWidth: '2px',
+                    },
+                  },
+                },
+                '& .MuiSelect-select': {
+                  py: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+              }}
+            >
+              {plants.map((item, index) => (
+                <MenuItem
+                  key={index}
+                  value={item.BUKRS}
+                  sx={{
+                    py: 1,
+                    px: 1,
+                    borderBottom: index !== plants.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    '&:hover': {
+                      backgroundColor: '#f5f3ff',
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: '#ede9fe',
+                      '&:hover': {
+                        backgroundColor: '#ddd6fe',
+                      },
+                    },
+                  }}
+                >
+               <MenuItem key={index} value={item.BUKRS}>
+        <Typography sx={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
+          {item.BUKRS} - {item.COMP_CODE_DESC}
+        </Typography>
+      </MenuItem>
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+      
+          {/* Reporting To and Probation - 2 Column Layout */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: '1fr 1fr',
+              },
+              gap: 2.5,
+            }}
+          >
+            {/* Reporting To */}
+            <Box>
+              
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#374151',
+                  mb: 1,
+                }}
+              >
+                👤 Reporting To <span style={{ color: 'red' }}>*</span>
+              </Typography>
+      
+              <TextField
+                fullWidth
+                placeholder="e.g., John Smith"
+                name="reporting_to"
+                value={formData.reporting_to}
+                onChange={handleChange}
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <Box
+                      component="span"
+                      sx={{
+                        color: '#9ca3af',
+                        mr: 0.5,
+                        fontSize: '16px',
+                      }}
+                    >
+                    
+                    </Box>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: '#fafafa',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: '#f5f3ff',
+                      '& fieldset': {
+                        borderColor: '#735dc9',
+                      },
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: '#ffffff',
+                      '& fieldset': {
+                        borderColor: '#735dc9',
+                        borderWidth: '2px',
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
+      
+            {/* Probation Period */}
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#374151',
+                  mb: 1,
+                }}
+              >
+                 ⏱️ Probation Period <span style={{ color: 'red' }}>*</span>
+              </Typography>
+      
+              <TextField
+                fullWidth
+                placeholder="e.g., 6 months"
+                name="probation"
+                value={formData.probation}
+                onChange={handleChange}
+                size="small"
+              
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: '#fafafa',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: '#f5f3ff',
+                      '& fieldset': {
+                        borderColor: '#735dc9',
+                      },
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: '#ffffff',
+                      '& fieldset': {
+                        borderColor: '#735dc9',
+                        borderWidth: '2px',
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+      
+          {/* Optional: Help text */}
+          <Typography
+            sx={{
+              fontSize: '11px',
+              color: '#9ca3af',
+              mt: 2,
+              textAlign: 'center',
+            }}
+          >
+            All fields are required for appointment letter generation
+          </Typography>
+        </DialogContent>
+      
+        {/* FOOTER */}
+      <DialogActions
+  sx={{
+    px: 3,
+    py: 2,
+    borderTop: '1px solid #f1f5f9',
+    gap: 1.5,
+  }}
+>
+  <Button
+    onClick={() => {
+      resetForm();
+      setDetailsDialogOpen(false);
+    }}
+    variant="outlined"
+    sx={{
+      textTransform: 'none',
+      borderRadius: '10px',
+      px: 3,
+      py: 0.8,
+      fontSize: '13px',
+      fontWeight: 500,
+      borderColor: '#e2e8f0',
+      color: '#64748b',
+      '&:hover': {
+        borderColor: '#cbd5e1',
+        backgroundColor: '#f8fafc',
+      },
+    }}
+  >
+    Cancel
+  </Button>
+
+  <Button
+    onClick={handleSubmit}
+    variant="contained"
+    disabled={
+      !selectedPlant ||
+      !formData.reporting_to ||
+      !formData.probation ||
+      submitLoading
+    }
+    startIcon={
+      submitLoading ? (
+        <CircularProgress size={16} color="inherit" />
+      ) : null
+    }
+    sx={{
+      background: submitLoading
+        ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+        : 'linear-gradient(135deg, #4338ca 0%, #6d28d9 100%)',
+      textTransform: 'none',
+      borderRadius: '14px',
+      fontWeight: 700,
+      px: 3.5,
+      py: 1.1,
+      fontSize: '13px',
+      minWidth: '170px',
+      letterSpacing: '0.3px',
+      color: '#fff',
+      boxShadow: submitLoading
+        ? '0 4px 12px rgba(99,102,241,0.35)'
+        : '0 8px 20px rgba(79,70,229,0.35)',
+      transition: 'all 0.25s ease',
+      '&:hover': {
+        background: 'linear-gradient(135deg, #312e81 0%, #5b21b6 100%)',
+        transform: 'translateY(-2px) scale(1.01)',
+        boxShadow: '0 12px 24px rgba(79,70,229,0.45)',
+      },
+      '&:active': {
+        transform: 'scale(0.98)',
+      },
+      '&:disabled': {
+        background: '#cbd5e1',
+        color: '#f8fafc',
+        boxShadow: 'none',
+        cursor: 'not-allowed',
+      },
+    }}
+  >
+    {submitLoading ? 'Submitting Details...' : 'Submit Details'}
+  </Button>
+</DialogActions>
+      </Dialog>
+      
 
       {/* DocUpload Modal */}
    {/* DocUpload Modal */}

@@ -8,14 +8,14 @@ const JoiningReportForm = ({ rowData, onClose }) => {
 
   if (!rowData) return null;
 
-  const joiningDate = rowData.joining_date
-    ? new Date(rowData.joining_date).toLocaleDateString('en-IN', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      })
-    : '';
-const today = new Date().toLocaleDateString('en-IN', {
-  day: '2-digit', month: 'long', year: 'numeric'
-});
+//   const joiningDate = rowData.joining_date
+//     ? new Date(rowData.joining_date).toLocaleDateString('en-IN', {
+//         day: '2-digit', month: 'long', year: 'numeric'
+//       })
+//     : '';
+// const today = new Date().toLocaleDateString('en-IN', {
+//   day: '2-digit', month: 'long', year: 'numeric'
+// });
   
   const InputField = ({ defaultValue = '', width = '130px', readOnly = false }) => (
   <input
@@ -42,7 +42,7 @@ const today = new Date().toLocaleDateString('en-IN', {
         </div>
 
         {/* Letter */}
-        <div  className="px-8 py-6 font-serif text-black text-sm">
+        <div  className="px-8 py-6  text-black text-sm">
 
           {/* Company Header */}
           <div className="border-2 border-black mb-4">
@@ -56,7 +56,7 @@ const today = new Date().toLocaleDateString('en-IN', {
 </div>
               <div className="flex-1 flex flex-col">
                 <div className="border-b border-black px-3 py-1.5 text-center">
-                  <p className="text-sm font-bold tracking-wide">MY HOME CONSTRUCTIONS PVT. LTD.</p>
+                  <p className="text-sm font-bold tracking-wide">{rowData?.fullData?.ONBOARD_PLANT}</p>
                 </div>
                 <div className="flex">
                   <div className="flex-1 px-3 py-1.5 flex items-center justify-center border-r border-black">
@@ -79,7 +79,7 @@ const today = new Date().toLocaleDateString('en-IN', {
           <div className="mb-4 text-xs leading-6">
             <p>To</p>
             <p className="ml-4">The Human Resource Management,</p>
-            <p className="ml-4">My Home Constructions Pvt. Ltd.,</p>
+            <p className="ml-4">{rowData?.fullData?.ONBOARD_PLANT},</p>
             <p className="ml-4">Hyderabad.</p>
           </div>
 
@@ -97,15 +97,34 @@ const today = new Date().toLocaleDateString('en-IN', {
           <div className="mb-6 text-xs leading-8">
   <p>
     With reference to your offer letter No
-    <InputField defaultValue={rowData.CHILD_CASEID} width="120px" readOnly />
+    <InputField defaultValue={rowData.REF_NO} width="120px" readOnly />
     dated
-    <InputField defaultValue={joiningDate} width="120px" readOnly />
+<InputField
+  defaultValue={
+    rowData?.fullData?.joining_updated_at
+      ? new Date(rowData?.fullData?.joining_updated_at)
+          .toLocaleDateString('en-GB')
+      : ''
+  }
+  width="120px"
+  readOnly
+/>
     I Mr. / Ms.
     <InputField defaultValue={rowData.employee_name} width="150px" readOnly />
     joining with our
 
     organization on
-    <InputField defaultValue={joiningDate} width="120px" readOnly />
+    
+
+     <InputField  defaultValue={
+    rowData?.joining_date
+      ? new Date(rowData?.joining_date)
+          .toLocaleDateString('en-GB')
+      : ''
+  }
+  width="120px"
+  readOnly
+/>
     at
     <InputField defaultValue={rowData.location} width="300px" readOnly />
 

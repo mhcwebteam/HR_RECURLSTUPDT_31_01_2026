@@ -1,311 +1,363 @@
-import React, { useState, useMemo, useEffect, useContext } from 'react';
-import axios from 'axios';
-import { useLocation, useNavigate } from "react-router-dom";
+
+
+
+
+
+import React, { useState, useEffect, useContext, useMemo } from 'react';
+import axios from "axios";
 import Swal from 'sweetalert2';
+import {
+  Paper,
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  TextField,
+  InputAdornment,
+  MenuItem,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
+import {
+  Search,
+  CheckCircle,
+  Cancel,
+  Visibility,
+  Refresh,
+  Download
+} from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Paper, Modal, IconButton, Typography, Button, CircularProgress, TextField, InputAdornment, Tooltip } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import 'sweetalert2/dist/sweetalert2.min.css';
-import SearchIcon from '@mui/icons-material/Search';
-import { Doughnut } from 'react-chartjs-2';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
-import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaChartPie } from 'react-icons/fa';
-import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
-import DataFlow from "../Components/DataFlow.jsx"
-
-import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { API_BASE_URL } from '../Config/Config.jsx';
-
-import ManPowerView from '../Components/ManPowerView.jsx';
+import { ContextData } from '../Context/ContextData';
+import {API_BASE_URL, API_BASE_URLss} from '../Config/Config.jsx';
+import OfferLetterModal from './OfferLetterModal';
 import axiosInstance from '../Config/axiosConfig.jsx';
-
-ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
-
-const RecruitmentMail = () => {
-  const [searchText, setSearchText] = useState('');
-  const [data, setData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-  const [manpowerOpen, setManPowerOpen] = useState(false);
-  const [processCaseId, setProcessAndCaseIdData] = useState('');
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
-  const [selectedRowData, setSelectedRowData] = useState(null);
-  const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {})
-  const [HrData, setHrData] = useState([]);
-
-  // Load saved emails from localStorage on component mount
-  const loadSavedEmails = () => {
-    const savedEmails = localStorage.getItem(`recruitment_emails_${userToken?.Email || 'default'}`);
-    if (savedEmails) {
-      return JSON.parse(savedEmails);
-    }
-    return {};
-  };
-
-  const [emailInputs, setEmailInputs] = useState(() => loadSavedEmails());
+import dayjs from 'dayjs';
+const OfferApproved = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [submitting, setSubmitting] = useState({});
-
-  // Save emails to localStorage whenever emailInputs changes
-  useEffect(() => {
-    if (userToken?.Email) {
-      localStorage.setItem(
-        `recruitment_emails_${userToken.Email}`, 
-        JSON.stringify(emailInputs)
-      );
-    }
-  }, [emailInputs, userToken?.Email]);
-
-useEffect(() => {
-  if (!userToken?.token) return;
-
-  const Recuritment = async () => {
-    try {
-
-      
-      const response = await axiosInstance.get(
-        `${API_BASE_URL}/task-Assign-GtDta`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${userToken.token}`,
-          },
-        }
-      );
+  const [joiningDates, setJoiningDates] = useState({});
+  const [offerLetterOpen, setOfferLetterOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [ofrList,setOfferLetterData]=useState([]);
+  //------edit-----
+  const [editingRows, setEditingRows] = useState({});
+  const [refNumberValues, setRefNumberValues] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
 
-    
-
-      setHrData(response.data);
-      console.log("NOTE FOR APPROVAL API DATA:", response.data);
-    } catch (err) {
-      console.error("Error fetching approval data", err);
-    }
-  };
-
-  Recuritment();
-}, [userToken?.token]);
 
 
-useEffect(() => {
-  if (Array.isArray(HrData?.TaskAssignmentData)) {
-  
 
-    const filtered = HrData.TaskAssignmentData
-
-
-      .filter(row => {
-   
-
-        return (
-             row.actionStatus == "new" && row.verifyEmail !== "sent"
-        );
-      })
-      .map((row, index) => ({
-        ...row,
-        id: row.case_id || `row_${index}`,
-      }));
-
-    setData(filtered);
-    
-    // Preserve existing emails when setting filtered data
-    setFilteredData(prevFiltered => {
-      // If this is the first load, use the filtered data with saved emails
-      if (prevFiltered.length === 0) {
-        return filtered.map(row => ({
-          ...row,
-          // Check if we have a saved email for this case
-          savedEmail: emailInputs[row.CHILD_CASEID] || null
-        }));
-      }
-      
-      // Otherwise, merge existing emails with new data
-      const emailMap = new Map();
-      prevFiltered.forEach(row => {
-        if (row.savedEmail || emailInputs[row.CHILD_CASEID]) {
-          emailMap.set(row.CHILD_CASEID, row.savedEmail || emailInputs[row.CHILD_CASEID]);
-        }
-      });
-      
-      return filtered.map(row => ({
-        ...row,
-        savedEmail: emailMap.get(row.CHILD_CASEID) || emailInputs[row.CHILD_CASEID] || null
-      }));
-    });
-  } else {
-    setData([]);
-    setFilteredData([]);
-  }
-
-  setLoading(false);
-}, [HrData]);
-
-useEffect(() => {
-  if (!userToken.token) navigate('/');
-}, [navigate, userToken?.token]);
-
- 
-
-  const handleEmailChange = (caseId, email) => {
-    setEmailInputs(prev => ({
-      ...prev,
-      [caseId]: email
-    }));
-    
-    // Also update the filteredData to reflect the email
-    setFilteredData(prev => 
-      prev.map(row => 
-        row.CHILD_CASEID === caseId 
-          ? { ...row, savedEmail: email }
-          : row
-      )
-    );
-  };
-
-  const handleSubmitEmail = async (caseId, rowData) => {
-  const email = emailInputs[caseId];
-  if (!email) {
-    Swal.fire('Error', 'Please enter email', 'error');
-    return;
-  }
-
-  if (!validateEmail(email)) {
-    Swal.fire('Error', 'Please enter a valid email address', 'error');
-    return;
-  }
-
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Do you want to send the Recruitment form link to ${email}?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, Send Email',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#10b981',
-    cancelButtonColor: '#6b7280',
+  const [token] = useState(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    return userInfo ? userInfo : null;
   });
 
-  if (!result.isConfirmed) {
-    return;
+
+
+  const handleEditClick = (rowId) => {
+    setEditingRows(prev => ({ ...prev, [rowId]: true }));
+    const row = ofrList.find(item => item.CHILD_CASEID === rowId);
+    if (row) {
+      setRefNumberValues(prev => ({
+        ...prev,
+        [rowId]: row.REF_NUMBER || ''
+      }));
+    }
+  };
+
+  // Handle cancel edit for REF_NUMBER
+  const handleCancelEdit = (rowId) => {
+    setEditingRows(prev => ({ ...prev, [rowId]: false }));
+    setRefNumberValues(prev => {
+      const newValues = { ...prev };
+      delete newValues[rowId];
+      return newValues;
+    });
+  };
+
+  // Save REF_NUMBER to local state
+  const handleSaveRefNumber = async (rowId, rowData) => {
+    const refNumber = refNumberValues[rowId];
+    
+    if (!refNumber || refNumber.trim() === "") {
+      await Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please enter a valid Reference Number",
+        confirmButtonColor: "#2563eb",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      // Update local state
+      setOfferLetterData(prevData => 
+        prevData.map(item => 
+          item.CHILD_CASEID === rowId 
+            ? { ...item, REF_NUMBER: refNumber }
+            : item
+        )
+      );
+      
+      // Exit edit mode
+      setEditingRows(prev => ({ ...prev, [rowId]: false }));
+      
+      await Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Reference Number saved successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error saving reference number:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to save reference number",
+        confirmButtonColor: "#2563eb",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+  const handleJoiningDateChange = (caseId, date) => {
+
+
+    setJoiningDates(prev => ({
+      ...prev,
+      [caseId]: date
+    }));
+  };
+  
+ 
+  const handleOfferLterEmail=async (rowData)  =>
+ 
+
+  {
+    try
+    {
+      const confirm = await Swal.fire({
+          title: "Are you sure?",
+          text: "You want to Move OnBoarding?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, Send",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#2563eb",
+        });
+        if (!confirm.isConfirmed) return;
+           const refNumber = refNumberValues[rowData.CHILD_CASEID] || rowData.REF_NUMBER;
+
+        const  payload =
+        {
+          CHILD_CASEID: rowData.CHILD_CASEID,
+             REF_NUMBER: refNumber  
+       
+
+       
+        }
+      const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/move-To-OnBoard`,payload,
+        {
+        headers:
+        {
+           "Content-Type" :"application/json",
+           "Accept"       :"application/json",
+           "Authorization":`Bearer ${token.token}`
+         }})
+
+      
+      if (ofrMailSend.data.message) 
+        {
+       
+
+    await Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Move to OnBoarding!",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    if(fetchOfrData) {
+      await fetchOfrData()
+    }
+           
+         } else {
+           await Swal.fire("Failed", response.data.message, "error");
+         }
+       } catch (error) {
+         console.error(error);
+         await Swal.fire(
+           "Error",
+           error.response?.data?.message || "Something went wrong",
+           "error"
+         );
+       }
   }
+  
 
-  setSubmitting(prev => ({ ...prev, [caseId]: true }));
-
-  const payload2 = {
-    email: email,
-    child_caseId: caseId,
-    hrEmail: userToken?.Email
-  }
-
+ const fetchOfrData = async () => {
   try {
-    const response = await axiosInstance.post(
-      `${API_BASE_URL}/emp-email`,
-      payload2,
+    const response = await axiosInstance.get(
+      `${API_BASE_URL}/ofr-aprvl-issue-lst`,
       {
         headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          "Content-Type": "application/json",
           Accept: "application/json",
+          Authorization: `Bearer ${token.token}`,
         },
       }
     );
 
-    if (response.data) {
-      Swal.fire({
-        title: 'Success!',
-        icon: "success",
-        text: 'Recruitment form link sent to employee email!',
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setFilteredData(prev =>
-        prev.map(row =>
-          row.CHILD_CASEID === caseId
-            ? { ...row, StatusTrack: "WIP", verifyEmail: "sent", savedEmail: email }
-            : row
-        )
-      );
-      
-      // Keep email in localStorage
-      // Already saved via useEffect
-    }
-  } catch (error) {
-    console.error('Email send error:', error);
-    Swal.fire('Error', 'Failed to send email', 'error');
-  } finally {
-    setSubmitting(prev => ({ ...prev, [caseId]: false }));
+    setOfferLetterData(response.data?.candidAcptdOfr ?? []);
+  } catch (err) {
+    console.error("Error in fetching offer list:", err);
   }
 };
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+useEffect(() => {
+  if (token?.token) {
+    fetchOfrData();
+  }
+}, [token?.token]);
+
+
+
+  const handleViewOfferLetter = (user) => 
+  {
+    setOfferLetterOpen(true);
+     setSelectedCandidate({
+        ...user,
+      });
   };
 
-  const handleOpenManpower = async (rowData, type) => {
-    setSelectedRowData(rowData);
-    setProcessAndCaseIdData({
-      processname: rowData.PROCESSNAME,
-      caseId: row.CASEID,
-      type: type
-    });
-    setManPowerOpen(true);
+  const filteredData = useMemo(() => {
+    if (!ofrList || ofrList.length === 0) return [];
+    let result = [...ofrList];
+    
+    if (searchTerm) {
+      result = result.filter(
+        (item) =>
+          item.NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.CHILD_CASEID?.includes(searchTerm)
+      );
+    }
+    
+    if (statusFilter !== "all") {
+      result = result.filter(
+        (item) => item.STATUS?.toLowerCase() === statusFilter
+      );
+    }
+    
+    return result.map((item, index) => ({
+      ...item,
+      SNO: index + 1,
+    }));
+  }, [ofrList, searchTerm, statusFilter, editingRows, refNumberValues, isSaving]);
+
+  const getStatusChip = (status) => {
+  const statusValue = status?.toLowerCase();
+  const config = {
+    verified: { color: '#10b981' },
+    pending:  { color: '#f59e0b' },
+    rejected: { color: '#ef4444' },
+    uploaded: { color: '#3b82f6' },
+    approved: { color: '#10b981' },
+    'not uploaded': { color: '#6b7280' }
+  };
+  const { color } = config[statusValue] || config.pending;
+  return (
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+    }}>
+      <Box sx={{
+        color: '#ffffff',
+        backgroundColor: color,
+        padding: '4px 10px',  // Reduced vertical padding
+        borderRadius: '6px',
+        fontSize: '10px',  // Smaller font
+        fontWeight: 600,
+        textTransform: 'capitalize',
+        lineHeight: 1.2,  // Tighter line height
+        height: '25px',  // Fixed small height
+        display: 'flex',
+        alignItems: 'center',
+      }}>
+        {statusValue?.charAt(0).toUpperCase() + statusValue?.slice(1) || 'Pending'}
+      </Box>
+    </Box>
+  );
+};
+
+  const handleViewDetails = (user) => {
+    setSelectedUser(user);
+    setModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setManPowerOpen(false);
-    setSelectedRowData(null);
+  const handleStatusChange = (updateData) => {
+    console.log('Status updated:', updateData);
   };
 
-  const statusCounts = useMemo(() => {
-    const counts = {
-      total: filteredData.length,
-      completed: 0,
-      pending: 0,
-      rejected: 0
-    };
-    filteredData.forEach(row => {
-      const status = row.ACTION_STATUS?.toLowerCase();
-      if (status === 'completed') {
-        counts.completed++;
-      } else if (status === 'pending' || status === 'to_do') {
-        counts.pending++;
-      } else if (status === 'rejected') {
-        counts.rejected++;
-      }
-    });
-    return counts;
-  }, [filteredData]);
+
+  const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+
+  let [day, month, year] = dateStr.split('-');
+
+  // ✅ Ensure 2-digit format
+  day = day.padStart(2, '0');
+  month = month.padStart(2, '0');
+
+  return new Date(`${year}-${month}-${day}`);
+};
 
 
-   const hasTypePlant = HrData?.TaskAssignmentData?.some(row => row.TYPE_PLANT);
+  const formatNumber = (value) => {
+    if (!value || value === 'N/A') return 'N/A';
+    return value.toString();
+  };
 
-  const recCycle = HrData?.TaskAssignmentData?.some(row => row.RECRUIT_CYCLE);
+console.log("fgfff",ofrList);
 
-  const columns = [
+   const hasTypePlant = ofrList?.some(row => row.TYPE_PLANT);
+
+  const recCycle = ofrList?.some(row => row.RECRUIT_CYCLE);
+
+  const columns = useMemo(() => [
     {
       field: 'SNO',
       headerName: 'S.NO',
       flex: 0.5,
-      minWidth: 50,
+      minWidth: 70,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 600, color: '#374151' }}>
-          {params.api.getAllRowIds().indexOf(params.id) + 1}
+          {params.value}
         </Box>
       ),
     },
-
-          {
+    {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
-      minWidth: 100,
+      minWidth: 130,
       renderCell: (params) => (
         <Box sx={{ fontWeight: 500, color: '#1f2937' }}>
           {params.value}
@@ -313,322 +365,493 @@ useEffect(() => {
       ),
     },
 
+            ...(hasTypePlant
+                    ? [{
+                        field: 'TYPE_PLANT',
+                        headerName: 'Type Plant',
+                          minWidth: 100,
+                        flex: 1.2,
+                        renderCell: (params) => (
+                          <Box sx={{ color: '#374151' }}>
+                            {params.value}
+                          </Box>
+                        ),
+                      }]
+                    : []),
+                
+                  // ✅ MUST be array
+                  ...(recCycle
+                    ? [{
+                        field: 'RECRUIT_CYCLE',
+                        headerName: 'Emp Level',
 
-        ...(hasTypePlant
-    ? [{
-        field: 'TYPE_PLANT',
-        headerName: 'Type Plant',
-        flex: 1.2,
-            minWidth: 80,
-        renderCell: (params) => (
-          <Box sx={{ color: '#374151' }}>
-            {params.value}
-          </Box>
-        ),
-      }]
-    : []),
+                             minWidth: 100,
+                        flex: 1.2,
+                        renderCell: (params) => (
+                          <Box sx={{ color: '#374151' }}>
+                            {params.value}
+                          </Box>
+                        ),
+                      }]
+                    : []),
 
-  // ✅ MUST be array
-  ...(recCycle
-    ? [{
-        field: 'RECRUIT_CYCLE',
-        headerName: 'Emp Level',
-        flex: 1.2,
-            minWidth: 120,
-        renderCell: (params) => (
-          <Box sx={{ color: '#374151' }}>
-            {params.value}
-          </Box>
-        ),
-      }]
-    : []),
 
-        {
-                field: 'CUR_REV_ID',
-                headerName: 'Rev ID',
-                flex: 1,
-                minWidth: 60,
-                renderCell: (params) => (
-                    <Box sx={{ color: '#374151' }}>
-                       {params.value || "00"} 
-                    </Box>
-                ),
-            },
-
+                           {
+                                        field: 'CUR_REV_ID',
+                                        headerName: 'Rev ID',
+                                        flex: 1,
+                                        minWidth: 60,
+                                        renderCell: (params) => (
+                                            <Box sx={{ color: '#374151' }}>
+                                                 {params.value || "00"} 
+                                            </Box>
+                                        ),
+                                    },
     {
       field: 'PLANT',
-      headerName: 'Plant',
-      flex: 1.2,
-      minWidth: 200,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-          {params.value}
-        </Box>
-      ),
-    },
-{
-  field: 'DEPT',
-  headerName: 'Dept',
-  flex: 1,
-  minWidth: 140,
-  renderCell: (params) => {
-    const groupCode = params.row.GROUP_CODE;
-    const dept = params.value;
-
-    return (
-      <Box sx={{ color: '#374151', fontWeight: 500 }}>
-        {groupCode ? `${groupCode} - ${dept}` : dept}
-      </Box>
-    );
-  },
-},
-
-  {
-  field: 'MANPOWER_DESG',
-  headerName: 'Desig/Position',
-  flex: 1.2,
-  minWidth: 130,
-  renderCell: (params) => {
-    const subCode = params.row.SUB_CODE;
-    const value = params.value || 'N/A';
-
-    return (
-      <Box
-        sx={{
-          color: '#374151',
-          padding: '2px 8px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          fontWeight: 600,
-        }}
-      >
-        {subCode ? `${subCode} - ${value}` : value}
-      </Box>
-    );
-  },
-},
-
-    {
-      field: 'RAISER',
-      headerName: 'Raiser',
-      flex: 1,
-      minWidth: 90,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'RAISER_DATE',
-      headerName: 'Raiser Dt',
-      flex: 1,
-      minWidth: 80,
-     renderCell: (params) => {
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-
-    const [day, month, year] = parts;
-
-    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
-  };
-
-  return (
-    <Box sx={{ color: '#6b7280' }}>
-      {formatDate(params.value)}
-    </Box>
-  );
-}
-    },
-    
-    {
-      field: 'ACTION_STATUS',
-      headerName: 'Status',
-      flex: 0.8,
-      minWidth: 90,
-      renderCell: (params) => (
-        <Button
-          variant="contained"
-          size="small"
-          sx={{
-            background: '#10b981',
-            color: 'white',
-            fontSize: '11px',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            textTransform: 'capitalize',
-            fontWeight: 600,
-            minWidth: 'auto',
-            boxShadow: 'none',
-            '&:hover': {
-              background: '#059669',
-              boxShadow: 'none',
-            },
-          }}
-        >
-          Shortlisted
-        </Button>
-      ),
-    },
-    {
-  field: 'verifyEmail',
-  headerName: 'Mail Status',
-  flex: 0.8,
-  minWidth: 120,
-  renderCell: (params) => {
-    const status = params.row.StatusTrack;
-
-    return (
-      <Button
-        variant="contained"
-        size="small"
-        sx={{
-          background: status == "WIP" ? '#10b981' : '#522952',
-          color: 'white',
-          fontSize: '11px',
-          padding: '3px 10px',
-          borderRadius: '4px',
-          textTransform: 'capitalize',
-          fontWeight: 600,
-          minWidth: 'auto',
-          boxShadow: 'none',
-        }}
-      >
-        {status ? 'Email Sent' : 'Pending'}
-      </Button>
-    );
-  },
-},
-    {
-      field: 'USER_EMAIL',
-      headerName: 'User Email',
+      headerName: 'Plant Name',
       flex: 1.5,
       minWidth: 180,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+ {
+  field: 'FIRST_NAME',
+  headerName: 'Name',
+  flex: 1,
+  minWidth: 140,
+  valueGetter: (value, row) =>
+    `${row?.FIRST_NAME ?? ''} ${row?.LAST_NAME ?? ''}`,
+  renderCell: (params) => (
+    <Box sx={{ fontWeight: 600, color: '#1f2937' }}>
+      {params.value}
+    </Box>
+  ),
+},
+    {
+      field: 'EMAIL',
+      headerName: 'Email',
+      flex: 1.5,
+      minWidth: 200,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontSize: '12px' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+    {
+      field: 'PHONE_NUMBER',
+      headerName: 'Phone Number',
+      flex: 0.9,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151', fontWeight: 500 }}>
+          {formatNumber(params.value)}
+        </Box>
+      ),
+    },
+
+
+        {
+               field: 'DEPT',
+               headerName: 'Department',
+               flex: 1,
+               minWidth: 120,
+               renderCell: (params) => {
+                 const groupCode = params.row.GROUP_CODE;
+                 const dept = params.value;
+             
+                 return (
+                   <Box sx={{ color: '#374151', fontWeight: 500 }}>
+                     {groupCode ? `${groupCode} - ${dept}` : dept}
+                   </Box>
+                 );
+               },
+             },
+             
+                   {
+                      field: 'MANPOWER_DESG',
+                      headerName: 'M.Designation',
+                      flex: 1.2,
+                      minWidth: 130,
+                      renderCell: (params) => {
+                        const subCode = params.row.SUB_CODE;
+                        const value = params.value || 'N/A';
+                    
+                        return (
+                          <Box
+                            sx={{
+                              color: '#374151',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {subCode ? `${subCode} - ${value}` : value}
+                          </Box>
+                        );
+                      },
+                    },
+                    
+                    
+                    
+                    
+                    
+                      {
+                      field: 'DESIG',
+                      headerName: 'Designation',
+                      flex: 1.2,
+                      minWidth: 130,
+                      
+                       renderCell: (params) => (
+                    
+                            <Box sx={{ color: '#374151', fontSize: '12px' }}>
+                    
+                              {params.value}
+                    
+                            </Box>
+                    
+                          ),
+                    },
+
+    {
+      field: 'CURRENT_CTC',
+      headerName: 'Current CTC',
+      width: 110,
       renderCell: (params) => {
-        // Use saved email from emailInputs or from row data
-        const currentEmail = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+        const formattedValue = params.value
+          ? Number(params.value).toLocaleString('en-IN')
+          : '0';
         return (
-          <Tooltip 
-            title={currentEmail || 'No email entered'} 
-            arrow 
-            placement="top"
-            componentsProps={{
-              tooltip: {
-                sx: {
-                  backgroundColor: '#1f2937',
-                  fontSize: '12px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  '& .MuiTooltip-arrow': {
-                    color: '#1f2937',
-                  },
-                },
-              },
-            }}
-          >
-            <TextField
-              size="small"
-              type="email"
-              placeholder="Enter email address"
-              value={currentEmail}
-              onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
-              sx={{
-                width: '100%',
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '12px',
-                  height: '32px',
-                  '& fieldset': {
-                    borderColor: '#d1d5db',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#667eea',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#667eea',
-                  },
-                },
-              }}
-            />
-          </Tooltip>
+          <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>
+            ₹{formattedValue}
+          </Box>
         );
       },
     },
     {
-      field: 'ACTIONS',
-      headerName: 'Actions',
-      flex: 1,
-      minWidth: 110,
-      sortable: false,
-      filterable: false,
+      field: 'EXP_CTC',
+      headerName: 'Expected CTC',
+      width: 120,
       renderCell: (params) => {
-        const isSubmitting = submitting[params.row.CHILD_CASEID] || false;
-        const email = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+        const formattedValue = params.value
+          ? Number(params.value).toLocaleString('en-IN')
+          : '0';
         return (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => handleSubmitEmail(params.row.CHILD_CASEID, params.row)}
-            disabled={isSubmitting || !email}
-            sx={{
-              background: isSubmitting
-                ? '#9ca3af'
-                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              fontSize: '10px',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              textTransform: 'capitalize',
-              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
-              minWidth: '90px',
-              '&:hover': {
-                background: isSubmitting
-                  ? '#9ca3af'
-                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                transform: isSubmitting ? 'none' : 'translateY(-1px)',
-                boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
-              },
-              '&:disabled': {
-                background: '#9ca3af',
-                color: '#e5e7eb',
-              }
-            }}
-          >
-            {isSubmitting ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <CircularProgress size={12} sx={{ color: 'white' }} />
-                Sending...
-              </Box>
-            ) : (
-              'Send Email'
-            )}
-          </Button>
+          <Box sx={{ color: '#059669', fontWeight: 600, fontSize: '12px' }}>
+            ₹{formattedValue}
+          </Box>
         );
       },
     },
-  ];
+    {
+      field: 'OFFER_CTC',
+      headerName: 'Offer CTC',
+      width: 110,
+      renderCell: (params) => {
+        const formattedValue = params.value
+          ? Number(params.value).toLocaleString('en-IN')
+          : '0';
+        return (
+          <Box sx={{ color: '#dc2626', fontWeight: 600, fontSize: '12px' }}>
+            ₹{formattedValue}
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'HR',
+      headerName: 'HR',
+      width: 100,
+      renderCell: (params) => getStatusChip(params.value),
+    },
+    {
+      field: 'DIRECTOR',
+      headerName: 'DIRECTOR',
+      width: 110,
+      renderCell: (params) => getStatusChip(params.value),
+    },
+    {
+      field: 'EVC',
+      headerName: 'EVC',
+      width: 100,
+      renderCell: (params) => getStatusChip(params.value),
+    },
+    {
+      field: 'STATUS',
+      headerName: 'Overall Status',
+      flex: 0.9,
+      minWidth: 120,
+      renderCell: (params) => getStatusChip(params.value),
+    },
 
-  const modalStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '90%',
-    maxWidth: '1200px',
-    bgcolor: '#ffffff',
-    border: 'none',
-    borderRadius: '16px',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    p: 0,
-    maxHeight: '80vh',
-    overflow: 'hidden'
-  };
 
-  const handleBack = () => {
-    navigate('/');
-  };
+{
+  field: 'joiningDate',
+  headerName: 'Date of Joining',
+  flex: 1.3,
+  minWidth: 170,
+  renderCell: (params) => {
+    return params.value
+      ? dayjs(params.value).format("DD-MM-YYYY")
+      : "—";
+  },
+}
+
+,
+    {
+      field: 'View',
+      headerName: 'View Offer',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Tooltip title="View Offer Letter">
+          <IconButton
+            size="small"
+            onClick={() => handleViewOfferLetter(params.row)}
+            sx={{
+              color: '#3b82f6',
+              padding: '4px', 
+              '&:hover': {
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              },
+            }}
+          >
+            <Visibility fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
+
+
+
+
+        
+{
+  field: "candidOfrLtrSigned",
+  headerName: "C.ofrLtrSigned",
+  width: 150,
+  sortable: false,
+  renderCell: (params) => {
+    if (!params.value) return "-";
+
+    const fileUrl = `${API_BASE_URLss}/candid_apprvl/${params.value}`;
+    const fileName = params.value.split("_").pop();
+
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: "#1e40af",
+          fontSize: "12px",
+          textDecoration: "underline",
+          cursor: "pointer"
+        }}
+      >
+        {fileName}
+      </a>
+    );
+  }
+},
+{
+      field: 'REF_NUMBER',
+      headerName: 'Ref Number',
+      width: 280,
+      renderCell: (params) => {
+        const rowId = params.row.CHILD_CASEID;
+        const hasSavedValue = params.row.REF_NUMBER && params.row.REF_NUMBER.trim() !== '';
+        const isEditing = editingRows[rowId];
+
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }} key={`ref-number-${rowId}-${isEditing}`}>
+            {hasSavedValue && !isEditing ? (
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                width: '100%',
+                gap: 1
+              }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: '#1e293b',
+                    backgroundColor: '#f1f5f9',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    flex: 1
+                  }}
+                >
+                  {params.row.REF_NUMBER}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleEditClick(rowId)}
+                  disabled={isSaving}
+                  sx={{
+                    borderRadius: '999px',
+                    height: '24px',
+                    minWidth: 'unset',
+                    px: '9px',
+                    fontSize: '11px',
+                    textTransform: 'none',
+                    background: '#dbeafe',
+                    color: '#1d4ed8',
+                    border: 'none',
+                    boxShadow: 'none',
+                    transition: 'all 0.15s',
+                    '&:hover': {
+                      background: '#bfdbfe',
+                      boxShadow: '0 0 0 2px #93c5fd',
+                      transform: 'translateY(-1px)',
+                    },
+                    '&:active': { transform: 'scale(0.96)' },
+                  }}
+                >
+                  Edit
+                </Button>
+              </Box>
+            ) : (
+              <>
+                <TextField
+                  key={`textfield-${rowId}`}
+                  value={refNumberValues[rowId] !== undefined ? refNumberValues[rowId] : params.row.REF_NUMBER || ""}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setRefNumberValues(prev => ({
+                      ...prev,
+                      [rowId]: newValue === undefined ? '' : newValue
+                    }));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveRefNumber(rowId, params.row);
+                    }
+                  }}
+                  size="small"
+                  placeholder="Enter Reference Number"
+                  type="text"
+                  disabled={isSaving}
+                  autoFocus={isEditing}
+                  onClick={(e) => e.stopPropagation()}
+                  InputProps={{
+                    sx: {
+                      '& .MuiInputBase-input': {
+                        fontSize: '12px',
+                        padding: '8px 12px',
+                      }
+                    }
+                  }}
+                  sx={{
+                    width: '150px',
+                    '& .MuiOutlinedInput-root': {
+                      height: '35px',
+                      fontSize: '12px',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#3b82f6',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6',
+                      },
+                    },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleSaveRefNumber(rowId, params.row)}
+                  disabled={isSaving || !refNumberValues[rowId] || refNumberValues[rowId].trim() === ""}
+                  sx={{
+                    borderRadius: '999px',
+                    height: '24px',
+                    minWidth: 'unset',
+                    px: '9px',
+                    fontSize: '11px',
+                    textTransform: 'none',
+                    background: '#156ee2',
+                    border: 'none',
+                    boxShadow: 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  Save
+                </Button>
+                {hasSavedValue && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleCancelEdit(rowId)}
+                    disabled={isSaving}
+                    sx={{
+                      borderRadius: '999px',
+                      height: '24px',
+                      minWidth: 'unset',
+                      px: '9px',
+                      fontSize: '11px',
+                      textTransform: 'none',
+                      background: '#fee2e2',
+                      color: '#b91c1c',
+                      border: 'none',
+                      boxShadow: 'none',
+                      transition: 'all 0.15s',
+                      '&:hover': {
+                        background: '#fecaca',
+                        boxShadow: '0 0 0 2px #fca5a5',
+                        transform: 'translateY(-1px)',
+                      },
+                      '&:active': { transform: 'scale(0.96)' },
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </>
+            )}
+          </Box>
+        );
+      }
+    },
+
+    
+    {
+  field: 'actions',
+  headerName: 'Actions',
+  width: 120,
+  sortable: false,
+  renderCell: (params) => (
+    <Tooltip title="Move to Onboarding">
+      <Button
+        size="small"
+        variant="contained"
+        onClick={() => handleOfferLterEmail(params.row)}
+        sx={{
+          backgroundColor: '#10b981',
+          textTransform: 'none',
+          fontSize: '9px',
+          '&:hover': {
+            backgroundColor: '#059669',
+          },
+        }}
+      >
+    Move To Onboarding
+      </Button>
+    </Tooltip>
+  ),
+}
+  ], [joiningDates]);
 
   return (
     <Box sx={{
@@ -636,7 +859,10 @@ useEffect(() => {
       margin: "0 auto",
       padding: "12px",
     }}>
-     
+   
+        
+      
+
         <Box sx={{
           width: "100%",
           borderRadius: "10px",
@@ -647,56 +873,33 @@ useEffect(() => {
           <DataGrid
             rows={filteredData}
             columns={columns}
-            getRowId={(row) => row.task_assignment_id}
             paginationModel={paginationModel}
+            getRowId={(row) => row.CHILD_CASEID}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10, 20, 50]}
-            rowHeight={40}
-            loading={loading}
-            columnHeaderHeight={40}
-            slots={{
-              loadingOverlay: () => (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: '50px',
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    zIndex: 10,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
-                    <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
-                      Loading...
-                    </Typography>
-                  </Box>
-                </Box>
-              ),
-            }}
+        rowHeight={40}
+            columnHeaderHeight={42}
             sx={{
               border: "none",
-              "& .MuiDataGrid-columnHeaders": {
+              "& .MuiDataGrid-columnHeaders": 
+              {
                 borderBottom: "2px solid #e2e8f0",
               },
-              "& .MuiDataGrid-columnHeader": {
+              "& .MuiDataGrid-columnHeader": 
+              {
                 fontWeight: 600,
                 fontSize: "13px",
                 color: "#1e293b",
                 backgroundColor: "rgba(188, 198, 238, 0.5)",
                 borderRight: "1px solid #e2e8f0",
+                padding: "0 6px", 
               },
               "& .MuiDataGrid-cell": {
                 borderBottom: "1px solid #f1f5f9",
                 borderRight: "1px solid #f1f5f9",
                 fontSize: "12px",
                 color: "#374151",
-                padding: "0 8px",
+                padding: "0 6px", 
                 display: "flex",
                 alignItems: "center",
               },
@@ -714,62 +917,15 @@ useEffect(() => {
         </Box>
      
 
-      {/* Manpower Modal */}
-      <Modal open={manpowerOpen} onClose={handleCloseModal}>
-        <Box sx={modalStyle}>
-          <Box sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            padding: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTopLeftRadius: '16px',
-            borderTopRightRadius: '16px',
-          }}>
-            <Typography variant="h6" sx={{
-              fontWeight: 600,
-              fontSize: '16px',
-              flex: 1,
-              textAlign: 'center',
-            }}>
-              Case ID: {selectedRowData?.CASEID} | Process: {selectedRowData?.PROCESSNAME}
-            </Typography>
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseModal}
-              sx={{
-                color: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                },
-                ml: 1,
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Box sx={{
-            padding: '20px',
-            maxHeight: 'calc(80vh - 80px)',
-            overflowY: 'auto',
-            backgroundColor: '#f8fafc',
-          }}>
-            {processCaseId.type === "view" ? (
-              <DataFlow
-                processname={processCaseId.processname ?? ""}
-                caseId={processCaseId.caseId ?? ""}
-                mode={processCaseId.type ?? ""}
-              />
-            ) : (
-              <ManPowerView caseId={processCaseId.caseId ?? ""} />
-            )}
-          </Box>
-        </Box>
-      </Modal>
+      <OfferLetterModal
+        open={offerLetterOpen}
+        onClose={() => setOfferLetterOpen(false)}
+        candidate={selectedCandidate}
+      />
     </Box>
   );
 };
 
-export default RecruitmentMail;
+export default OfferApproved;
+
+

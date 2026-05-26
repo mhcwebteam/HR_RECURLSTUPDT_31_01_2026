@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip, Modal, IconButton, Divider, FormControlLabel, Checkbox, Alert } from '@mui/material';
+import { Box, Paper, Typography, Button, Chip, TextField, InputAdornment, Tooltip, Modal, IconButton, Divider, FormControlLabel, Checkbox, Alert, Dialog, DialogContent, DialogActions, MenuItem } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SearchIcon from '@mui/icons-material/Search';
@@ -16,6 +16,7 @@ import html2canvas from 'html2canvas';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { CheckCircle2, Download } from 'lucide-react';
 import axiosInstance from '../Config/axiosConfig.jsx';
+import { Close } from '@mui/icons-material';
 
 const AppointmentLetter = () => {
   const [joiningData, setJoiningData] = useState([]);
@@ -33,15 +34,26 @@ const AppointmentLetter = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const [joiningDates, setJoiningDates] = useState({});
+const [submittedDetails, setSubmittedDetails] = useState({});
 
+const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  console.log("appointmentLetterDataappointmentLetterData",appointmentLetterData);
+const [plants, setPlants] = useState([]);
+const [selectedPlant, setSelectedPlant] = useState("");
+
+const [formData, setFormData] = useState({
+  reporting_to: '',
+  probation: '',
+});
+
 
   const navigate = useNavigate();
   const [Token, useToken] = useState(() => {
     const userToken = JSON.parse(localStorage.getItem('userInfo'));
     return userToken ? userToken : null;
   })
+
+  console.log(Token,"tokennnnvalue!!!!!!!!!!");
 
   //----------------------------JoiningDataStart------------------------//
   const joinData = async () => {
@@ -92,9 +104,21 @@ const AppointmentLetter = () => {
           hr_owner: item.CURRENT_USER,
           created_at: item.created_at,
           fullData: item,
+           appointmentDetailsFilled: !!(
+          item.ONBOARD_PLANT && 
+          item.REPORTING_TO && 
+          item.PROBITION
+        ),
+        
+        // Store the existing data for pre-filling the form
+        existingDetails: {
+          ONBOARD_PLANT: item.ONBOARD_PLANT || '',
+          REPORTING_TO: item.REPORTING_TO || '',
+          PROBITION: item.PROBITION || ''
+        },
         }));
 
-      console.log("Filtered formattedRows (with joining dates):", apiData);
+  
       setJoiningData(formattedRows);
       setFilteredData(formattedRows);
     } catch (error) {
@@ -146,7 +170,14 @@ const AppointmentLetter = () => {
       reference_no_App: `HR/APPT/${new Date().getFullYear()}/${rowData.CHILD_CASEID}`,
       DO_App: new Date().toLocaleDateString('en-GB'),
       Name_of_the_candidate: rowData.employee_name,
-      Address_of_The_CandidateP1: rowData.fullData?.current_address || 'Not Provided',
+    Address_of_The_CandidateP1: `
+  ${rowData.fullData?.PRESENT_HNO || ''},
+  ${rowData.fullData?.PRESENT_CITY || ''},
+  ${rowData.fullData?.PRESENT_MANDAL || ''},
+  ${rowData.fullData?.PRESENT_DISTRICT || ''},
+  ${rowData.fullData?.PRESENT_STATE || ''} - 
+  ${rowData.fullData?.PRESENT_PINCODE || ''}
+`.replace(/\s+/g, ' ').trim(),
 Designation:
   rowData?.DESIG !== 'N/A'
     ? rowData.DESIG
@@ -154,11 +185,11 @@ Designation:
 
       DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
       Location: rowData.location,
-      Reporting_to: rowData.fullData?.reporting_to || 'HOD',
+      Reporting_to: rowData.fullData?.REPORTING_TO || 'HOD',
       offer_ctc: rowData?.fullData?.offer_ctc,
       CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
-      Probation: '6 months',
-      Company: 'Company Name',
+      Probation: rowData?.fullData?.PROBITION,
+      Company: rowData?.fullData?.ONBOARD_PLANT,
       email: rowData.email,
       phone: rowData.phone,
       caseId: rowData.CHILD_CASEID,
@@ -354,7 +385,110 @@ const generatePDF = async () => {
     }));
   };
 
+const handleSubmit = async () => {
+  const selectedPlantObj = plants.find(
+    (p) => p.BUKRS === selectedPlant
+  );
 
+  if (!selectedPlantObj) {
+    Swal.fire({
+      icon: "error",
+      title: "Select plant first",
+    });
+    return;
+  }
+
+  if (!selectedRow?.CHILD_CASEID) {
+    Swal.fire({
+      icon: "error",
+      title: "Case ID missing",
+    });
+    return;
+  }
+
+  // ✅ Confirmation Alert
+
+    const confirmResult = await Swal.fire({
+    title: 'Are you sure?',
+   text: "Do you want to submit onboard details?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Submit',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#494b9b',
+    cancelButtonColor: '#6b7280',
+    customClass: {
+      container: 'swal2-container-custom'
+    },
+    didOpen: () => {
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '9999';
+      }
+    }
+  });
+  
+  if (!confirmResult.isConfirmed) {
+    return;
+  }
+
+  try {
+    const payload = {
+      case_id: selectedRow?.CHILD_CASEID,
+      REPORTING_TO: formData.reporting_to,
+      PROBITION: formData.probation,
+      ONBOARD_PLANT: `${selectedPlantObj.BUKRS}-${selectedPlantObj.COMP_CODE_DESC}`,
+      assigned_to: Token?.employee,
+    };
+
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/onboard-details`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${Token.token}`,
+        },
+      }
+    );
+
+    // ✅ Success Alert
+    if (response.data.status) {
+      await Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: response.data.message,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // Reset fields
+      setFormData({
+        reporting_to: "",
+        probation: "",
+      });
+
+      setSelectedPlant("");
+      setSelectedRow(null);
+
+      // Close dialog
+      setDetailsDialogOpen(false);
+
+      // Refresh data
+      joinData();
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text:
+        error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong",
+    });
+  }
+};
 
   const handleSubmitAppointment = async () => {
   if (!accepted) {
@@ -479,6 +613,62 @@ const generatePDF = async () => {
   } finally {
     setIsGeneratingPDF(false);
   }
+};
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+
+  const zmmPlants = async () => {
+    if (!Token?.token) return;
+
+    try {
+        const response = await axiosInstance.get(
+            `${API_BASE_URL}/zmm-plants`,
+            {
+                headers: { Authorization: `Bearer ${Token.token}` },
+            }
+        );
+
+        setPlants(response.data.data); // ✅ store data here
+
+        console.log(response.data, "plants response");
+
+    } catch (err) {
+        console.error("Error fetching plants", err);
+    }
+};
+
+    useEffect(() => {
+zmmPlants()
+    },[])
+
+
+
+const handleViewRejectedDetails = (row) => {
+  setSelectedRow(row);
+
+  setFormData({
+    reporting_to: row.existingDetails?.REPORTING_TO || '',
+    probation: row.existingDetails?.PROBITION || '',
+  });
+
+  // Also pre-select the plant if exists
+  if (row.existingDetails?.ONBOARD_PLANT) {
+    // Extract BUKRS from "2400-My Home Prop Dev Pvt Ltd"
+    const plantCode = row.existingDetails.ONBOARD_PLANT.split('-')[0];
+    setSelectedPlant(plantCode);
+  } else {
+    setSelectedPlant("");
+  }
+
+  setDetailsDialogOpen(true);
 };
 
   const hasTypePlant = filteredData?.some(row => row.TYPE_PLANT);
@@ -677,15 +867,47 @@ const generatePDF = async () => {
       );
     },
   },
+  //      {
+  //   field: 'Appoinment',
+  //   headerName: 'Appoinment Details',
+  //   flex: 0.6,
+  //   minWidth: 140,
+  //   sortable: false,
+  //   filterable: false,
+  //   renderCell: (params) => {
+    
+  
+  
+  //     return (
+  //       <Button
+  //         variant="contained"
+  //         size="small"
+  //        onClick={() => handleViewRejectedDetails(params.row)}
+  //         sx={{
+  //           backgroundColor: '#3b82f6',
+  //           textTransform: 'capitalize',
+  //           fontSize: '11px',
+  //           padding: '3px 10px',
+  //           borderRadius: '6px',
+  //           '&:hover': {
+  //             backgroundColor: '#2563eb',
+  //           },
+  //         }}
+  //       >
+  //         details
+  //       </Button>
+  //     );
+  //   },
+  // },
     {
       field: 'joining_status',
-      headerName: 'Status',
+      headerName: 'Appoinment Status',
       flex: 0.8,
-      minWidth: 100,
+      minWidth: 130,
       renderCell: (params) => (
         <Chip
           size="small"
-          label={params.value}
+          label= "pending"
           sx={{
             backgroundColor: params.value === 'Joined' ? '#10b981' : '#ef4444',
             color: 'white',
@@ -696,28 +918,38 @@ const generatePDF = async () => {
         />
       ),
     },
-    {
-      field: 'Appointment',
-      headerName: 'Appointment',
-      flex: 0.8,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Tooltip title="View Appointment Letter">
-          <IconButton
-            size="small"
-            onClick={() => handleAppointmentClick(params.row)}
-            sx={{
-              color: '#667eea',
-              '&:hover': {
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-              },
-            }}
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
-    },
+  {
+  field: 'Appointment',
+  headerName: 'Appointment',
+  flex: 0.8,
+  minWidth: 100,
+  renderCell: (params) => (
+    <Tooltip 
+      title={params.row.appointmentDetailsFilled 
+        ? "View Appointment Letter" 
+        : "Please fill appointment details first"}
+    >
+      <IconButton
+        size="small"
+        onClick={() => params.row.appointmentDetailsFilled && handleAppointmentClick(params.row)}
+        disabled={!params.row.appointmentDetailsFilled}
+        sx={{
+          color: params.row.appointmentDetailsFilled ? '#667eea' : '#cbd5e1',
+          '&:hover': {
+            backgroundColor: params.row.appointmentDetailsFilled 
+              ? 'rgba(102, 126, 234, 0.1)' 
+              : 'transparent',
+          },
+        }}
+      >
+        <VisibilityIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  ),
+},
+
+
+ 
   ];
 
   // Modal style
@@ -742,7 +974,7 @@ const generatePDF = async () => {
 
 
   sx={{
-      fontFamily: "'Times New Roman', serif",
+    
 
       maxWidth: "1400px",
   minHeight: "297mm",
@@ -870,40 +1102,423 @@ const generatePDF = async () => {
         </Box>
       </Paper>
 
-    {openDocModal && selectedRow && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            width: '90%',
-            maxWidth: '1000px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
-          }}>
-   
+  <Dialog
+  open={detailsDialogOpen}
+  onClose={() => setDetailsDialogOpen(false)}
+  maxWidth="sm"
+  fullWidth
+  PaperProps={{
+    sx: {
+      borderRadius: '20px',
+      overflow: 'hidden',
+      boxShadow: '0 24px 60px rgba(115,93,201,0.2), 0 6px 20px rgba(0,0,0,0.08)',
+    },
+  }}
+>
+  {/* HEADER */}
+  <Box
+    sx={{
+      background: 'linear-gradient(135deg, #3b2790 0%, #735dc9 60%, #9b7fe8 100%)',
+      px: 3,
+      pt: 2.5,
+      pb: 2.8,
+      position: 'relative',
+      overflow: 'hidden',
+    }}
+  >
+    <Box
+      sx={{
+        position: 'absolute',
+        top: -28,
+        right: -28,
+        width: 100,
+        height: 100,
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,0.06)',
+      }}
+    />
 
-            <DocUpload
-              rowData={selectedRow}
-              onClose={handleCloseModal}
-            refreshTable={joinData}
-            Report = "Appointement"
-            />
-          </div>
-        </div>
-      )}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+      }}
+    >
+      <Box>
+        <Typography
+          sx={{
+            fontSize: '18px',
+            fontWeight: 700,
+            color: 'white',
+            letterSpacing: '-0.3px',
+          }}
+        >
+          Appointment Details
+        </Typography>
+
+      </Box>
+
+      <IconButton
+        onClick={() => setDetailsDialogOpen(false)}
+        size="small"
+        sx={{
+          color: '#fff',
+          '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <Close sx={{ fontSize: 18 }} />
+      </IconButton>
+    </Box>
+  </Box>
+
+  {/* BODY */}
+  <DialogContent sx={{ p: 3 }}>
+    {/* Plant / Company Code Dropdown - Improved */}
+    <Box sx={{ mb: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          mb: 1,
+        }}
+      >
+   <Typography
+  sx={{
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#374151',
+  }}
+>
+  Plant / Company Code{' '}
+  <span style={{ color: 'red' }}>*</span>
+</Typography>
+        
+      </Box>
+
+      <TextField
+        select
+        fullWidth
+        size="small"
+        value={selectedPlant}
+        onChange={(e) => setSelectedPlant(e.target.value)}
+        placeholder="Select Plant / Company"
+        SelectProps={{
+          displayEmpty: true,
+          renderValue: (selected) => {
+            if (!selected) {
+              return (
+                <Typography sx={{ color: '#9ca3af', fontSize: '13px' }}>
+                  Select Plant / Company 
+                </Typography>
+              );
+            }
+            const selectedItem = plants.find((item) => item.BUKRS === selected);
+            return (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: '#10b981',
+                  }}
+                />
+                <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
+                  {selectedItem?.BUKRS} - {selectedItem?.COMP_CODE_DESC}
+                </Typography>
+              </Box>
+            );
+          },
+          MenuProps: {
+            PaperProps: {
+              sx: {
+                maxHeight: 300,
+                borderRadius: '12px',
+                mt: 1,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              },
+            },
+          },
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '8px',
+            backgroundColor: '#fafafa',
+            transition: 'all 0.2s',
+            '&:hover': {
+              backgroundColor: '#f5f3ff',
+              '& fieldset': {
+                borderColor: '#735dc9',
+              },
+            },
+            '&.Mui-focused': {
+              backgroundColor: '#ffffff',
+              '& fieldset': {
+                borderColor: '#735dc9',
+                borderWidth: '2px',
+              },
+            },
+          },
+          '& .MuiSelect-select': {
+            py: 1,
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
+      >
+        {plants.map((item, index) => (
+          <MenuItem
+            key={index}
+            value={item.BUKRS}
+            sx={{
+              py: 1,
+              px: 1,
+              borderBottom: index !== plants.length - 1 ? '1px solid #f1f5f9' : 'none',
+              '&:hover': {
+                backgroundColor: '#f5f3ff',
+              },
+              '&.Mui-selected': {
+                backgroundColor: '#ede9fe',
+                '&:hover': {
+                  backgroundColor: '#ddd6fe',
+                },
+              },
+            }}
+          >
+         <MenuItem key={index} value={item.BUKRS}>
+  <Typography sx={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
+    {item.BUKRS} - {item.COMP_CODE_DESC}
+  </Typography>
+</MenuItem>
+          </MenuItem>
+        ))}
+      </TextField>
+    </Box>
+
+    {/* Reporting To and Probation - 2 Column Layout */}
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: '1fr 1fr',
+        },
+        gap: 2.5,
+      }}
+    >
+      {/* Reporting To */}
+      <Box>
+        
+        <Typography
+          sx={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: '#374151',
+            mb: 1,
+          }}
+        >
+          👤 Reporting To <span style={{ color: 'red' }}>*</span>
+        </Typography>
+
+        <TextField
+          fullWidth
+          placeholder="e.g., John Smith"
+          name="reporting_to"
+          value={formData.reporting_to}
+          onChange={handleChange}
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <Box
+                component="span"
+                sx={{
+                  color: '#9ca3af',
+                  mr: 0.5,
+                  fontSize: '16px',
+                }}
+              >
+              
+              </Box>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              backgroundColor: '#fafafa',
+              transition: 'all 0.2s',
+              '&:hover': {
+                backgroundColor: '#f5f3ff',
+                '& fieldset': {
+                  borderColor: '#735dc9',
+                },
+              },
+              '&.Mui-focused': {
+                backgroundColor: '#ffffff',
+                '& fieldset': {
+                  borderColor: '#735dc9',
+                  borderWidth: '2px',
+                },
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {/* Probation Period */}
+      <Box>
+        <Typography
+          sx={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: '#374151',
+            mb: 1,
+          }}
+        >
+           ⏱️ Probation Period <span style={{ color: 'red' }}>*</span>
+        </Typography>
+
+        <TextField
+          fullWidth
+          placeholder="e.g., 6 months"
+          name="probation"
+          value={formData.probation}
+          onChange={handleChange}
+          size="small"
+        
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              backgroundColor: '#fafafa',
+              transition: 'all 0.2s',
+              '&:hover': {
+                backgroundColor: '#f5f3ff',
+                '& fieldset': {
+                  borderColor: '#735dc9',
+                },
+              },
+              '&.Mui-focused': {
+                backgroundColor: '#ffffff',
+                '& fieldset': {
+                  borderColor: '#735dc9',
+                  borderWidth: '2px',
+                },
+              },
+            },
+          }}
+        />
+      </Box>
+    </Box>
+
+    {/* Optional: Help text */}
+    <Typography
+      sx={{
+        fontSize: '11px',
+        color: '#9ca3af',
+        mt: 2,
+        textAlign: 'center',
+      }}
+    >
+      All fields are required for appointment letter generation
+    </Typography>
+  </DialogContent>
+
+  {/* FOOTER */}
+  <DialogActions
+    sx={{
+      px: 3,
+      py: 2,
+      borderTop: '1px solid #f1f5f9',
+      gap: 1.5,
+    }}
+  >
+    <Button
+      onClick={() => setDetailsDialogOpen(false)}
+      variant="outlined"
+      sx={{
+        textTransform: 'none',
+        borderRadius: '10px',
+        px: 3,
+        py: 0.8,
+        fontSize: '13px',
+        fontWeight: 500,
+        borderColor: '#e2e8f0',
+        color: '#64748b',
+        '&:hover': {
+          borderColor: '#cbd5e1',
+          backgroundColor: '#f8fafc',
+        },
+      }}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      onClick={handleSubmit}
+      variant="contained"
+      disabled={!selectedPlant || !formData.reporting_to || !formData.probation}
+      sx={{
+        background: 'linear-gradient(135deg, #2e3864, #283040)',
+        textTransform: 'none',
+        borderRadius: '10px',
+        fontWeight: 600,
+        px: 3,
+        py: 0.8,
+        fontSize: '13px',
+        boxShadow: '0 2px 6px rgba(103, 100, 194, 0.3)',
+        '&:hover': {
+          background: 'linear-gradient(135deg, #23285c, #292581)',
+          transform: 'translateY(-1px)',
+          boxShadow: '0 4px 12px rgba(25, 35, 99, 0.4)',
+        },
+        '&:disabled': {
+          background: '#d1d5db',
+          boxShadow: 'none',
+        },
+      }}
+    >
+      Submit Details
+    </Button>
+  </DialogActions>
+</Dialog>
+
+   {openDocModal && selectedRow && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           backgroundColor: 'rgba(0,0,0,0.5)',
+           display: 'flex',
+           justifyContent: 'center',
+           alignItems: 'center',
+           zIndex: 9999,
+           padding: '20px'
+         }}>
+           <div style={{
+             background: 'white',
+             borderRadius: '12px',
+             width: '90%',
+             maxWidth: '1000px',
+             maxHeight: '90vh',
+             overflow: 'auto',
+             position: 'relative'
+           }}>
+    
+ 
+             <DocUpload
+               rowData={selectedRow}
+               onClose={handleCloseModal}
+             refreshTable={joinData}
+             Report = "Appointement"
+             />
+           </div>
+         </div>
+       )}
       {/* Appointment Letter Modal */}
       <Modal
         open={openAppointmentModal}
@@ -977,9 +1592,21 @@ const generatePDF = async () => {
 
       <Box sx={{ mb: 2 }}>
         <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>3. Reporting:</Box>
-        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          You will report to {appointmentLetterData?.Reporting_to} or any other authority assigned by Management from time to time.
-        </Box>
+    <Box
+  sx={{
+    pl: 2,
+    fontSize: '14px',
+    fontFamily: 'Arial, sans-serif'
+  }}
+>
+  You will report to{' '}
+  
+  <Box component="span" sx={{ fontWeight: 'bold' }}>
+    {appointmentLetterData?.Reporting_to}
+  </Box>
+
+  {' '}or any other authority assigned by Management from time to time.
+</Box>
       </Box>
 
       <Box sx={{ mb: 2 }}>
@@ -991,9 +1618,21 @@ const generatePDF = async () => {
 
       <Box sx={{ mb: 2 }}>
         <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>5. Probation:</Box>
-        <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          You will be on probation for a period of {appointmentLetterData?.Probation} from the date of your joining and will continue to be so unless your services are confirmed in writing.
-        </Box>
+   <Box
+  sx={{
+    pl: 2,
+    fontSize: '14px',
+    fontFamily: 'Arial, sans-serif'
+  }}
+>
+  You will be on probation for a period of{' '}
+
+  <Box component="span" sx={{ fontWeight: 'bold' }}>
+    {appointmentLetterData?.Probation}
+  </Box>
+
+  {' '}from the date of your joining and will continue to be so unless your services are confirmed in writing.
+</Box>
       </Box>
 
       <Box sx={{ mb: 2 }}>
@@ -1098,7 +1737,7 @@ const generatePDF = async () => {
     <Box sx={{ mt: 6 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
         <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          <Box sx={{ mb: 1 }}>For {appointmentLetterData?.Company}</Box>
+          <Box sx={{ mb: 1 }}>{appointmentLetterData?.Company}</Box>
           <Box sx={{ mb: 4, fontWeight: 'bold' }}>Sudeep Kumar K</Box>
           <Box>Vice President - HR</Box>
         </Box>

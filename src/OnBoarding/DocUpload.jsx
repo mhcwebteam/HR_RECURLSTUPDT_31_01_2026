@@ -1843,7 +1843,7 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
         {item.type !== 'multiple' && (
           item.fileName
             ? <span title={item.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{item.fileName}</span>
-            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1' }}>No file</span>
         )}
       </td>
       {/* Actions */}
@@ -1873,7 +1873,7 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
         <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>
           {subItem.fileName
             ? <span title={subItem.fileName} style={{ fontSize: 11, color: '#475569', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{subItem.fileName}</span>
-            : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic' }}>No file</span>
+            : <span style={{ fontSize: 11, color: '#cbd5e1' }}>No file</span>
           }
         </td>
         <td style={{ padding: '7px 14px', verticalAlign: 'middle' }}>

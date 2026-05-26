@@ -9,7 +9,7 @@ import { Typography, Button, CircularProgress, } from "@mui/material";
 import { ArrowLeftIcon, BriefcaseIcon, CalendarCheck, CalendarCheck2, CalendarIcon, CheckCircleIcon, UserIcon } from "lucide-react";
 import { AcademicCapIcon, BuildingOfficeIcon, DocumentTextIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_BASE_URL } from '../Config/Config';
+import { API_BASE_URL, FILE_PATH } from '../Config/Config';
 import axiosInstance from "../Config/axiosConfig";
 
 function ManPowerView({ caseId, onClose }) {
@@ -25,7 +25,7 @@ function ManPowerView({ caseId, onClose }) {
     plant: "", caseid: "", rdate: "", requestor: "", rmail_id: "", department: "", EVC_DATE:"",
     jobtype: "", recruitmentcycle: "", Position: "", qualf: "", exyear: "",
     hiringfor: "", reportingto: "", req_pers: "", tecskill: "", soft_skill: "",
-    jdesc: "", uremarks: "", remarks: "", approve: "", hodremarks: "", Replacing_Emp:""
+    jdesc: "", uremarks: "", remarks: "", approve: "", hodremarks: "", Replacing_Emp:"", CUR_TASK: "",
   });
   const [showPopup, setShowPopup] = useState(true);
   const [modalType, setModalType] = useState("");
@@ -262,6 +262,8 @@ const CustomDateField = () => (
                       <input type="text" name="hiringfor" value={formData.RECRUIT_FOR} readOnly className={getFieldClass("hiringfor")} />
                     </div>
                     {formData.RECRUIT_FOR == "Replacement" && (
+                      <>
+                  
   <div>
     <label className="block text-xs font-semibold text-gray-700 mb-0.5">
       Replacing Employee
@@ -273,6 +275,38 @@ const CustomDateField = () => (
       className={getFieldClass("replacing_emp")}
     />
   </div>
+  <div>
+    <label className="block text-xs font-semibold text-gray-700 mb-1">
+      Resignation File
+    </label>
+
+    <div className="w-full border border-gray-300 rounded-md bg-white px-3 py-2 flex items-center justify-between">
+
+      {formData.REPLACEMENT_FILE ? (
+        <>
+          <span className="text-xs text-gray-700 truncate max-w-[70%]">
+            📄 {formData.REPLACEMENT_FILE}
+          </span>
+
+          <a
+            href={`${FILE_PATH}${formData.REPLACEMENT_FILE}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 text-sm font-medium hover:underline"
+          >
+            View
+          </a>
+        </>
+      ) : (
+        <span className="text-sm text-gray-400">
+          No file uploaded
+        </span>
+      )}
+
+    </div>
+  </div>
+
+      </>
 )}
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Reporting To</label>
@@ -407,7 +441,7 @@ const CustomDateField = () => (
                             )}
                     
                               <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">EVC:</label>
+                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold"> {formData?.CUR_TASK}</label>
                                 <textarea value={formData?.EVC_REM  || formData?.CFO_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
                               </div>
                           

@@ -171,6 +171,8 @@ const resetFamilyForm = () => {
     sons: []
   });
 };
+
+
 const handleFamilySubmit = async () => {
   console.log("=== handleFamilySubmit START ===");
   console.log("selectedRow:", selectedRow);
@@ -186,62 +188,89 @@ const handleFamilySubmit = async () => {
     return;
   }
   
- const confirmResult = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'Do you want to submit family details?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Submit',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      customClass: {
-        container: 'swal2-container-custom'
-      },
-      didOpen: () => {
-        // Set z-index after modal opens
-        const swalContainer = document.querySelector('.swal2-container');
-        if (swalContainer) {
-          swalContainer.style.zIndex = '9999';
-        }
+  const confirmResult = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'Do you want to submit family details?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Submit',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#6b7280',
+    customClass: {
+      container: 'swal2-container-custom'
+    },
+    didOpen: () => {
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '9999';
       }
-    });
-    
-    if (!confirmResult.isConfirmed) {
-      return;
     }
-
+  });
   
+  if (!confirmResult.isConfirmed) {
+    return;
+  }
 
-  
   setFamilyLoading(true);
-  console.log("familyLoading set to true");
 
   try {
     const formData = new FormData();
     formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
     formData.append('onBoarding', 1);
     
-    console.log("CHILD_CASEID:", selectedRow?.CHILD_CASEID);
-    
-    // Get existing data
-    const existingSpouseName = selectedRow?.fullData?.spouse_name || '';
-    const existingSpouseDob = selectedRow?.fullData?.spouse_dob || '';
+    // Get existing data from backend
     const existingDaughters = selectedRow?.fullData?.daughters_data || [];
     const existingSons = selectedRow?.fullData?.sons_data || [];
     
-    console.log("existingDaughters:", existingDaughters);
-    console.log("existingSons:", existingSons);
+    // Get IDs (document_id) of existing records
+    const existingDaughterIds = existingDaughters.map(d => d.document_id).filter(id => id);
+    const existingSonIds = existingSons.map(s => s.document_id).filter(id => id);
     
-    // Spouse
+    // Get current daughter IDs from form
+    const currentDaughterIds = familyFormData.daughters
+      .map(d => d.document_id || d.id)
+      .filter(id => id);
+    
+    const currentSonIds = familyFormData.sons
+      .map(s => s.document_id || s.id)
+      .filter(id => id);
+    
+    // Find deleted IDs
+    const deletedDaughterIds = existingDaughterIds.filter(id => !currentDaughterIds.includes(id));
+    const deletedSonIds = existingSonIds.filter(id => !currentSonIds.includes(id));
+    
+
+    // Send deleted IDs to backend as JSON string
+    if (deletedDaughterIds.length > 0) {
+      formData.append('deleted_daughter_ids', JSON.stringify(deletedDaughterIds));
+      console.log("Deleting daughters with document_ids:", deletedDaughterIds);
+    }
+    
+    if (deletedSonIds.length > 0) {
+      formData.append('deleted_son_ids', JSON.stringify(deletedSonIds));
+      console.log("Deleting sons with document_ids:", deletedSonIds);
+    }
+    
+    // Handle spouse data
+    const existingSpouseName = selectedRow?.fullData?.spouse_name || '';
+    const existingSpouseDob = selectedRow?.fullData?.spouse_dob || '';
+    
     if (familyFormData.spouseName && familyFormData.spouseName !== existingSpouseName) {
       formData.append('spouse_name', familyFormData.spouseName);
-      console.log("Adding spouse_name:", familyFormData.spouseName);
+      console.log("Updating spouse_name:", familyFormData.spouseName);
+    } else if (familyFormData.spouseName === '' && existingSpouseName) {
+      // If spouse name is cleared, send empty to delete
+      formData.append('spouse_name', '');
+      console.log("Removing spouse name");
     }
     
     if (familyFormData.spouseDob && familyFormData.spouseDob !== existingSpouseDob) {
       formData.append('spouse_dob', familyFormData.spouseDob);
-      console.log("Adding spouse_dob:", familyFormData.spouseDob);
+      console.log("Updating spouse_dob:", familyFormData.spouseDob);
+    } else if (familyFormData.spouseDob === '' && existingSpouseDob) {
+      formData.append('spouse_dob', '');
+      console.log("Removing spouse DOB");
     }
     
     if (familyFormData.spouseFile) {
@@ -249,39 +278,47 @@ const handleFamilySubmit = async () => {
       console.log("Adding spouseFile:", familyFormData.spouseFile.name);
     }
     
-    // Daughters - Only send if there are daughters
-    if (familyFormData.daughters && familyFormData.daughters.length > 0) {
-      console.log("Processing daughters, count:", familyFormData.daughters.length);
-      formData.append('daughters_count', familyFormData.daughters.length);
-      
-      familyFormData.daughters.forEach((daughter, index) => {
-        if (daughter.name) {
-          formData.append(`daughter_${index + 1}_name`, daughter.name);
-          formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
-          if (daughter.file) {
-            formData.append(`daughter_${index + 1}_document`, daughter.file);
-          }
-          console.log(`Added daughter ${index + 1}:`, daughter.name);
-        }
-      });
-    }
+    // Process Daughters
+    const validDaughters = familyFormData.daughters.filter(d => d.name && d.name.trim() !== '');
+    console.log("Valid daughters count:", validDaughters.length);
+    formData.append('daughters_count', validDaughters.length);
     
-    // Sons - Only send if there are sons
-    if (familyFormData.sons && familyFormData.sons.length > 0) {
-      console.log("Processing sons, count:", familyFormData.sons.length);
-      formData.append('sons_count', familyFormData.sons.length);
-      
-      familyFormData.sons.forEach((son, index) => {
-        if (son.name) {
-          formData.append(`son_${index + 1}_name`, son.name);
-          formData.append(`son_${index + 1}_dob`, son.dob || '');
-          if (son.file) {
-            formData.append(`son_${index + 1}_document`, son.file);
-          }
-          console.log(`Added son ${index + 1}:`, son.name);
-        }
-      });
-    }
+    validDaughters.forEach((daughter, index) => {
+      // Send document_id if exists (for update)
+      if (daughter.document_id || daughter.id) {
+        formData.append(`daughter_${index + 1}_document_id`, daughter.document_id || daughter.id);
+      }
+      formData.append(`daughter_${index + 1}_name`, daughter.name);
+      formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
+      if (daughter.file) {
+        formData.append(`daughter_${index + 1}_document`, daughter.file);
+      }
+      if (daughter.order) {
+        formData.append(`daughter_${index + 1}_order`, daughter.order);
+      }
+      console.log(`Added daughter ${index + 1}:`, daughter.name, `(ID: ${daughter.document_id || daughter.id || 'New'})`);
+    });
+    
+    // Process Sons
+    const validSons = familyFormData.sons.filter(s => s.name && s.name.trim() !== '');
+    console.log("Valid sons count:", validSons.length);
+    formData.append('sons_count', validSons.length);
+    
+    validSons.forEach((son, index) => {
+      // Send document_id if exists (for update)
+      if (son.document_id || son.id) {
+        formData.append(`son_${index + 1}_document_id`, son.document_id || son.id);
+      }
+      formData.append(`son_${index + 1}_name`, son.name);
+      formData.append(`son_${index + 1}_dob`, son.dob || '');
+      if (son.file) {
+        formData.append(`son_${index + 1}_document`, son.file);
+      }
+      if (son.order) {
+        formData.append(`son_${index + 1}_order`, son.order);
+      }
+      console.log(`Added son ${index + 1}:`, son.name, `(ID: ${son.document_id || son.id || 'New'})`);
+    });
     
     console.log("Making API call to:", `${API_BASE_URL}/on-board-Store`);
     
@@ -297,20 +334,20 @@ const handleFamilySubmit = async () => {
     
     console.log("API Response:", response.data);
     
-  if (response.data.success || response.data.message) {
-  await Swal.fire({
-    icon: 'success',
-    title: 'Success!',
-    text: response.data.message || 'Family details saved successfully',
-    timer: 2000,
-    showConfirmButton: false,
-  });
+    if (response.data.success || response.data.message) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: response.data.message || 'Family details saved successfully',
+        timer: 2000,
+        showConfirmButton: false,
+      });
 
-resetFamilyForm();
-setSelectedRow(null);
-setFamilyModal(false);
-await joinData(); // after closing so re-open gets fresh data// ✅ Refresh table data so fullData is updated
-} else {
+      // resetFamilyForm();
+      // setSelectedRow(null);
+      setFamilyModal(false);
+      await joinData(); // Refresh table data
+    } else {
       throw new Error(response.data.message || 'Failed to save');
     }
     
@@ -325,9 +362,165 @@ await joinData(); // after closing so re-open gets fresh data// ✅ Refresh tabl
     });
   } finally {
     setFamilyLoading(false);
-    console.log("familyLoading set to false");
   }
 };
+// const handleFamilySubmit = async () => {
+//   console.log("=== handleFamilySubmit START ===");
+//   console.log("selectedRow:", selectedRow);
+//   console.log("familyFormData:", familyFormData);
+  
+//   if (!selectedRow || !selectedRow.CHILD_CASEID) {
+//     console.error("ERROR: No selected row");
+//     Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: 'No employee selected. Please try again.',
+//     });
+//     return;
+//   }
+  
+//  const confirmResult = await Swal.fire({
+//       title: 'Are you sure?',
+//       text: 'Do you want to submit family details?',
+//       icon: 'question',
+//       showCancelButton: true,
+//       confirmButtonText: 'Yes, Submit',
+//       cancelButtonText: 'Cancel',
+//       confirmButtonColor: '#10b981',
+//       cancelButtonColor: '#6b7280',
+//       customClass: {
+//         container: 'swal2-container-custom'
+//       },
+//       didOpen: () => {
+//         // Set z-index after modal opens
+//         const swalContainer = document.querySelector('.swal2-container');
+//         if (swalContainer) {
+//           swalContainer.style.zIndex = '9999';
+//         }
+//       }
+//     });
+    
+//     if (!confirmResult.isConfirmed) {
+//       return;
+//     }
+
+  
+
+  
+//   setFamilyLoading(true);
+//   console.log("familyLoading set to true");
+
+//   try {
+//     const formData = new FormData();
+//     formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
+//     formData.append('onBoarding', 1);
+    
+//     console.log("CHILD_CASEID:", selectedRow?.CHILD_CASEID);
+    
+//     // Get existing data
+//     const existingSpouseName = selectedRow?.fullData?.spouse_name || '';
+//     const existingSpouseDob = selectedRow?.fullData?.spouse_dob || '';
+//     const existingDaughters = selectedRow?.fullData?.daughters_data || [];
+//     const existingSons = selectedRow?.fullData?.sons_data || [];
+    
+//     console.log("existingDaughters:", existingDaughters);
+//     console.log("existingSons:", existingSons);
+    
+//     // Spouse
+//     if (familyFormData.spouseName && familyFormData.spouseName !== existingSpouseName) {
+//       formData.append('spouse_name', familyFormData.spouseName);
+//       console.log("Adding spouse_name:", familyFormData.spouseName);
+//     }
+    
+//     if (familyFormData.spouseDob && familyFormData.spouseDob !== existingSpouseDob) {
+//       formData.append('spouse_dob', familyFormData.spouseDob);
+//       console.log("Adding spouse_dob:", familyFormData.spouseDob);
+//     }
+    
+//     if (familyFormData.spouseFile) {
+//       formData.append('spouseFile', familyFormData.spouseFile);
+//       console.log("Adding spouseFile:", familyFormData.spouseFile.name);
+//     }
+    
+//     // Daughters - Only send if there are daughters
+//     if (familyFormData.daughters && familyFormData.daughters.length > 0) {
+//       console.log("Processing daughters, count:", familyFormData.daughters.length);
+//       formData.append('daughters_count', familyFormData.daughters.length);
+      
+//       familyFormData.daughters.forEach((daughter, index) => {
+//         if (daughter.name) {
+//           formData.append(`daughter_${index + 1}_name`, daughter.name);
+//           formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
+//           if (daughter.file) {
+//             formData.append(`daughter_${index + 1}_document`, daughter.file);
+//           }
+//           console.log(`Added daughter ${index + 1}:`, daughter.name);
+//         }
+//       });
+//     }
+    
+//     // Sons - Only send if there are sons
+//     if (familyFormData.sons && familyFormData.sons.length > 0) {
+//       console.log("Processing sons, count:", familyFormData.sons.length);
+//       formData.append('sons_count', familyFormData.sons.length);
+      
+//       familyFormData.sons.forEach((son, index) => {
+//         if (son.name) {
+//           formData.append(`son_${index + 1}_name`, son.name);
+//           formData.append(`son_${index + 1}_dob`, son.dob || '');
+//           if (son.file) {
+//             formData.append(`son_${index + 1}_document`, son.file);
+//           }
+//           console.log(`Added son ${index + 1}:`, son.name);
+//         }
+//       });
+//     }
+    
+//     console.log("Making API call to:", `${API_BASE_URL}/on-board-Store`);
+    
+//     const response = await axiosInstance.post(
+//       `${API_BASE_URL}/on-board-Store`,
+//       formData,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${Token.token}`,
+//         },
+//       }
+//     );
+    
+//     console.log("API Response:", response.data);
+    
+//   if (response.data.success || response.data.message) {
+//   await Swal.fire({
+//     icon: 'success',
+//     title: 'Success!',
+//     text: response.data.message || 'Family details saved successfully',
+//     timer: 2000,
+//     showConfirmButton: false,
+//   });
+
+// resetFamilyForm();
+// setSelectedRow(null);
+// setFamilyModal(false);
+// await joinData(); // after closing so re-open gets fresh data// ✅ Refresh table data so fullData is updated
+// } else {
+//       throw new Error(response.data.message || 'Failed to save');
+//     }
+    
+//   } catch (error) {
+//     console.error("ERROR in handleFamilySubmit:", error);
+//     console.error("Error response:", error.response);
+    
+//     await Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: error.response?.data?.message || error.message || 'Something went wrong',
+//     });
+//   } finally {
+//     setFamilyLoading(false);
+//     console.log("familyLoading set to false");
+//   }
+// };
 
 
 
@@ -396,28 +589,57 @@ const handleSpouseFileSelect = (event) => {
     setSelectedRow(rowData);
     setOpenDocModal(true);
   };
-
-  // const handleFamilyUploadClick = (rowData) => {
-  //   setSelectedRow(rowData);
-  //   resetFamilyForm();
-  //   setFamilyModal(true);
-  // };
-
 const handleFamilyUploadClick = (rowData) => {
   setSelectedRow(rowData);
-
-  // ✅ Always reset first
+  
+  // Pre-populate form with existing data including document_id as id
+  const existingDaughters = (rowData.fullData?.daughters_data || []).map(daughter => ({
+    id: daughter.document_id || daughter.id, // Map document_id to id
+    document_id: daughter.document_id,
+    name: daughter.name || '',
+    dob: daughter.dob || '',
+    
+    file: null,
+    order: daughter.order || 1
+  }));
+  
+  const existingSons = (rowData.fullData?.sons_data || []).map(son => ({
+    id: son.document_id || son.id, // Map document_id to id
+    document_id: son.document_id,
+    name: son.name || '',
+    dob: son.dob || '',
+    file: null,
+    order: son.order || 1
+  }));
+  
   setFamilyFormData({
-    spouseName: '',
-    spouseDob: '',
+    spouseName: rowData.fullData?.spouse_name || '',
+    spouseDob: rowData.fullData?.spouse_dob || '',
     spouseFile: null,
-    daughters: [],
-    sons: [],
+    daughters: existingDaughters,
+    sons: existingSons,
   });
-
+  
   setFileErrors({ spouse: '', daughters: [], sons: [] });
   setFamilyModal(true);
 };
+
+
+// const handleFamilyUploadClick = (rowData) => {
+//   setSelectedRow(rowData);
+
+//   // ✅ Always reset first
+//   setFamilyFormData({
+//     spouseName: '',
+//     spouseDob: '',
+//     spouseFile: null,
+//     daughters: [],
+//     sons: [],
+//   });
+
+//   setFileErrors({ spouse: '', daughters: [], sons: [] });
+//   setFamilyModal(true);
+// };
   const handleHistoryClick = (rowData) => {
     setSelectedRow(rowData);
     setOpenHistoryModal(true);
@@ -841,25 +1063,7 @@ const validateFileType = (file) => {
         </Button>
       ),
     },
-    {
-      field: 'joining_status',
-      headerName: 'Status',
-      flex: 0.8,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Chip
-          size="small"
-          label={params.value}
-          sx={{
-            backgroundColor: params.value === 'Joined' ? '#10b981' : '#ef4444',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '11px',
-            height: '24px',
-          }}
-        />
-      ),
-    },
+
     // {
     //   field: 'documents_status',
     //   headerName: 'Docs Status',
@@ -1157,89 +1361,94 @@ const validateFileType = (file) => {
           </Box>
 
           {/* Dynamic Daughter Fields */}
-          {familyFormData.daughters?.map((daughter, index) => (
-            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
-     <IconButton
-  onClick={() => removeDaughter(index)}
-  size="small"
-  sx={{
-    position: 'absolute',
-    top:-8,
-    right: -5,
-    color: '#ef4444',
-    backgroundColor: '#fff',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-    '&:hover': {
-      backgroundColor: '#fee2e2'
-    }
-  }}
->
-  <CircleX size={16} />
-</IconButton>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextField
-                  sx={{ flex: 1, minWidth: '180px' }}
-                  label={`Daughter ${index + 1} Name`}
-                  value={daughter.name}
-                  onChange={(e) => updateDaughter(index, 'name', e.target.value)}
-                  placeholder="Enter daughter's name"
-                  size="small"
-                />
-                <TextField
-                  sx={{ flex: 1, minWidth: '150px' }}
-                  label="Date of Birth"
-                  type="date"
-                  value={daughter.dob}
-                  onChange={(e) => updateDaughter(index, 'dob', e.target.value)}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Button
-                  size="small"
-                  variant="outlined"
-                  component="label"
-                  startIcon={<CloudUploadIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    borderColor: '#667eea',
-                    color: '#667eea',
-                    '&:hover': {
-                      borderColor: '#764ba2',
-                      backgroundColor: '#f5f3ff'
-                    }
-                  }}
-                >
-                  Upload
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/jpeg,image/jpg,image/png"
-                    onChange={(e) => handleFileSelect(e, 'daughter', index)}
-                  />
-                </Button>
+      {familyFormData.daughters?.map((daughter, index) => (
+  <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
+    <IconButton
+      onClick={() => removeDaughter(index)}
+      size="small"
+      sx={{
+        position: 'absolute',
+        top: -8,
+        right: -5,
+        color: '#ef4444',
+        backgroundColor: '#fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+        '&:hover': {
+          backgroundColor: '#fee2e2'
+        }
+      }}
+    >
+      <CircleX size={16} />
+    </IconButton>
+    
+    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <TextField
+        sx={{ flex: 1, minWidth: '180px' }}
+        label={`Daughter ${index + 1} Name`}
+        value={daughter.name}
+        onChange={(e) => updateDaughter(index, 'name', e.target.value)}
+        placeholder="Enter daughter's name"
+        size="small"
+      />
+      <TextField
+        sx={{ flex: 1, minWidth: '150px' }}
+        label="Date of Birth"
+        type="date"
+        value={daughter.dob}
+        onChange={(e) => updateDaughter(index, 'dob', e.target.value)}
+        size="small"
+        InputLabelProps={{ shrink: true }}
+      />
+      <Button
+        size="small"
+        variant="outlined"
+        component="label"
+        startIcon={<CloudUploadIcon />}
+        sx={{
+          textTransform: 'none',
+          borderRadius: '8px',
+          borderColor: '#667eea',
+          color: '#667eea',
+          '&:hover': {
+            borderColor: '#764ba2',
+            backgroundColor: '#f5f3ff'
+          }
+        }}
+      >
+        {daughter.file ? 'Change File' : 'Upload'}
+        <input
+          type="file"
+          hidden
+          accept="image/jpeg,image/jpg,image/png"
+          onChange={(e) => handleFileSelect(e, 'daughter', index)}
+        />
+      </Button>
+    </Box>
 
+    {/* ========== FIXED: Show existing file or new file ========== */}
+    {(daughter.file || daughter.document_id) && (
+      <Box sx={{ marginTop: '8px' }}>
+        {daughter.file ? (
+          // Show newly selected file
+          <Typography variant="caption" sx={{ color: '#10b981', display: 'block' }}>
+            📄 New: {daughter.file.name.substring(0, 30)}
+          </Typography>
+        ) : daughter.document_id ? (
+          // Show existing file from database
+          <Typography variant="caption" sx={{ color: '#3b82f6', display: 'block' }}>
+            📎 Existing file uploaded (ID: {daughter.document_id})
+          </Typography>
+        ) : null}
+      </Box>
+    )}
 
-              </Box>
-              {daughter.file && (
-                <Typography variant="caption" sx={{ color: '#10b981', display: 'block', marginTop: '8px' }}>
-                  📄 {daughter.file.name.substring(0, 30)}
-                </Typography>
-              )}
-
-              {fileErrors.daughters[index] && (
-  <Typography variant="caption" sx={{ color: 'red', mt: 1 }}>
-    {fileErrors.daughters[index]}
-  </Typography>
-)}
-            </Box>
-          ))}
-          
-          {(!familyFormData.daughters || familyFormData.daughters.length === 0) && (
-            <Typography variant="body2" sx={{ color: '#9ca3af', textAlign: 'center', py: 2 }}>
-              No daughters added. Click "+ Add Daughter" to add.
-            </Typography>
-          )}
+    {fileErrors.daughters[index] && (
+      <Typography variant="caption" sx={{ color: 'red', mt: 1, display: 'block' }}>
+        {fileErrors.daughters[index]}
+      </Typography>
+    )}
+  </Box>
+))}
         </Box>
 
         <Divider sx={{ my: 2 }} />
@@ -1270,80 +1479,92 @@ const validateFileType = (file) => {
           </Box>
 
           {/* Dynamic Son Fields */}
-          {familyFormData.sons?.map((son, index) => (
-            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
-             <IconButton
-  onClick={() => removeSon(index)}
-  size="small"
-  sx={{
-    position: 'absolute',
-    top:-8,
-    right: -5,
-    color: '#ef4444',
-    backgroundColor: '#fff',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-    '&:hover': {
-      backgroundColor: '#fee2e2'
-    }
-  }}
->
-  <CircleX size={16} />
-</IconButton>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextField
-                  sx={{ flex: 1, minWidth: '180px' }}
-                  label={`Son ${index + 1} Name`}
-                  value={son.name}
-                  onChange={(e) => updateSon(index, 'name', e.target.value)}
-                  placeholder="Enter son's name"
-                  size="small"
-                />
-                <TextField
-                  sx={{ flex: 1, minWidth: '150px' }}
-                  label="Date of Birth"
-                  type="date"
-                  value={son.dob}
-                  onChange={(e) => updateSon(index, 'dob', e.target.value)}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Button
-                  size="small"
-                  variant="outlined"
-                  component="label"
-                  startIcon={<CloudUploadIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    borderColor: '#667eea',
-                    color: '#667eea',
-                    '&:hover': {
-                      borderColor: '#764ba2',
-                      backgroundColor: '#f5f3ff'
-                    }
-                  }}
-                >
-                  Upload
-                  <input
-                    type="file"
-                    hidden
-                  accept="image/jpeg,image/jpg,image/png"
-                    onChange={(e) => handleFileSelect(e, 'son', index)}
-                  />
-                </Button>
-              </Box>
-              {son.file && (
-                <Typography variant="caption" sx={{ color: '#10b981', display: 'block', marginTop: '8px' }}>
-                  📄 {son.file.name.substring(0, 30)}
-                </Typography>
-              )}
-                        {fileErrors.sons[index] && (
-  <Typography variant="caption" sx={{ color: 'red', mt: 1 }}>
-    {fileErrors.sons[index]}
-  </Typography>
-)}
-            </Box>
-          ))}
+      {familyFormData.sons?.map((son, index) => (
+  <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e2e8f0', borderRadius: '8px', position: 'relative' }}>
+    <IconButton
+      onClick={() => removeSon(index)}
+      size="small"
+      sx={{
+        position: 'absolute',
+        top: -8,
+        right: -5,
+        color: '#ef4444',
+        backgroundColor: '#fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+        '&:hover': {
+          backgroundColor: '#fee2e2'
+        }
+      }}
+    >
+      <CircleX size={16} />
+    </IconButton>
+    
+    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <TextField
+        sx={{ flex: 1, minWidth: '180px' }}
+        label={`Son ${index + 1} Name`}
+        value={son.name}
+        onChange={(e) => updateSon(index, 'name', e.target.value)}
+        placeholder="Enter son's name"
+        size="small"
+      />
+      <TextField
+        sx={{ flex: 1, minWidth: '150px' }}
+        label="Date of Birth"
+        type="date"
+        value={son.dob}
+        onChange={(e) => updateSon(index, 'dob', e.target.value)}
+        size="small"
+        InputLabelProps={{ shrink: true }}
+      />
+      <Button
+        size="small"
+        variant="outlined"
+        component="label"
+        startIcon={<CloudUploadIcon />}
+        sx={{
+          textTransform: 'none',
+          borderRadius: '8px',
+          borderColor: '#667eea',
+          color: '#667eea',
+          '&:hover': {
+            borderColor: '#764ba2',
+            backgroundColor: '#f5f3ff'
+          }
+        }}
+      >
+        {son.file ? 'Change File' : 'Upload'}
+        <input
+          type="file"
+          hidden
+          accept="image/jpeg,image/jpg,image/png"
+          onChange={(e) => handleFileSelect(e, 'son', index)}
+        />
+      </Button>
+    </Box>
+
+    {/* Show existing file or new file */}
+    {(son.file || son.document_id) && (
+      <Box sx={{ marginTop: '8px' }}>
+        {son.file ? (
+          <Typography variant="caption" sx={{ color: '#10b981', display: 'block' }}>
+            📄 New: {son.file.name.substring(0, 30)}
+          </Typography>
+        ) : son.document_id ? (
+          <Typography variant="caption" sx={{ color: '#3b82f6', display: 'block' }}>
+            📎 Existing file uploaded (ID: {son.document_id})
+          </Typography>
+        ) : null}
+      </Box>
+    )}
+
+    {fileErrors.sons[index] && (
+      <Typography variant="caption" sx={{ color: 'red', mt: 1, display: 'block' }}>
+        {fileErrors.sons[index]}
+      </Typography>
+    )}
+  </Box>
+))}
 
           
           {(!familyFormData.sons || familyFormData.sons.length === 0) && (

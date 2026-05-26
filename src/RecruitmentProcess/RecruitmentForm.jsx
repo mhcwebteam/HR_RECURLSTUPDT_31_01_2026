@@ -191,6 +191,8 @@ HIGHEST_QUA: "",
     }
   };
 
+  
+
 
 // ✅ ADD THIS before return()
 const responsiveStyles = `

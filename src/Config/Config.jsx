@@ -22,3 +22,4 @@
 export const API_BASE_URLss='http://172.20.0.9/laravel/myhomedashboardMRF/public/storage/';
 
 
+export const FILE_PATH = "http://172.20.0.9/laravel/myhomedashboard/api/replacement-file/";

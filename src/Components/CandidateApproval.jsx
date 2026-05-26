@@ -927,7 +927,7 @@ const CandidateApproval = ({ caseId }) => {
           >
             <option value="">Select Status</option>
             <option value="Accept">Accept</option>
-            <option value="Modify">Modify</option>
+            <option value="Modify">Negotiation</option>
             <option value="Reject">Reject</option>
           </select>
           {errors.status && <p style={styles.errorText}>{errors.status}</p>}
