@@ -9,6 +9,7 @@ import { API_BASE_URL } from "../Config/Config";
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import { Eye } from 'lucide-react';
+import axiosInstance from "../Config/axiosConfig";
 
 const InfoRow = ({ label, value, valueColor = 'text-gray-700' }) => (
     <div className="flex items-center gap-2 text-xs">
@@ -498,7 +499,7 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
 
     setIsSubmitting(true);
     try {
-      const response = await axios.post(`${API_BASE_URL}/salary-breakUp`, payload, {
+      const response = await axiosInstance.post(`${API_BASE_URL}/salary-breakUp`, payload, {
         headers: {
           Authorization: `Bearer ${userToken.token}`,
           'Content-Type': 'application/json',

@@ -6,10 +6,10 @@ import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import jsPDF from 'jspdf';
 import axios from 'axios';
 import axiosInstance from '../Config/axiosConfig';
-
+import ReactDOM from 'react-dom'; 
 const DocUpload = ({ rowData, onClose, refreshTable, Report }) => {
 
-  console.log("doddddddddddddddddd",rowData);
+
 
  
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
@@ -1540,47 +1540,119 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
   // ─── Column width map ───
   const colWidths = { sno: 52, docType: '30%', status: 120, fileName: '22%', actions: '28%' };
 
- const PdfViewer = ({ document, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-6xl h-5/6 flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-semibold">{document.fileName}</h3>
+
+  // ─── Modal sizing ───
+ const modalStyle = isFullscreen
+  ? { position: 'fixed', inset: 0, borderRadius: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' } // Remove duplicate zIndex
+  : { position: 'relative', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '92vh', width: '100%', maxWidth: 1400, margin: '0 auto', background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' };
+const PdfViewer = ({ document: pdfDoc, onClose }) => {
+  const [portalContainer, setPortalContainer] = useState(null);
+  
+  useEffect(() => {
+    // Use the global window.document, not the prop
+    if (typeof window !== 'undefined' && window.document) {
+      let container = window.document.getElementById('pdf-viewer-portal');
+      if (!container) {
+        container = window.document.createElement('div');
+        container.id = 'pdf-viewer-portal';
+        window.document.body.appendChild(container);
+      }
+      setPortalContainer(container);
+      
+      // Prevent body scroll
+      window.document.body.style.overflow = 'hidden';
+      
+      return () => {
+        if (window.document && window.document.body) {
+          window.document.body.style.overflow = '';
+        }
+      };
+    }
+  }, []);
+  
+  if (!portalContainer) return null;
+  
+  const viewerContent = (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      zIndex: 999999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }} onClick={(e) => {
+      if (e.target === e.currentTarget) onClose();
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        width: '90%',
+        maxWidth: '1200px',
+        height: '85%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 24px',
+          borderBottom: '1px solid #e2e8f0',
+          backgroundColor: '#fff',
+        }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>
+            {pdfDoc.fileName}
+          </h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '28px',
+              cursor: 'pointer',
+              color: '#64748b',
+              padding: '0 8px',
+              borderRadius: '6px',
+            }}
           >
             ×
           </button>
         </div>
-        <div className="flex-1 p-4">
+        <div style={{ flex: 1, padding: '20px', overflow: 'auto', backgroundColor: '#f8fafc' }}>
           <iframe
-            src={document.filePath}
-            title={document.fileName}
-            className="w-full h-full border-0"
+            src={pdfDoc.filePath}
+            title={pdfDoc.fileName}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              borderRadius: '8px',
+            }}
           />
         </div>
-        <div className="p-4 border-t flex justify-between">
-          <button
-            onClick={() => handleDownloadDocument(document.filePath, document.fileName)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            <Download size={18} />
-            Download PDF
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-          >
-            Close Viewer
-          </button>
+        <div style={{
+          padding: '16px 24px',
+          borderTop: '1px solid #e2e8f0',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '12px',
+          backgroundColor: '#fff',
+        }}>
+      
+      
         </div>
       </div>
     </div>
   );
-  // ─── Modal sizing ───
-  const modalStyle = isFullscreen
-    ? { position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, display: 'flex', flexDirection: 'column', background: '#fff' }
-    : { position: 'relative', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '92vh', width: '100%', maxWidth: 1400, margin: '0 auto', background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' };
+  
+  return ReactDOM.createPortal(viewerContent, portalContainer);
+};
 
   return (
     <>
@@ -1593,7 +1665,7 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
               <Building2 size={22} color="#fff" />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: '0.03em', textTransform: 'uppercase' }}>My Home Constructions Pvt. Ltd.</h2>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: '0.03em', textTransform: 'uppercase' }}>{ rowData?.fullData?.ONBOARD_PLANT || formData?.siteLocation}</h2>
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2, letterSpacing: '0.04em' }}>
                 Employee Onboarding Documents &nbsp;•&nbsp; ID: {formData.empId}
               </p>
@@ -1644,7 +1716,7 @@ const renderActionButtons = (item, subItem = null, isSubRow = false) => {
     : 'Not Set'
 },
                 { label: 'Department', value: formData.department },
-                { label: 'Site / Location', value: formData.siteLocation || 'N/A' },
+                { label: 'Site / Location', value:   rowData?.fullData?.ONBOARD_PLANT || formData.siteLocation || 'N/A' },
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', minWidth: 90, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}:</span>

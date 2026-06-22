@@ -74,6 +74,7 @@ const OnBoardEmployeeList = () => {
             phone: item.phone_number,
             department: item.DEPT,
             location: item.PLANT,
+           ONBOARD_PLANT:item?.ONBOARD_PLANT,
             joining_date: item.joiningDate,
             current_ctc: item.CURRENT_CTC,
             expected_ctc: item.EXP_CTC,
@@ -460,6 +461,18 @@ const OnBoardEmployeeList = () => {
       headerName: 'Location',
       flex: 1.2,
       minWidth: 200,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+            {
+      field: 'ONBOARD_PLANT',
+      headerName: 'Required Location',
+      flex: 1.2,
+      minWidth: 140,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}

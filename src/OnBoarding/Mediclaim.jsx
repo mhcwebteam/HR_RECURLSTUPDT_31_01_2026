@@ -262,7 +262,7 @@ const handleFamilySubmit = async () => {
     } else if (familyFormData.spouseName === '' && existingSpouseName) {
       // If spouse name is cleared, send empty to delete
       formData.append('spouse_name', '');
-      console.log("Removing spouse name");
+     
     }
     
     if (familyFormData.spouseDob && familyFormData.spouseDob !== existingSpouseDob) {
@@ -364,163 +364,6 @@ const handleFamilySubmit = async () => {
     setFamilyLoading(false);
   }
 };
-// const handleFamilySubmit = async () => {
-//   console.log("=== handleFamilySubmit START ===");
-//   console.log("selectedRow:", selectedRow);
-//   console.log("familyFormData:", familyFormData);
-  
-//   if (!selectedRow || !selectedRow.CHILD_CASEID) {
-//     console.error("ERROR: No selected row");
-//     Swal.fire({
-//       icon: 'error',
-//       title: 'Error',
-//       text: 'No employee selected. Please try again.',
-//     });
-//     return;
-//   }
-  
-//  const confirmResult = await Swal.fire({
-//       title: 'Are you sure?',
-//       text: 'Do you want to submit family details?',
-//       icon: 'question',
-//       showCancelButton: true,
-//       confirmButtonText: 'Yes, Submit',
-//       cancelButtonText: 'Cancel',
-//       confirmButtonColor: '#10b981',
-//       cancelButtonColor: '#6b7280',
-//       customClass: {
-//         container: 'swal2-container-custom'
-//       },
-//       didOpen: () => {
-//         // Set z-index after modal opens
-//         const swalContainer = document.querySelector('.swal2-container');
-//         if (swalContainer) {
-//           swalContainer.style.zIndex = '9999';
-//         }
-//       }
-//     });
-    
-//     if (!confirmResult.isConfirmed) {
-//       return;
-//     }
-
-  
-
-  
-//   setFamilyLoading(true);
-//   console.log("familyLoading set to true");
-
-//   try {
-//     const formData = new FormData();
-//     formData.append('CHILD_CASEID', selectedRow?.CHILD_CASEID || '');
-//     formData.append('onBoarding', 1);
-    
-//     console.log("CHILD_CASEID:", selectedRow?.CHILD_CASEID);
-    
-//     // Get existing data
-//     const existingSpouseName = selectedRow?.fullData?.spouse_name || '';
-//     const existingSpouseDob = selectedRow?.fullData?.spouse_dob || '';
-//     const existingDaughters = selectedRow?.fullData?.daughters_data || [];
-//     const existingSons = selectedRow?.fullData?.sons_data || [];
-    
-//     console.log("existingDaughters:", existingDaughters);
-//     console.log("existingSons:", existingSons);
-    
-//     // Spouse
-//     if (familyFormData.spouseName && familyFormData.spouseName !== existingSpouseName) {
-//       formData.append('spouse_name', familyFormData.spouseName);
-//       console.log("Adding spouse_name:", familyFormData.spouseName);
-//     }
-    
-//     if (familyFormData.spouseDob && familyFormData.spouseDob !== existingSpouseDob) {
-//       formData.append('spouse_dob', familyFormData.spouseDob);
-//       console.log("Adding spouse_dob:", familyFormData.spouseDob);
-//     }
-    
-//     if (familyFormData.spouseFile) {
-//       formData.append('spouseFile', familyFormData.spouseFile);
-//       console.log("Adding spouseFile:", familyFormData.spouseFile.name);
-//     }
-    
-//     // Daughters - Only send if there are daughters
-//     if (familyFormData.daughters && familyFormData.daughters.length > 0) {
-//       console.log("Processing daughters, count:", familyFormData.daughters.length);
-//       formData.append('daughters_count', familyFormData.daughters.length);
-      
-//       familyFormData.daughters.forEach((daughter, index) => {
-//         if (daughter.name) {
-//           formData.append(`daughter_${index + 1}_name`, daughter.name);
-//           formData.append(`daughter_${index + 1}_dob`, daughter.dob || '');
-//           if (daughter.file) {
-//             formData.append(`daughter_${index + 1}_document`, daughter.file);
-//           }
-//           console.log(`Added daughter ${index + 1}:`, daughter.name);
-//         }
-//       });
-//     }
-    
-//     // Sons - Only send if there are sons
-//     if (familyFormData.sons && familyFormData.sons.length > 0) {
-//       console.log("Processing sons, count:", familyFormData.sons.length);
-//       formData.append('sons_count', familyFormData.sons.length);
-      
-//       familyFormData.sons.forEach((son, index) => {
-//         if (son.name) {
-//           formData.append(`son_${index + 1}_name`, son.name);
-//           formData.append(`son_${index + 1}_dob`, son.dob || '');
-//           if (son.file) {
-//             formData.append(`son_${index + 1}_document`, son.file);
-//           }
-//           console.log(`Added son ${index + 1}:`, son.name);
-//         }
-//       });
-//     }
-    
-//     console.log("Making API call to:", `${API_BASE_URL}/on-board-Store`);
-    
-//     const response = await axiosInstance.post(
-//       `${API_BASE_URL}/on-board-Store`,
-//       formData,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${Token.token}`,
-//         },
-//       }
-//     );
-    
-//     console.log("API Response:", response.data);
-    
-//   if (response.data.success || response.data.message) {
-//   await Swal.fire({
-//     icon: 'success',
-//     title: 'Success!',
-//     text: response.data.message || 'Family details saved successfully',
-//     timer: 2000,
-//     showConfirmButton: false,
-//   });
-
-// resetFamilyForm();
-// setSelectedRow(null);
-// setFamilyModal(false);
-// await joinData(); // after closing so re-open gets fresh data// ✅ Refresh table data so fullData is updated
-// } else {
-//       throw new Error(response.data.message || 'Failed to save');
-//     }
-    
-//   } catch (error) {
-//     console.error("ERROR in handleFamilySubmit:", error);
-//     console.error("Error response:", error.response);
-    
-//     await Swal.fire({
-//       icon: 'error',
-//       title: 'Error',
-//       text: error.response?.data?.message || error.message || 'Something went wrong',
-//     });
-//   } finally {
-//     setFamilyLoading(false);
-//     console.log("familyLoading set to false");
-//   }
-// };
 
 
 
@@ -775,6 +618,7 @@ const validateFileType = (file) => {
           phone: item.phone_number,
           department: item.DEPT,
           location: item.PLANT,
+        ONBOARD_PLANT:item?.ONBOARD_PLANT,
           joining_date: item.joiningDate,
           current_ctc: item.CURRENT_CTC,
           expected_ctc: item.EXP_CTC,
@@ -1006,6 +850,18 @@ const validateFileType = (file) => {
         </Box>
       ),
     },
+
+            {
+          field: 'ONBOARD_PLANT',
+          headerName: 'Required Location',
+          flex: 1.2,
+          minWidth: 140,
+          renderCell: (params) => (
+            <Box sx={{ color: '#374151' }}>
+              {params.value}
+            </Box>
+          ),
+        },
 {
   field: 'joining_date',
   headerName: 'Joining Date',

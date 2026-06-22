@@ -249,12 +249,14 @@ const EmpVerify = async () => {
       const draftRecords = response.data.data.filter(
         item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
           (item.status?.toLowerCase() === "draft" || 
-           item.status?.toLowerCase() === "pending" ||
+           item.status?.toLowerCase() === "pending" ||item.status?.toLowerCase() === "submit" ||
            item.Status_Edit === "Edit")
       );
 
       if (draftRecords.length > 0) {
         const draftData = draftRecords[0];
+
+        console.log("draaaaaaaaaaaaaa",draftData)
         setFormStatus(draftData.status?.toLowerCase() || '');
         setStatusEdit(draftData.Status_Edit || null);
 

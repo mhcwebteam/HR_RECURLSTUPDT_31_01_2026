@@ -84,6 +84,7 @@ const [formData, setFormData] = useState({
           phone: item.phone_number,
           department: item.DEPT,
           location: item.PLANT,
+          ONBOARD_PLANT:item?.ONBOARD_PLANT,
           joining_date: item.joiningDate,
           current_ctc: item.CURRENT_CTC,
           expected_ctc: item.EXP_CTC,
@@ -184,7 +185,8 @@ Designation:
     : rowData?.MANPOWER_DESG || 'Not Specified',
 
       DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
-      Location: rowData.location,
+      Location:   rowData.location,
+
       Reporting_to: rowData.fullData?.REPORTING_TO || 'HOD',
       offer_ctc: rowData?.fullData?.offer_ctc,
       CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
@@ -840,6 +842,18 @@ const handleViewRejectedDetails = (row) => {
         </Box>
       ),
     },
+    
+            {
+          field: 'ONBOARD_PLANT',
+          headerName: 'Required Location',
+          flex: 1.2,
+          minWidth: 140,
+          renderCell: (params) => (
+            <Box sx={{ color: '#374151' }}>
+              {params.value}
+            </Box>
+          ),
+        },
   {
     field: 'joining_date',
     headerName: 'Joining Date',
@@ -1569,7 +1583,7 @@ const handleViewRejectedDetails = (row) => {
 
     {/* Introduction */}
     <Box sx={{ mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-      With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
+      With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{   appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
     </Box>
 
     {/* Terms and Conditions */}

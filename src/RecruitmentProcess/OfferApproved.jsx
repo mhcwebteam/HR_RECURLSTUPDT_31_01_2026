@@ -147,7 +147,7 @@ const OfferApproved = () => {
 
       // Get the REF_NUMBER from state
       const refNumber = refNumberValues[rowData.CHILD_CASEID] || rowData.REF_NUMBER;
-       console.log(refNumber,"hiuui")
+    
       
       if (!refNumber || refNumber.trim() === "") {
         await Swal.fire({

@@ -236,7 +236,7 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
         { sno: 2, label: "Emp. ID", value: rowData?.child_caseid || rowData?.CHILD_CASEID || '-' },
         { sno: 3, label: "Designation", value: rowData?.MANPOWER_DESG || rowData?.DESIG?.toUpperCase() || '-' },
         { sno: 4, label: "Department", value: rowData?.fullData?.DEPT?.toUpperCase() || '-' },
-        { sno: 5, label: "Location", value: rowData?.fullData?.PLANT?.toUpperCase() || '-' },
+        { sno: 5, label: "Location", value: rowData?.fullData?.ONBOARD_PLANT?.toUpperCase() || rowData?.fullData?.PLANT?.toUpperCase()},
         { sno: 6, label: "Gender", value: rowData?.fullData?.GENDER?.toUpperCase() || '-' }
       ];
       
@@ -586,13 +586,16 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
                   />
                 </div>
                 <div className="flex-1 flex flex-col">
-                  <div className="border-b border-black px-3 py-1.5 text-center">
+                  <div className="border-b border-black  py-1.5 text-center">
                     <p className="text-sm font-bold tracking-wide">
-                      MY HOME CONSTRUCTIONS PVT. LTD.
+                   {
+  rowData?.fullData?.ONBOARD_PLANT?.toUpperCase() ||
+  rowData?.fullData?.PLANT?.toUpperCase()
+}
                     </p>
                   </div>
                   <div className="flex">
-                    <div className="flex-1 px-3 py-1.5 flex items-center justify-center border-r border-black">
+                    <div className="flex-1 px-3 py-1.5 pl-34 text-center flex items-center justify-center border-r border-black">
                       <p className="text-xs font-bold tracking-wider">
                         Mediclaim Data Enrolment Form
                       </p>
@@ -623,16 +626,19 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
                 },
                 {
                   label: "Designation",
-                  value: rowData?.MANPOWER_DESG?.toUpperCase(),
+                  value:   rowData.DESIG.toUpperCase() || rowData?.MANPOWER_DESG?.toUpperCase(),
                 },
                 {
                   label: "Department",
                   value: rowData?.fullData?.DEPT?.toUpperCase(),
                 },
-                {
-                  label: "Location",
-                  value: rowData?.fullData?.PLANT?.toUpperCase(),
-                },
+{
+  label: "Location",
+  value:
+    rowData?.fullData?.ONBOARD_PLANT?.toUpperCase() ||
+    rowData?.fullData?.PLANT?.toUpperCase(),
+},
+               
                 {
                   label: "Gender",
                   value: rowData?.fullData?.GENDER?.toUpperCase(),

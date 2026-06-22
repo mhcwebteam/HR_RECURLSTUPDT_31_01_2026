@@ -79,7 +79,7 @@ const JoiningReportForm = ({ rowData, onClose }) => {
           <div className="mb-4 text-xs leading-6">
             <p>To</p>
             <p className="ml-4">The Human Resource Management,</p>
-            <p className="ml-4">{rowData?.fullData?.ONBOARD_PLANT},</p>
+            <p className="ml-4">{rowData?.fullData?.ONBOARD_PLANT },</p>
             <p className="ml-4">Hyderabad.</p>
           </div>
 
@@ -126,7 +126,7 @@ const JoiningReportForm = ({ rowData, onClose }) => {
   readOnly
 />
     at
-    <InputField defaultValue={rowData.location} width="300px" readOnly />
+    <InputField defaultValue={rowData?.fullData?.ONBOARD_PLANT} width="300px" readOnly />
 
    
     as
