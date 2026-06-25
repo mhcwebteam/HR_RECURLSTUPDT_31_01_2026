@@ -273,12 +273,20 @@ const fetchOfrData = async () => {
     });
     const list = ofrdata.data.evcVerifiedData || [];
 
-      const filtered = list.filter(
+      // const filtered = list.filter(
+      // (item) =>
+      //   item.HR == "Approved" &&
+      //   item.DIRECTOR == "Approved" &&
+      //   item.EVC == "Approved"
+    // );
+
+  
+
+       const filtered = list.filter(
       (item) =>
-        item.HR == "Approved" &&
-        item.DIRECTOR == "Approved" &&
-        item.EVC == "Approved"
+      item?.CUR_STATUS == 'COMPLETED'
     );
+    console.log("fiiiiiiiiiiiiiii",filtered);
 
     setOfferLetterData(filtered);
 

@@ -140,7 +140,7 @@ const noteFrAprvlData = async () => {
   
  
   const assignApprover = async (row, role) => {
-
+console.log(row,"rowwwwwwwwwwwwww");
   const result = await Swal.fire({
     title: 'Confirm Approver Assignment',
     text: `Are you sure you want to send this to ${role} for approval?`,
@@ -162,12 +162,14 @@ const noteFrAprvlData = async () => {
         child_case_id: row.CHILD_CASEID,
         verification_id: row.id,
         approver_role: role,
+         dept: row?.DEPT,
+         
       };
     
 
 
             const response = await axiosInstance.post(
-        `${API_BASE_URL}/assign-approver`,
+        `${API_BASE_URL}/assign-approval-flow`,
         payload,
         {
           headers: {
@@ -657,43 +659,80 @@ renderCell: (params) => getStatusBadge(params.row, "EVC"),
     },
    
 
-token?.Emp_Category == "HR" && {
+// token?.Emp_Category == "HR" && {
+//   field: "APPROVER",
+//   headerName: "Send For Approval",
+//   flex: 1.3,
+//   minWidth: 180,
+//   sortable: false,
+//   renderCell: (params) => {
+//     // Hide dropdown if HR is approved
+//     if (params.row.HR === "Approved") {
+//       return null; 
+//     }
+
+//     return (
+//       <TextField
+//         select
+//         size="small"
+//         fullWidth
+//         value={params.row.APPROVER ?? ""}
+//         onChange={(e) => assignApprover(params.row, e.target.value)}
+//         SelectProps={{ displayEmpty: true }}
+//         sx={{
+//           '& .MuiOutlinedInput-root': {
+//             fontSize: '12px',
+//             height: '32px',
+//             '& fieldset': { borderColor: '#d1d5db' },
+//             '&:hover fieldset': { borderColor: '#667eea' },
+//             '&.Mui-focused fieldset': { borderColor: '#667eea' },
+//           },
+//         }}
+//       >
+//         <MenuItem value="" disabled>
+//           <em>Select Approver</em>
+//         </MenuItem>
+//         <MenuItem value="HOD">HOD</MenuItem>
+//         <MenuItem value="DIRECTOR">Director</MenuItem>
+//         <MenuItem value="EVC">EVC</MenuItem>
+//       </TextField>
+//     );
+//   },
+// },
+
+
+token?.Emp_Category === "HR" && {
   field: "APPROVER",
   headerName: "Send For Approval",
   flex: 1.3,
   minWidth: 180,
   sortable: false,
   renderCell: (params) => {
-    // Hide dropdown if HR is approved
+    // Hide button if HR is already approved
     if (params.row.HR === "Approved") {
-      return null; 
+      return null;
     }
 
     return (
-      <TextField
-        select
+      <Button
+        variant="contained"
         size="small"
         fullWidth
-        value={params.row.APPROVER ?? ""}
-        onChange={(e) => assignApprover(params.row, e.target.value)}
-        SelectProps={{ displayEmpty: true }}
+       onClick={() => assignApprover(params.row, "HR")}
+
         sx={{
-          '& .MuiOutlinedInput-root': {
-            fontSize: '12px',
-            height: '32px',
-            '& fieldset': { borderColor: '#d1d5db' },
-            '&:hover fieldset': { borderColor: '#667eea' },
-            '&.Mui-focused fieldset': { borderColor: '#667eea' },
+          textTransform: "none",
+          fontSize: "10px",
+          height: "24px",
+          width:"120px",
+          backgroundColor: "#667eea",
+          "&:hover": {
+            backgroundColor: "#5563d6",
           },
         }}
       >
-        <MenuItem value="" disabled>
-          <em>Select Approver</em>
-        </MenuItem>
-        <MenuItem value="HOD">HOD</MenuItem>
-        <MenuItem value="DIRECTOR">Director</MenuItem>
-        <MenuItem value="EVC">EVC</MenuItem>
-      </TextField>
+        Send For Approvals
+      </Button>
     );
   },
 },
