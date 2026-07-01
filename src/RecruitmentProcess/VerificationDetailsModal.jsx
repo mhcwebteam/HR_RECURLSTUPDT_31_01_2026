@@ -313,7 +313,8 @@ payslips_DocId: 'PAY_Status',
     const payload = {
       child_caseId: data?.CHILD_CASEID,
       email: data?.EMAIL,
-      Status_Edit: "Edit"
+      Status_Edit: "Edit",
+      status:"Edit",
     };
 
     const response = await axiosInstance.post(

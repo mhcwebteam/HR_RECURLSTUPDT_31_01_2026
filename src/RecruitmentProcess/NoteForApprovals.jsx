@@ -35,6 +35,7 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import { API_BASE_URL } from "../Config/Config";
 import axiosInstance from "../Config/axiosConfig";
+import HRMView from "./HRMView";
 
 
 /* ===================================================== */
@@ -53,6 +54,8 @@ const NoteForApprovals = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [approveRow, setApproveRow] = useState(null);
   const [approveOpen, setApproveOpen] = useState(false);
+  // Add these state variables with your other state declarations
+const [flowModalOpen, setFlowModalOpen] = useState(false);
  const [ personalData,setPersonalData] = useState([]);
 
 
@@ -211,31 +214,8 @@ if(noteFrAprvlData) {
   let result = [...noteAprvlData];
   
   // For HR users, filter out records where all approvals are complete
-  if (token?.Emp_Category === "HR") {
-    result = result.filter(item => {
-      // Keep records where at least one approval is pending
-      return !(
-        item.DIRECTOR == "Approved" &&
-        item.HR == "Approved" &&
-        item.EVC == "Approved"
-      );
-    });
-  }
   
-  if (searchTerm) {
-    result = result.filter(
-      (item) =>
-        item.FIRST_NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.EMAIL?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.CHILD_CASEID?.includes(searchTerm)
-    );
-  }
-  
-  if (statusFilter !== "all") {
-    result = result.filter(
-      (item) => item.status?.toLowerCase() === statusFilter
-    );
-  }
+
   
   return result.map((item, index) => ({
     id: item.verification_id,
@@ -271,58 +251,58 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
 
 
-const getCurrentStep = (row) => {
-  if (row.HR !== "Approved") return "HR";
-  if (row.DIRECTOR !== "Approved") return "DIRECTOR";
-  if (row.EVC !== "Approved") return "EVC";
-  return null;
-};
+// const getCurrentStep = (row) => {
+//   if (row.HR !== "Approved") return "HR";
+//   if (row.DIRECTOR !== "Approved") return "DIRECTOR";
+//   if (row.EVC !== "Approved") return "EVC";
+//   return null;
+// };
 
 
-const getStatusBadge = (row, role) => {
-  const currentStep = getCurrentStep(row);
+// const getStatusBadge = (row, role) => {
+//   const currentStep = getCurrentStep(row);
 
-  let type = "";
+//   let type = "";
 
-  if (row[role] === "Approved") {
-    type = "approved";
-  } else if (currentStep === role) {
-    type = "wip";
-  } else {
-    type = "pending";
-  }
+//   if (row[role] === "Approved") {
+//     type = "approved";
+//   } else if (currentStep === role) {
+//     type = "wip";
+//   } else {
+//     type = "pending";
+//   }
 
-  const style =
-    type === "approved"
-      ? { bg: "#10b981", color: "#fff", text: "Approved", icon: "✓" }
-      : type === "wip"
-      ? { bg: "#3b82f6", color: "#fff", text: "WIP", icon: "⚡" }
-      : { bg: "#f59e0b", color: "#fff", text: "Pending", icon: "⏳" };
+//   const style =
+//     type === "approved"
+//       ? { bg: "#10b981", color: "#fff", text: "Approved", icon: "✓" }
+//       : type === "wip"
+//       ? { bg: "#3b82f6", color: "#fff", text: "WIP", icon: "⚡" }
+//       : { bg: "#f59e0b", color: "#fff", text: "Pending", icon: "⏳" };
 
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: style.bg,
-        color: style.color,
-        fontSize: "10px",
-        fontWeight: 600,
-        height: "25px",
-        minWidth: "80px",
-        borderRadius: "6px",
-        gap: "4px",
-        px: 1.5,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        textTransform: "capitalize",
-      }}
-    >
-      <span>{style.icon}</span>
-      <span>{style.text}</span>
-    </Box>
-  );
-};
+//   return (
+//     <Box
+//       sx={{
+//         display: "flex",
+//         alignItems: "center",
+//         justifyContent: "center",
+//         backgroundColor: style.bg,
+//         color: style.color,
+//         fontSize: "10px",
+//         fontWeight: 600,
+//         height: "25px",
+//         minWidth: "80px",
+//         borderRadius: "6px",
+//         gap: "4px",
+//         px: 1.5,
+//         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+//         textTransform: "capitalize",
+//       }}
+//     >
+//       <span>{style.icon}</span>
+//       <span>{style.text}</span>
+//     </Box>
+//   );
+// };
 
  
 
@@ -597,28 +577,7 @@ const getStatusBadge = (row, role) => {
       ),
 },
 
-    { 
-      field: "HR", 
-      headerName: "HR", 
-      flex: 1.2,
-      minWidth: 100,
-       renderCell: (params) => getStatusBadge(params.row, "HR"),
-    },
 
-    { 
-      field: "DIRECTOR", 
-      headerName: "DIRECTOR", 
-      flex: 1.2,
-      minWidth: 100,
-      renderCell: (params) => getStatusBadge(params.row, "DIRECTOR"),
-    },
-    { 
-      field: "EVC", 
-      headerName: "EVC", 
-      flex: 1.2,
-      minWidth: 100,
-renderCell: (params) => getStatusBadge(params.row, "EVC"),
-    },
 
     {
       field: "CURRENT_CTC",
@@ -659,46 +618,43 @@ renderCell: (params) => getStatusBadge(params.row, "EVC"),
     },
    
 
-// token?.Emp_Category == "HR" && {
-//   field: "APPROVER",
-//   headerName: "Send For Approval",
-//   flex: 1.3,
-//   minWidth: 180,
-//   sortable: false,
-//   renderCell: (params) => {
-//     // Hide dropdown if HR is approved
-//     if (params.row.HR === "Approved") {
-//       return null; 
-//     }
+    // Add this column to your columns array in NoteForApprovals.js
 
-//     return (
-//       <TextField
-//         select
-//         size="small"
-//         fullWidth
-//         value={params.row.APPROVER ?? ""}
-//         onChange={(e) => assignApprover(params.row, e.target.value)}
-//         SelectProps={{ displayEmpty: true }}
-//         sx={{
-//           '& .MuiOutlinedInput-root': {
-//             fontSize: '12px',
-//             height: '32px',
-//             '& fieldset': { borderColor: '#d1d5db' },
-//             '&:hover fieldset': { borderColor: '#667eea' },
-//             '&.Mui-focused fieldset': { borderColor: '#667eea' },
-//           },
-//         }}
-//       >
-//         <MenuItem value="" disabled>
-//           <em>Select Approver</em>
-//         </MenuItem>
-//         <MenuItem value="HOD">HOD</MenuItem>
-//         <MenuItem value="DIRECTOR">Director</MenuItem>
-//         <MenuItem value="EVC">EVC</MenuItem>
-//       </TextField>
-//     );
-//   },
-// },
+{
+  field: "viewFlow",
+  headerName: "NFA Flow",
+  flex: 1,
+  minWidth: 120,
+  sortable: false,
+  renderCell: (params) => (
+    <Button
+      variant="outlined"
+      size="small"
+      onClick={() => {
+        setSelectedUser(params.row);
+        setFlowModalOpen(true);
+      }}
+      sx={{
+        textTransform: 'none',
+        fontSize: '10px',
+        fontWeight: 600,
+        borderColor: '#667eea',
+        color: '#667eea',
+        padding: '4px 12px',
+        borderRadius: '6px',
+        '&:hover': {
+          backgroundColor: '#667eea',
+          color: 'white',
+          borderColor: '#667eea',
+        },
+      }}
+    >
+      View Flow
+    </Button>
+  ),
+},
+
+
 
 
 token?.Emp_Category === "HR" && {
@@ -708,34 +664,32 @@ token?.Emp_Category === "HR" && {
   minWidth: 180,
   sortable: false,
   renderCell: (params) => {
-    // Hide button if HR is already approved
-    if (params.row.HR === "Approved") {
-      return null;
-    }
+    const isDisabled = params.row.HR === "Approved";
 
     return (
       <Button
         variant="contained"
         size="small"
         fullWidth
-       onClick={() => assignApprover(params.row, "HR")}
-
+        disabled={isDisabled}
+        onClick={() => assignApprover(params.row, "HR")}
         sx={{
           textTransform: "none",
           fontSize: "10px",
           height: "24px",
-          width:"120px",
+          width: "120px",
           backgroundColor: "#667eea",
           "&:hover": {
             backgroundColor: "#5563d6",
           },
         }}
       >
-        Send For Approvals
+        Send For Approval
       </Button>
     );
   },
 },
+
   ];
 
   /* -------------------- JSX -------------------- */
@@ -936,7 +890,76 @@ token?.Emp_Category === "HR" && {
         </DialogActions>
       </Dialog>
       {/**-----------------------------------------------End ApprovalModal Here --------------------------------------------------**/}
-      
+      {/* HRM Approval Flow Modal */}
+<Dialog
+  open={flowModalOpen}
+  onClose={() => setFlowModalOpen(false)}
+  fullWidth
+  maxWidth="md"
+  PaperProps={{
+    sx: {
+      borderRadius: 2,
+      maxHeight: '90vh',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+    }
+  }}
+>
+  <DialogTitle sx={{ 
+    pb: 1,
+    borderBottom: '1px solid #e5e7eb',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+        Approval Flow Details
+      </Typography>
+      <Chip 
+        label={selectedUser?.CHILD_CASEID || ''}
+        size="small"
+        sx={{ 
+          backgroundColor: '#667eea',
+          color: 'white',
+          fontWeight: 500,
+          fontSize: '10px'
+        }}
+      />
+    </Box>
+    <IconButton 
+      onClick={() => setFlowModalOpen(false)}
+      sx={{ 
+        color: '#6b7280',
+        '&:hover': { backgroundColor: '#f3f4f6' }
+      }}
+    >
+      {/* <CloseIcon /> */}
+    </IconButton>
+  </DialogTitle>
+  
+  <DialogContent dividers sx={{ py: 3 }}>
+    <HRMView 
+      ID={selectedUser?.CHILD_CASEID || selectedUser?.id}
+      isMaximized={true}
+    />
+  </DialogContent>
+  
+  <DialogActions sx={{ px: 3, py: 2 }}>
+    <Button
+      onClick={() => setFlowModalOpen(false)}
+      variant="contained"
+      sx={{
+        textTransform: 'none',
+        fontWeight: 600,
+        backgroundColor: '#667eea',
+        '&:hover': { backgroundColor: '#5563d6' }
+      }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+
       <CandidateStackDetailsModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

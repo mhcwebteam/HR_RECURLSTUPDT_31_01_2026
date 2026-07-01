@@ -20,7 +20,8 @@ import {
   Dialog,
   DialogContent,
   DialogActions,
-  DialogTitle
+  DialogTitle,
+  Chip
 } from '@mui/material';
 import {
   Search,
@@ -45,6 +46,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import axiosInstance from '../Config/axiosConfig.jsx';
+import HRMView from './HRMView.jsx';
 dayjs.extend(customParseFormat);
 
 
@@ -54,6 +56,7 @@ const OfferLetter = () => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [flowModalOpen, setFlowModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState({});
   const [joiningDates, setJoiningDates] = useState({});
   const [offerLetterOpen, setOfferLetterOpen] = useState(false);
@@ -286,7 +289,7 @@ const fetchOfrData = async () => {
       (item) =>
       item?.CUR_STATUS == 'COMPLETED'
     );
-    console.log("fiiiiiiiiiiiiiii",filtered);
+   
 
     setOfferLetterData(filtered);
 
@@ -413,6 +416,7 @@ setSelectedCandidate({ ...user });
     rejected: { color: '#ef4444' },
     uploaded: { color: '#3b82f6' },
     approved: { color: '#10b981' },
+      completed: { color: "#10b981" }, 
     'not uploaded': { color: '#6b7280' }
   };
   const { color } = config[statusValue] || config.pending;
@@ -707,32 +711,8 @@ setSelectedCandidate({ ...user });
         );
       },
     },
-    {
-      field: 'HR',
-      headerName: 'HR',
-      width: 100,
-      renderCell: (params) => getStatusChip(params.value),
-    },
-    {
-      field: 'DIRECTOR',
-      headerName: 'DIRECTOR',
-      width: 100,
-      renderCell: (params) => getStatusChip(params.value),
-    },
-    {
-      field: 'EVC',
-      headerName: 'EVC',
-      width: 100,
-      renderCell: (params) => getStatusChip(params.value),
-    },
-    {
-      field: 'STATUS',
-      headerName: 'Overall Status',
-      flex: 0.9,
-      minWidth: 120,
-      renderCell: (params) => getStatusChip(params.value),
-    },
-
+   
+ 
     {
   field: 'Date of Joining',
   headerName: 'Date of Joining',
@@ -924,6 +904,56 @@ renderCell: (params) => {
       renderCell: (params) => getStatusChip(params.value),
     },
 
+    //   {
+    //   field: 'Approval History',
+    //   headerName: 'Approval Status',
+    //   flex: 0.9,
+    //   minWidth: 120,
+      
+    //   renderCell: (params) => getStatusChip(params.value),
+    // },
+   {
+      field: 'CUR_STATUS',
+      headerName: 'Approval Status',
+      flex: 0.9,
+      minWidth: 120,
+      
+      renderCell: (params) => getStatusChip(params.value),
+    },
+
+    {
+      field: "viewFlow",
+      headerName: "NFA Flow",
+      flex: 1,
+      minWidth: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            setSelectedUser(params.row);
+            setFlowModalOpen(true);
+          }}
+          sx={{
+            textTransform: 'none',
+            fontSize: '10px',
+            fontWeight: 600,
+            borderColor: '#667eea',
+            color: '#667eea',
+            padding: '4px 12px',
+            borderRadius: '6px',
+            '&:hover': {
+              backgroundColor: '#667eea',
+              color: 'white',
+              borderColor: '#667eea',
+            },
+          }}
+        >
+          View Flow
+        </Button>
+      ),
+    },
 
      {
   
@@ -1308,6 +1338,75 @@ renderCell: (params) => {
           />
         </Box>
     
+
+    <Dialog
+  open={flowModalOpen}
+  onClose={() => setFlowModalOpen(false)}
+  fullWidth
+  maxWidth="md"
+  PaperProps={{
+    sx: {
+      borderRadius: 2,
+      maxHeight: '90vh',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+    }
+  }}
+>
+  <DialogTitle sx={{ 
+    pb: 1,
+    borderBottom: '1px solid #e5e7eb',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+        Approval Flow Details
+      </Typography>
+      <Chip 
+        label={selectedUser?.CHILD_CASEID || ''}
+        size="small"
+        sx={{ 
+          backgroundColor: '#667eea',
+          color: 'white',
+          fontWeight: 500,
+          fontSize: '10px'
+        }}
+      />
+    </Box>
+    <IconButton 
+      onClick={() => setFlowModalOpen(false)}
+      sx={{ 
+        color: '#6b7280',
+        '&:hover': { backgroundColor: '#f3f4f6' }
+      }}
+    >
+      {/* <CloseIcon /> */}
+    </IconButton>
+  </DialogTitle>
+  
+  <DialogContent dividers sx={{ py: 3 }}>
+    <HRMView 
+      ID={selectedUser?.CHILD_CASEID || selectedUser?.id}
+      isMaximized={true}
+    />
+  </DialogContent>
+  
+  <DialogActions sx={{ px: 3, py: 2 }}>
+    <Button
+      onClick={() => setFlowModalOpen(false)}
+      variant="contained"
+      sx={{
+        textTransform: 'none',
+        fontWeight: 300,
+        backgroundColor: '#667eea',
+        '&:hover': { backgroundColor: '#5563d6' }
+      }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
 
       <OfferLetterModal
         open={offerLetterOpen}

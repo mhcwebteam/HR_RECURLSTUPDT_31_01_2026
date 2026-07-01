@@ -703,39 +703,39 @@ const validateFileType = (file) => {
         </Button>
       ),
     },
-    {
-      field: 'history',
-      headerName: 'History',
-      flex: 1,
-      minWidth: 140,
-      sortable: false,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<HistoryIcon />}
-            onClick={() => handleHistoryClick(params.row)}
-            sx={{
-              fontSize: '10px',
-              padding: '4px 10px',
-              borderRadius: '8px',
-              textTransform: 'capitalize',
-              backgroundColor: '#8b5cf6',
-              fontWeight: 600,
-              boxShadow: '0 2px 4px rgba(139, 92, 246, 0.2)',
-              '&:hover': {
-                backgroundColor: '#7c3aed',
-                boxShadow: '0 4px 6px rgba(139, 92, 246, 0.3)',
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            View
-          </Button>
-       </Box>
-      ),
-    },
+    // {
+    //   field: 'history',
+    //   headerName: 'History',
+    //   flex: 1,
+    //   minWidth: 140,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <Box sx={{ display: 'flex', gap: 1 }}>
+    //       <Button
+    //         size="small"
+    //         variant="contained"
+    //         startIcon={<HistoryIcon />}
+    //         onClick={() => handleHistoryClick(params.row)}
+    //         sx={{
+    //           fontSize: '10px',
+    //           padding: '4px 10px',
+    //           borderRadius: '8px',
+    //           textTransform: 'capitalize',
+    //           backgroundColor: '#8b5cf6',
+    //           fontWeight: 600,
+    //           boxShadow: '0 2px 4px rgba(139, 92, 246, 0.2)',
+    //           '&:hover': {
+    //             backgroundColor: '#7c3aed',
+    //             boxShadow: '0 4px 6px rgba(139, 92, 246, 0.3)',
+    //             transform: 'translateY(-1px)',
+    //           },
+    //         }}
+    //       >
+    //         View
+    //       </Button>
+    //    </Box>
+    //   ),
+    // },
     {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',

@@ -576,22 +576,27 @@ const CandidateApproval = ({ caseId }) => {
         (item) => String(item?.child_caseid) === String(caseId)
       );
 
+      console.log("offffffffffffffffrrrrrrrr",record);
+
       setOfferLetterData(record || {});
     } catch (err) {
       console.error("Error In Fetching Offer List");
     }
   };
 
-  useEffect(() => {
+   useEffect(() => {
     if (userToken?.token && caseId) fetchOfrData();
   }, [userToken?.token, caseId]);
 
-  useEffect(() => {
-    if (offerLetterData?.ofrLetterStatus === "Accept") {
-      setStatus("Accept");
-      setRemarks(offerLetterData?.ofrLetterRemarks || "");
-    }
-  }, [offerLetterData]);
+useEffect(() => {
+  if (offerLetterData) {
+    setStatus(offerLetterData.ofrLetterStatus || "");
+    setRemarks(offerLetterData.ofrLetterRemarks || "");
+    setModifyDate(
+      formatDate(offerLetterData.Candid_Reqstd_Join_date || "")
+    );
+  }
+}, [offerLetterData]);
 
   const readonlyStyle = {
     backgroundColor: isReadOnly ? '#f3f4f6' : '#ffffff',
@@ -938,51 +943,80 @@ const CandidateApproval = ({ caseId }) => {
           <label style={styles.label}>
             Upload Signed Offer Letter (PDF) {status == "Accept" && <span style={{ color: '#ef4444' }}>*</span>}
           </label>
+{/* Existing Document */}
+{offerLetterData?.candidOfrLtrSigned && (
+  <div style={styles.fileDisplay}>
+    📄 {offerLetterData.candidOfrLtrSigned.split('/').pop()}
 
-          {isReadOnly && offerLetterData?.candidOfrLtrSigned ? (
-            <div style={styles.fileDisplay}>
-              📄 {offerLetterData.candidOfrLtrSigned.split('/').pop()}
-              <div style={{ marginTop: '6px' }}>
-                <a
-                  href={offerLetterData.candidOfrLtrSigned}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.link}
-                >
-                  <Eye size={14} color="#1e40af" strokeWidth={3} />
-                  <span>View Document</span>
-                </a>
-              </div>
-            </div>
-          ) : isReadOnly ? (
-            <input
-              type="file"
-              key={status}
-              disabled={true}
-              style={styles.disabledInput}
-            />
-          ) : (
-            <input
-              key={status}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              style={styles.input}
-              onFocus={(e) => !errors.file && !fileSizeError && (e.target.style.borderColor = '#34d399')}
-              onBlur={(e) => !errors.file && !fileSizeError && (e.target.style.borderColor = '#d1fae5')}
-            />
-          )}
+    <div style={{ marginTop: '6px' }}>
+      <a
+        href={offerLetterData.candidOfrLtrSigned}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={styles.link}
+      >
+        <Eye size={14} color="#1e40af" strokeWidth={3} />
+        <span>View Document</span>
+      </a>
+    </div>
+  </div>
+)}
 
-          {file && !isReadOnly && (
-            <p style={styles.fileInfo}>
-              <CheckCircle size={12} />
-              Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-            </p>
-          )}
+{/* Upload */}
+<input
+  type="file"
+  key={status}
+  accept=".pdf"
+  disabled={isReadOnly}
+  onChange={handleFileChange}
+  style={{
+    ...styles.input,
+    ...(isReadOnly
+      ? {
+          backgroundColor: '#f3f4f6',
+          cursor: 'not-allowed'
+        }
+      : {})
+  }}
+  onFocus={(e) =>
+    !isReadOnly &&
+    !errors.file &&
+    !fileSizeError &&
+    (e.target.style.borderColor = '#34d399')
+  }
+  onBlur={(e) =>
+    !isReadOnly &&
+    !errors.file &&
+    !fileSizeError &&
+    (e.target.style.borderColor = '#d1fae5')
+  }
+/>
 
-          {fileSizeError && <p style={styles.errorText}>{fileSizeError}</p>}
-          {errors.file && !fileSizeError && <p style={styles.errorText}>{errors.file}</p>}
-          {!isReadOnly && <p style={styles.hintText}>PDF only, Max size: 1MB</p>}
+{/* Selected New File */}
+{file && !isReadOnly && (
+  <p style={styles.fileInfo}>
+    <CheckCircle size={12} />
+    Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+  </p>
+)}
+
+{fileSizeError && (
+  <p style={styles.errorText}>
+    {fileSizeError}
+  </p>
+)}
+
+{errors.file && !fileSizeError && (
+  <p style={styles.errorText}>
+    {errors.file}
+  </p>
+)}
+
+{!isReadOnly && (
+  <p style={styles.hintText}>
+    PDF only, Max size: 1MB
+  </p>
+)}
         </div>
 
         {/* HR Date */}

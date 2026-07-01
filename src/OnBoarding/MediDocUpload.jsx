@@ -625,8 +625,14 @@ doc.text('Date: 01st Nov, 2019', pageWidth - 35, yPos + 10);
                   value: rowData?.child_caseid || rowData?.CHILD_CASEID,
                 },
                 {
-                  label: "Designation",
-                  value:   rowData.DESIG.toUpperCase() || rowData?.MANPOWER_DESG?.toUpperCase(),
+              
+  label: "Designation",
+  value: (
+    !rowData?.DESIG || rowData.DESIG === 'N/A'
+      ? rowData?.MANPOWER_DESG
+      : rowData.DESIG
+  )?.toUpperCase() || '-',
+
                 },
                 {
                   label: "Department",

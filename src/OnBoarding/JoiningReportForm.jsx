@@ -130,7 +130,17 @@ const JoiningReportForm = ({ rowData, onClose }) => {
 
    
     as
-    <InputField defaultValue= {  rowData.DESIG || rowData?.MANPOWER_DESG} width="170px" readOnly />
+    <InputField
+  defaultValue={
+    !rowData?.DESIG || rowData.DESIG === 'N/A'
+      ? rowData?.MANPOWER_DESG
+      : rowData.DESIG
+  }
+  width="170px"
+  readOnly
+/>
+
+
   </p>
 </div>
 

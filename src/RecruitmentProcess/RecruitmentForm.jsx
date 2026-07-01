@@ -20,7 +20,7 @@ const [updatedFiles, setUpdatedFiles] = useState([])
 
   // ✅ CORRECT ORDER
   const [formStatus, setFormStatus] = useState('');
-      const isPending = formStatus === 'pending';
+    const isPending = formStatus === 'pending' || formStatus === 'submit';
   const [removedFiles, setRemovedFiles] = useState([]); // ✅ NEW: Track removed files with their metadata
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",
@@ -120,7 +120,11 @@ GROUP_DEPT: "",
 RAISER_EMP_ID: "",
 RECRUIT_CYCLE: "",
 HIGHEST_QUA: "",
-
+  payslips:"",
+relieving_letter: "",
+offer_letter: "",
+exp_letter: "",
+bank_statements: ""
 //  documentMetadata: {
 //   '10TH_FILENAME': { docId: null, status: null, certfi: null },
 //   'INTER_FILENAME': { docId: null, status: null, certfi: null },

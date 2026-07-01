@@ -105,11 +105,11 @@ const [formData, setFormData] = useState({
           hr_owner: item.CURRENT_USER,
           created_at: item.created_at,
           fullData: item,
-           appointmentDetailsFilled: !!(
-          item.ONBOARD_PLANT && 
-          item.REPORTING_TO && 
-          item.PROBITION
-        ),
+        //    appointmentDetailsFilled: !!(
+        //   item.ONBOARD_PLANT && 
+        //   item.REPORTING_TO && 
+        //   item.PROBITION
+        // ),
         
         // Store the existing data for pre-filling the form
         existingDetails: {
@@ -938,27 +938,28 @@ const handleViewRejectedDetails = (row) => {
   flex: 0.8,
   minWidth: 100,
   renderCell: (params) => (
-    <Tooltip 
-      title={params.row.appointmentDetailsFilled 
-        ? "View Appointment Letter" 
-        : "Please fill appointment details first"}
-    >
+    // <Tooltip 
+    //   title={params.row.appointmentDetailsFilled 
+    //     ? "View Appointment Letter" 
+    //     : "Please fill appointment details first"}
+    // >
       <IconButton
         size="small"
-        onClick={() => params.row.appointmentDetailsFilled && handleAppointmentClick(params.row)}
-        disabled={!params.row.appointmentDetailsFilled}
+      onClick={() =>  handleAppointmentClick(params.row)}
+
+        // disabled={!params.row.appointmentDetailsFilled}
         sx={{
-          color: params.row.appointmentDetailsFilled ? '#667eea' : '#cbd5e1',
+          color: '#667eea',
           '&:hover': {
-            backgroundColor: params.row.appointmentDetailsFilled 
-              ? 'rgba(102, 126, 234, 0.1)' 
-              : 'transparent',
+            backgroundColor: 
+           'rgba(102, 126, 234, 0.1)' 
+          
           },
         }}
       >
         <VisibilityIcon fontSize="small" />
       </IconButton>
-    </Tooltip>
+    // </Tooltip>
   ),
 },
 
