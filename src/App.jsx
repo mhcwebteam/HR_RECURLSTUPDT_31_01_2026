@@ -115,10 +115,11 @@ export default function App() {
               { path: "/HrInbox", element: <HrInboxWrapper /> },
               { path: "/Reports", element: <ReportsWrapper /> },
               { path: "/OnBoarding", element: <OnboardingWrapper /> }
+              
             ]
           },
           {
-            element: <RoleRoute allowedRoles={["HOD"]} />,
+            element: <RoleRoute allowedRoles={["HOD" , "Admin"]} />,
             children: [
               { path: "/PendingMRFS", element: <HODInboxWrapper /> },
               { path: "/AssignedTasks", element: <AssignedTasksWrapper /> },

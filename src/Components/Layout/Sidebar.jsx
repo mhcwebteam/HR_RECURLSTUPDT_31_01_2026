@@ -15,7 +15,10 @@ const Sidebar = () => {
  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const navigate = useNavigate();
 
-  const isEmployee = userToken?.Emp_Category === "Employee";
+  const isEmployee = userToken?.Emp_Category === "New Employee";
+
+
+  console.log("isssssssss",isEmployee);
 
   // Force sidebar open for employees and prevent toggling
   useEffect(() => {
@@ -154,9 +157,16 @@ const Sidebar = () => {
           if (item.path === "/onBoarding" || item.path === '/HrInbox' || item.path === '/History' || item.path === "/Reports") {
             return userToken.Emp_Category === "HR";
           }
-          if (item.path === "/PendingMRFS" || item.path === '/AssignedTasks' || item.path === '/HODHistory') {
-            return userToken.Emp_Category === "HOD";
-          }
+      if (
+  item.path === "/PendingMRFS" ||
+  item.path === "/AssignedTasks" ||
+  item.path === "/HODHistory"
+) {
+  return (
+    userToken.Emp_Category === "HOD" ||
+    userToken.Emp_Category === "Admin"
+  );
+}
           if (userToken?.Emp_Category === "New Employee") {
             const restrictedPaths = [
               "/OnBoarding",

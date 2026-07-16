@@ -30,13 +30,15 @@ export default function Login() {
         
         if (!isExpired) {
           // Redirect based on role
-          const empCategory = userInfo.Emp_Category;
+          const empCategory = userInfo.Emp_Category?.trim();
+
+console.log("LOGIN CATEGORY:", empCategory);
           
-          if (empCategory == "HOD") {
+      if (empCategory == "HOD" ) {
             navigate("/PendingMRFS", { replace: true });
-          } else if (empCategory == "DIRECTOR" || empCategory == "EVC") {
-            navigate("/RecruitmentProcess", { replace: true });
-          } else if (empCategory == "HR") {
+          } else if (empCategory == "Admin") {
+            navigate("/PendingMRFS", { replace: true });
+          }  else if (empCategory == "HR") {
             navigate("/HrInbox", { replace: true });
           } else {
             navigate("/", { replace: true });
@@ -70,6 +72,8 @@ export default function Login() {
         }
       );
 
+     
+
       const empCategory = data.employee?.Emp_Category;
 
 
@@ -79,24 +83,23 @@ export default function Login() {
 
         token: data.token,
         Emp_Id: data.employee.Emp_Id,
-        employee: data.employee.Employee_Name,
+        employee: data?.employee?.Employee_Name,
+         username:data?.employee?.User_Name,
         Email: data.employee.Email,
         Is_Employee: data.employee.Is_Employee,
            stage:   data?.employee?.CandidStages,
          Manpower: data?.employee?.ManPowerData,
         Emp_Category: empCategory,
-        Is_Admin: empCategory === "HR" || empCategory === "DIRECTOR" || empCategory === "EVC" || empCategory === "HOD"
+        Is_Admin: empCategory === "HR" ||  empCategory === "HOD" || empCategory === "Admin"
       };
 
     
 
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
 
-      if (empCategory == "HOD") {
-        navigate("/PendingMRFS");
-      } else if (empCategory == "DIRECTOR" || empCategory == "EVC") {
-        navigate("/RecruitmentProcess");
-      } else if (empCategory == "HR") {
+     if (empCategory == "HOD" || empCategory == "Admin") {
+  navigate("/PendingMRFS");
+}  else if (empCategory == "HR") {
         navigate("/HrInbox");
       } else {
         navigate("/CandidateForms");

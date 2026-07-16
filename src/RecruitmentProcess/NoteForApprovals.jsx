@@ -67,7 +67,7 @@ const [flowModalOpen, setFlowModalOpen] = useState(false);
     return userInfo ? userInfo : null;
   });
 
-
+console.log(token,"tokjennnnnnnnnnnnnnnnn");
 
 
 
@@ -245,7 +245,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
     STATUS: item.status,
     REVID: item.CUR_REV_ID,
      DESIG: item.DESIG,
-
+ CURRENT_USER: item.CURRENT_USER,  
     SUBMITTED_DATE: item.created_at,
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
@@ -663,31 +663,37 @@ token?.Emp_Category === "HR" && {
   flex: 1.3,
   minWidth: 180,
   sortable: false,
-  renderCell: (params) => {
-    const isDisabled = params.row.HR === "Approved";
+ renderCell: (params) => {
+  const isDisabled =
+    token?.username !== params.row.CURRENT_USER || params.row.CUR_STATUS == 'TO_DO'
+    params.row.HR === "Approved";
 
-    return (
-      <Button
-        variant="contained"
-        size="small"
-        fullWidth
-        disabled={isDisabled}
-        onClick={() => assignApprover(params.row, "HR")}
-        sx={{
-          textTransform: "none",
-          fontSize: "10px",
-          height: "24px",
-          width: "120px",
-          backgroundColor: "#667eea",
-          "&:hover": {
-            backgroundColor: "#5563d6",
-          },
-        }}
-      >
-        Send For Approval
-      </Button>
-    );
-  },
+  return (
+    <Button
+      variant="contained"
+      size="small"
+      fullWidth
+      disabled={isDisabled}
+      onClick={() => assignApprover(params.row, "HR")}
+      sx={{
+        textTransform: "none",
+        fontSize: "10px",
+        height: "24px",
+        width: "120px",
+        backgroundColor: "#667eea",
+        "&:hover": {
+          backgroundColor: "#5563d6",
+        },
+        "&.Mui-disabled": {
+          backgroundColor: "#c7cbe0",
+          color: "#f3f4f6",
+        },
+      }}
+    >
+      Send For Approval
+    </Button>
+  );
+},
 },
 
   ];

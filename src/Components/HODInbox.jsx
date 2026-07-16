@@ -282,7 +282,7 @@ const HODInbox = () => {
     },
     {
       field: 'CASEID',
-      headerName: 'Case ID',
+      headerName: 'CaseID',
       flex: 1,
       minWidth: 100,
       renderCell: (params) => (
@@ -293,7 +293,7 @@ const HODInbox = () => {
     },
     {
       field: 'CHILD_CASEID',
-      headerName: 'CHILD CASEID',
+      headerName: 'Child CaseID',
       flex: 1,
       minWidth: 120,
       renderCell: (params) => (
@@ -303,14 +303,24 @@ const HODInbox = () => {
       ),
     },
 
-    
+        {
+      field: 'PLANT',
+      headerName: 'Plant',
+      flex: 1.2,
+      minWidth: 250,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
 
   ...(hasTypePlant
     ? [{
         field: 'TYPE_PLANT',
-        headerName: 'Type Plant',
+        headerName: 'Type of Plants',
         flex: 1.2,
-        minWidth: 80,
+        minWidth: 110,
         renderCell: (params) => (
           <Box sx={{ color: '#374151' }}>
             {params.value}
@@ -335,17 +345,7 @@ const HODInbox = () => {
 
 
 
-     {
-      field: 'PLANT',
-      headerName: 'Plant',
-      flex: 1.2,
-      minWidth: 180,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-          {params.value}
-        </Box>
-      ),
-    },
+ 
 
 
 {
@@ -396,7 +396,7 @@ const HODInbox = () => {
       field: 'RAISER',
       headerName: 'Raiser',
       flex: 1,
-      minWidth: 110,
+      minWidth: 180,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
@@ -407,7 +407,7 @@ const HODInbox = () => {
       field: 'RAISER_DATE',
       headerName: 'Raiser Date',
       flex: 1,
-      minWidth: 80,
+      minWidth: 90,
       renderCell: (params) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -427,13 +427,61 @@ const HODInbox = () => {
   );
 }
     },
+
+    {
+      field: 'CUR_USR',
+      headerName: 'Final Approval Name',
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+       {
+      field: 'CUR_USR_DESIGNATION',
+      headerName: 'Final Approval Desig',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+
+
+{
+  field: "approvedDate",
+  headerName: "Final Approval Date",
+  flex: 1,
+  minWidth: 140,
+  renderCell: (params) => {
+    const value = params.row.EVC_DATE || params.row.SR_MGMT_DATE || params.row.SP_DATE;
+
+    if (!value) return "";
+
+    const date = value.split(" ")[0]; // e.g. 2026-07-08
+    const [year, month, day] = date.split("-");
+
+    return (
+      <Box sx={{ color: "#374151" }}>
+        {`${day}-${month}-${year}`}
+      </Box>
+    );
+  },
+},
+
    
  
     {
       field: 'ACTION_STATUS',
       headerName: 'Status',
       flex: 0.8,
-      minWidth: 80,
+      minWidth: 100,
       renderCell: (params) => (
         <Button
           variant="contained"
@@ -522,37 +570,42 @@ const HODInbox = () => {
             pageSizeOptions={[10, 20, 50]}
             rowHeight={42}
             columnHeaderHeight={44}
-            sx={{
-              border: "none",
-              "& .MuiDataGrid-columnHeaders": {
-                borderBottom: "2px solid #e2e8f0",
-              },
-              "& .MuiDataGrid-columnHeader": {
-                fontWeight: 600,
-                fontSize: "13px",
-                color: "#1e293b",
-                backgroundColor: "rgba(188, 198, 238, 0.5)",
-                borderRight: "1px solid #e2e8f0",
-              },
-              "& .MuiDataGrid-cell": {
-                borderBottom: "1px solid #f1f5f9",
-                borderRight: "1px solid #f1f5f9",
-                fontSize: "12px",
-                color: "#374151",
-                padding: "0 8px",
-                display: "flex",
-                alignItems: "center",
-              },
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "#f0f9ff",
-                cursor: "pointer",
-              },
-              "& .MuiDataGrid-footerContainer": {
-                borderTop: "1px solid #e2e8f0",
-                backgroundColor: "#f8fafc",
-                minHeight: "48px",
-              },
-            }}
+      sx={{
+  border: "1px solid #e2e8f0",
+
+  "& .MuiDataGrid-columnHeaders": {
+    borderBottom: "1px solid #e2e8f0",
+  },
+
+  "& .MuiDataGrid-columnHeader": {
+    fontWeight: 600,
+    fontSize: "13px",
+    color: "#1e293b",
+    backgroundColor: "rgba(188, 198, 238, 0.5)",
+    borderRight: "1px solid #e2e8f0",
+  },
+
+  "& .MuiDataGrid-cell": {
+    borderBottom: "1px solid #e2e8f0",
+    borderRight: "1px solid #e2e8f0",
+    fontSize: "12px",
+    color: "#374151",
+    padding: "0 8px",
+    display: "flex",
+    alignItems: "center",
+  },
+
+  "& .MuiDataGrid-row:hover": {
+    backgroundColor: "#f0f9ff",
+    cursor: "pointer",
+  },
+
+  "& .MuiDataGrid-footerContainer": {
+    borderTop: "1px solid #e2e8f0",
+    backgroundColor: "#f8fafc",
+    minHeight: "48px",
+  },
+}}
           />
         </Box>
       </Paper>

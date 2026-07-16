@@ -63,60 +63,52 @@ const RecruitmentMail = () => {
     }, [emailInputs, userToken?.Email]);
 
 
+useEffect(() => {
+  if (Array.isArray(HrData?.TaskAssignmentData)) {
 
-    useEffect(() => {
-      if (Array.isArray(HrData?.TaskAssignmentData)) {
-      
-    
-        const filtered = HrData.TaskAssignmentData
-    
-    
-          .filter(row => {
-       
-    
-            return (
-                 row.actionStatus == "new" && row.verifyEmail !== "sent"
-            );
-          })
-          .map((row, index) => ({
-            ...row,
-            id: row.case_id || `row_${index}`,
-          }));
-    
-        setData(filtered);
-        
-        // Preserve existing emails when setting filtered data
-        setFilteredData(prevFiltered => {
-          // If this is the first load, use the filtered data with saved emails
-          if (prevFiltered.length === 0) {
-            return filtered.map(row => ({
-              ...row,
-              // Check if we have a saved email for this case
-              savedEmail: emailInputs[row.CHILD_CASEID] || null
-            }));
-          }
-          
-          // Otherwise, merge existing emails with new data
-          const emailMap = new Map();
-          prevFiltered.forEach(row => {
-            if (row.savedEmail || emailInputs[row.CHILD_CASEID]) {
-              emailMap.set(row.CHILD_CASEID, row.savedEmail || emailInputs[row.CHILD_CASEID]);
-            }
-          });
-          
-          return filtered.map(row => ({
-            ...row,
-            savedEmail: emailMap.get(row.CHILD_CASEID) || emailInputs[row.CHILD_CASEID] || null
-          }));
-        });
-      } else {
-        setData([]);
-        setFilteredData([]);
+    // Remove emails from localStorage when StatusTrack is null
+    const updatedEmails = { ...emailInputs };
+
+    HrData.TaskAssignmentData.forEach((row) => {
+      if (row.StatusTrack == null) {
+        delete updatedEmails[row.CHILD_CASEID];
       }
-    
-      setLoading(false);
-    }, [HrData]);
-    
+    });
+
+    setEmailInputs(updatedEmails);
+
+    if (userToken?.Email) {
+      localStorage.setItem(
+        `recruitment_emails_${userToken.Email}`,
+        JSON.stringify(updatedEmails)
+      );
+    }
+
+    const filtered = HrData.TaskAssignmentData
+      .filter((row) => {
+        return (
+          row.actionStatus === "new" &&
+          row.verifyEmail !== "sent"
+        );
+      })
+      .map((row, index) => ({
+        ...row,
+        id: row.case_id || `row_${index}`,
+        savedEmail:
+          row.StatusTrack === "WIP"
+            ? updatedEmails[row.CHILD_CASEID] || ""
+            : "",
+      }));
+
+    setData(filtered);
+    setFilteredData(filtered);
+  } else {
+    setData([]);
+    setFilteredData([]);
+  }
+
+  setLoading(false);
+}, [HrData]);
 
 
 
@@ -150,16 +142,6 @@ useEffect(() => {
 
   Recuritment();
 }, [userToken?.token]);
-
-
-
-
-
-
-
-
-
-
 
 
 
