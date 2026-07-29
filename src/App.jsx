@@ -30,6 +30,9 @@ import HODHistory from "./HODHistory.jsx";
 import PreviewPage from "./RecruitmentProcess/previewPage.jsx";
 import VerifyPreviewPage from "./RecruitmentProcess/VerifyPreviewPage.jsx";
 import Reports from "./Components/Reports.jsx";
+//---------------------------------------------------------------------
+import AIAssistance from "./Components/AIAssistance.jsx";
+
 
 export const MyContext = createContext();
 
@@ -72,6 +75,8 @@ const OnboardingWrapper = () => {
   return <Layout isSidebarOpen={isSidebarOpen}><Onboarding /></Layout>;
 };
 
+
+
 const HODInboxWrapper = () => {
   const { isSidebarOpen } = React.useContext(MyContext);
   return <Layout isSidebarOpen={isSidebarOpen}><HODInbox /></Layout>;
@@ -96,6 +101,30 @@ const CandidateApprovalWrapper = () => {
   const { isSidebarOpen } = React.useContext(MyContext);
   return <Layout isSidebarOpen={isSidebarOpen}><CandidateApproval /></Layout>;
 };
+const AIChatWrapper = () => {
+  const { isSidebarOpen } = React.useContext(MyContext);
+  return (
+    <section className="main">
+      <Header />
+      <div className="contentMain flex">
+        <div
+          className={`sidebarWapper ${
+            isSidebarOpen ? "w-[18%]" : "w-[90px]"
+          } transition-all`}
+        >
+          <Sidebar />
+        </div>
+        <div
+          className={`contentRight py-4 px-4 ${
+            isSidebarOpen ? "w-[82%]" : "w-[calc(100%-90px)]"
+          } transition-all`}
+        >
+          <AIAssistance />
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -114,8 +143,10 @@ export default function App() {
             children: [
               { path: "/HrInbox", element: <HrInboxWrapper /> },
               { path: "/Reports", element: <ReportsWrapper /> },
-              { path: "/OnBoarding", element: <OnboardingWrapper /> }
+              { path: "/OnBoarding", element: <OnboardingWrapper /> },
+      
               
+
             ]
           },
           {
@@ -125,6 +156,11 @@ export default function App() {
               { path: "/AssignedTasks", element: <AssignedTasksWrapper /> },
             ]
           },
+                    {
+            path: "/ai-chat",
+            element: <AIChatWrapper />,
+          },
+
           {
             path: "/RecruitmentForm/:case_Id",
             element: (

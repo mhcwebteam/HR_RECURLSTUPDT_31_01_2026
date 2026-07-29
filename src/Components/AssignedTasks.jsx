@@ -11,12 +11,11 @@ const AssignedTasks = () => {
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [taskData, setTaskData] = useState([]);
-
   const navigate = useNavigate();
 const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
 
-  console.log("seeeeeeeeeeeeee",selectedCaseId)
+ 
   const token = useMemo(() => {
     const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
     return info?.token;
@@ -32,6 +31,10 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     setIsModalOpen(false);
     setSelectedCaseId(null);
   };
+
+
+
+
 
   const fetchTaskAssignments = async () => {
     if (!token) {
@@ -88,20 +91,59 @@ const [isModalOpen, setIsModalOpen] = useState(false);
           (row.current_task || '').toLowerCase().includes(term)
       );
     }
-    if (statusFilter !== 'all') {
-      data = data.filter((row) => row.status === statusFilter);
+    //added by 25/07/2026
+if (statusFilter !== 'all') {
+  data = data.filter((row) => {
+    if (statusFilter === "Completed") {
+      return row.status === "Completed" || row.status === "Offer Approved";
     }
+    return row.status === statusFilter;
+  });
+}
     return data;
   }, [taskData, searchTerm, statusFilter]);
 
-  const stats = useMemo(() => {
-    return {
-      total: taskData.length,
-      pending: taskData.filter((i) => i.status === 'Pending').length,
-      completed: taskData.filter((i) => i.status === 'Completed').length,
-    };
-  }, [taskData]);
 
+
+  console.log("hiiiiiiiiiii",
+  [...new Set(taskData.map(item => item.status))]
+);
+
+  //added by 25/07
+
+const pendingStages = [
+  "Actions",
+  "Recruitment Mail",
+  "Verification",
+  "Salary Stack Up",
+  "Candidate Approval",
+  "Note For Approval",
+  "Offer Letter",
+];
+
+
+
+const stats = useMemo(() => {
+  const completedCount = taskData.filter(
+    row => row.status === "Completed" || row.status === "Offer Approved"
+  ).length;
+
+  const holdCount = taskData.filter(
+    row => row.status === "Hold"
+  ).length;
+
+  const cancelledCount = taskData.filter(
+    row => row.status === "Cancelled"
+  ).length;
+
+  return {
+    total: taskData.length,
+    completed: completedCount,
+    pending: taskData.length - completedCount - holdCount - cancelledCount,
+    hold: holdCount,
+    cancelled: cancelledCount,
+  };
+}, [taskData]);
   const paginatedRows = useMemo(() => {
     const start = currentPage * pageSize;
     return filteredRows.slice(start, start + pageSize);
@@ -109,14 +151,42 @@ const [isModalOpen, setIsModalOpen] = useState(false);
 
   const totalPages = Math.ceil(filteredRows.length / pageSize);
   const safeTotalPages = Math.max(1, totalPages);
+const getStatusStyle = (status) => {
+  const styles = {
+    "Actions":
+      "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-300",
 
-  const getStatusStyle = (status) => {
-    if (!status) return 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300';
-    if (status === 'Pending') return 'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-300';
-    if (status === 'Completed') return 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-300';
-    if (status === 'In Progress') return 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-300';
-    return 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300';
+    "Recruitment Mail":
+      "bg-gradient-to-r from-green-100 to-green-50 text-green-700 border border-green-300",
+
+    "Verification":
+      "bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 border border-orange-300",
+
+    "Salary Stack Up":
+      "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border border-purple-300",
+
+    "Candidate Approval":
+      "bg-gradient-to-r from-rose-100 to-rose-50 text-rose-700 border border-rose-300",
+
+    "Note For Approval":
+      "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-300",
+
+    "Offer Letter":
+      "bg-gradient-to-r from-sky-100 to-sky-50 text-sky-700 border border-sky-300",
+
+
+
+    "Completed":
+      "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-300",
+
+    "Pending":
+      "bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 border border-gray-300"
   };
+
+  return styles[status] || styles.Pending;
+};
+
+
 const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
   return (
     <div className="min-h-screen bg-white" style={{ paddingLeft: '5px' }}>
@@ -138,9 +208,9 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
           <StatCard
-            title="Total Assigned"
+            title="Total Tasks"
             value={stats.total}
             icon={<ClipboardList className="w-4 h-4" />}
             color="blue"
@@ -157,6 +227,19 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
             icon={<UserCheck className="w-4 h-4" />}
             color="emerald"
           />
+          <StatCard
+  title="Hold Tasks"
+  value={stats.hold}
+  icon={<Clock className="w-4 h-4" />}
+  color="yellow"
+/>
+
+<StatCard
+  title="Cancelled Tasks"
+  value={stats.cancelled}
+  icon={<FileText className="w-4 h-4" />}
+  color="red"
+/>
         </div>
 
         {/* Main Table Card */}
@@ -178,16 +261,23 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
               <div className="flex gap-2">
                 <div className="relative group">
                   <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="pl-8 pr-7 py-2 border-2 border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none cursor-pointer text-xs font-medium hover:border-blue-300 hover:shadow-md transition-all"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                    <option value="In Progress">In Progress</option>
-                  </select>
+           <select
+  value={statusFilter}
+  onChange={(e) => setStatusFilter(e.target.value)}
+  className="pl-8 pr-7 py-2 border-2 border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none cursor-pointer text-xs font-medium hover:border-blue-300 hover:shadow-md transition-all"
+>
+  <option value="all">All Stages</option>
+  <option value="Actions">Actions</option>
+  <option value="Recruitment Mail">Recruitment</option>
+  <option value="Verification">Verification</option>
+  <option value="Salary Stack Up">Salary Stack Up</option>
+  <option value="Candidate Approval">Candidate Approval</option>
+  <option value="Note For Approval">Note For Approval</option>
+  <option value="Offer Letter">Offer Letter</option>
+  <option value="Offer Approved">Offer Approved</option>
+  <option value="Hold">Hold</option>
+<option value="Cancelled">Cancelled</option>
+</select>
                 </div>
 
                 <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -230,6 +320,8 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
                         { key: 'assignedTo', label: 'Assigned To', width: 'w-30' },
                         { key: 'status', label: 'Status', width: 'w-30' },
                         { key: 'assignedDate', label: 'Assigned Date', width: 'w-30' },
+                          { key: 'Hold_Date', label: 'Hold Date', width: 'w-30' },
+                      { key: 'Cancel_Date', label: 'Cancel Date', width: 'w-30' },
                       ].map((col) => (
                         <th
                           key={col.key}
@@ -285,11 +377,10 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
   </span>
                         </td>
                  <td className={tdStyle}>
-  <span >
-    {row.SUB_CODE 
-      ? `${row.SUB_CODE} - ${row.MANPOWER_DESG || 'N/A'}`
-      : (row.MANPOWER_DESG || 'N/A')}
-  </span>
+<span>
+  {`${row.MANPOWER_DESG || row.SUB_POST || 'N/A'}`}
+</span>
+
 </td>
                         <td className={tdStyle}>
                           <span>
@@ -301,13 +392,18 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
                             {row.assigned_to || ''}
                           </span>
                         </td>
-                         <td className={tdStyle}>
-                          <button
-                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer ${getStatusStyle(row.status)}`}
-                          >
-                            {row.status || ''}
-                          </button>
-                        </td>
+                   
+{/* 
+//added by 25/07 */}
+<td className={tdStyle}>
+ <button
+  className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 cursor-pointer whitespace-nowrap ${
+    getStatusStyle(row.status)
+  }`}
+>
+  {row.status}
+</button>
+</td>
                         <td className="px-3 py-2 text-xs text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
                           {row.assigned_date
                             ? new Date(row.assigned_date).toLocaleDateString('en-IN', {
@@ -317,6 +413,19 @@ const tdStyle = "px-3 py-1 text-[11px] text-gray-800 font-medium";
                             })
                             : ''}
                         </td>
+
+                               <td className={tdStyle}>
+                          <span>
+                            {row.Hold_Date || ''}
+                          </span>
+                        </td>
+
+          <td className={tdStyle}>
+                          <span>
+                            {row.Cancel_Date || ''}
+                          </span>
+                        </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -418,7 +527,24 @@ const StatCard = ({ title, value, icon, color }) => {
       border: 'border-emerald-200',
       hoverBorder: 'hover:border-emerald-400',
       hoverShadow: 'hover:shadow-emerald-200/50'
-    }
+    },
+    yellow: {
+  bgGradient: 'from-yellow-50 via-yellow-100 to-yellow-50',
+  text: 'text-yellow-700',
+  iconBg: 'from-yellow-100 to-yellow-200',
+  border: 'border-yellow-200',
+  hoverBorder: 'hover:border-yellow-400',
+  hoverShadow: 'hover:shadow-yellow-200/50'
+},
+
+red: {
+  bgGradient: 'from-red-50 via-red-100 to-red-50',
+  text: 'text-red-700',
+  iconBg: 'from-red-100 to-red-200',
+  border: 'border-red-200',
+  hoverBorder: 'hover:border-red-400',
+  hoverShadow: 'hover:shadow-red-200/50'
+}
   };
 
   const colors = colorClasses[color] || colorClasses.blue;
@@ -435,11 +561,11 @@ const StatCard = ({ title, value, icon, color }) => {
     </p>
 
     {/* Value */}
-    <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg px-30 py-1 shadow-sm`}>
+    {/* <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg px-30 py-1 shadow-sm`}> */}
       <p className={`text-sm font-bold ${colors.text}`}>
         {value}
       </p>
-    </div>
+    {/* </div> */}
 
     {/* Icon */}
     <div className={`bg-gradient-to-br ${colors.iconBg} rounded-lg p-1.5 shadow-sm`}>

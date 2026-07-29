@@ -27,3 +27,5 @@ export const API_BASE_URLss='http://172.20.0.9/laravel/myhomedashboardMRF/public
 
 
 export const FILE_PATH = "http://172.20.0.9/laravel/myhomedashboard/api/replacement-file/";
+
+export const APP_BASE_PATH = '/react/hrmprocess';

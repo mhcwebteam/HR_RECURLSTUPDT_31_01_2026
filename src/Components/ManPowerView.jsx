@@ -56,7 +56,7 @@ function ManPowerView({ caseId, onClose }) {
         });
         if (response.data) {
           console.log("ressssssssssssssssss",response.data);
-          setFormData(prev => ({ ...prev, ...response?.data?.data, caseid: response?.data?.data?.CHILD_CASEID }));
+          setFormData(prev => ({ ...prev, ...response?.data.data, caseid: response?.data.data.CHILD_CASEID }));
           if (response.data.CUR_TASK) setCurrentTask(response.data.CUR_TASK);
         }
       } catch (error) {
@@ -236,7 +236,14 @@ const CustomDateField = () => (
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Required for Job Title <span className="text-red-500">*</span></label>
-                      <input type="text" name="jobtype" value={formData.MANPOWER_DESG} readOnly className={getFieldClass("jobtype")} />
+                    
+                      <input
+  type="text"
+  name="jobtype"
+  value={ formData.MANPOWER_DESG || formData.SUB_POST }
+  readOnly
+  className={getFieldClass("jobtype")}
+/>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-0.5">Employee Level</label>
@@ -401,60 +408,158 @@ const CustomDateField = () => (
                   </motion.div>
 
                   {/* Approvals Section */}
-                  <motion.div>
-                    {(formData?.GM_STATUS || formData?.PRJ_STATUS || formData?.FUNC_STATUS ||
-                      formData?.SP_STATUS || formData?.HO_HOD_STATUS) && (
-                        <div className="rounded-xl shadow-sm p-2 border-2 border-yellow-200 mt-1.5">
-                          <div className="mb-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="p-1 bg-white rounded-md">
-                                <CalendarCheck className="w-3.5 h-3.5 text-yellow-600" />
-                              </div>
-                              <h2 className="text-sm font-bold text-yellow-800">Approvals</h2>
-                            </div>
-                          </div>
+     <motion.div>
+  {(formData?.GM_STATUS || formData?.PRJ_STATUS || formData?.FUNC_STATUS ||
+    formData?.SP_STATUS || formData?.HO_HOD_STATUS || formData?.EVC_STATUS ||   formData?.SR_MGMT_STATUS) && (
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                            {formData?.GM_STATUS && (
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">GM:</label>
-                                <textarea value={formData?.GM_REM} rows="1" maxLength="100" readOnly className={getFieldClass("tecskill")} />
-                              </div>
-                            )}
-                            {formData?.PRJ_STATUS && (
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">PRJ_HEAD:</label>
-                                <textarea value={formData?.PRJ_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
-                              </div>
-                            )}
-                            {formData?.FUNC_STATUS && (
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">FUNC_HEAD:</label>
-                                <textarea value={formData?.FUNC_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
-                              </div>
-                            )}
-                            {formData?.SP_STATUS && (
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">SP:</label>
-                                <textarea value={formData?.SP_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
-                              </div>
-                            )}
-                    
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold"> {formData?.CUR_TASK}</label>
-                                <textarea value={formData?.EVC_REM  || formData?.CFO_REM} rows="1" maxLength="100" readOnly className={getFieldClass("soft_skill")} />
-                              </div>
-                          
-                            {formData?.HO_HOD_STATUS && (
-                              <div>
-                                <label className="block mb-0.5 text-gray-700 text-xs font-semibold">HOD:</label>
-                                <textarea value={formData?.HO_HOD_REM} rows="1" maxLength="100" readOnly className={getFieldClass("tecskill")} />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                  </motion.div>
+    <div className="rounded-xl shadow-sm p-2 border-2 border-yellow-200 mt-1.5">
+
+      <div className="mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <div className="p-1 bg-white rounded-md">
+            <CalendarCheck className="w-3.5 h-3.5 text-yellow-600" />
+          </div>
+          <h2 className="text-sm font-bold text-yellow-800">
+            Approvals
+          </h2>
+        </div>
+      </div>
+
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+
+
+        {formData?.GM_STATUS && (
+          <div>
+            <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+              {formData.GM_NAME}
+              {formData.GM_NAME_DESIGNATION &&
+                ` - ${formData.GM_NAME_DESIGNATION}`}
+            </label>
+
+            <textarea
+              value={formData.GM_REM || ""}
+              rows="1"
+              readOnly
+              className={getFieldClass("tecskill")}
+            />
+          </div>
+        )}
+
+
+
+        {formData?.PRJ_STATUS && (
+          <div>
+            <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+              {formData.PRJ_NAME}
+              {formData.PRJ_NAME_DESIGNATION &&
+                ` - ${formData.PRJ_NAME_DESIGNATION}`}
+            </label>
+
+            <textarea
+              value={formData.PRJ_REM || ""}
+              rows="1"
+              readOnly
+              className={getFieldClass("soft_skill")}
+            />
+          </div>
+        )}
+
+
+
+        {formData?.FUNC_STATUS && (
+          <div>
+            <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+              {formData.FUNC_NAME}
+              {formData.FUNC_NAME_DESIGNATION &&
+                ` - ${formData.FUNC_NAME_DESIGNATION}`}
+            </label>
+
+            <textarea
+              value={formData.FUNC_REM || ""}
+              rows="1"
+              readOnly
+              className={getFieldClass("soft_skill")}
+            />
+          </div>
+        )}
+
+
+
+        {formData?.SP_STATUS && (
+          <div>
+            <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+              {formData.SP_NAME}
+              {formData.SP_NAME_DESIGNATION &&
+                ` - ${formData.SP_NAME_DESIGNATION}`}
+            </label>
+
+            <textarea
+              value={formData.SP_REM || ""}
+              rows="1"
+              readOnly
+              className={getFieldClass("soft_skill")}
+            />
+          </div>
+        )}
+
+
+{formData?.EVC_STATUS && (
+  <div>
+    <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+      {formData.EVC_NAME}
+      {formData.EVC_NAME_DESIGNATION &&
+        ` - ${formData.EVC_NAME_DESIGNATION}`}
+    </label>
+
+    <textarea
+      value={formData.EVC_REM || ""}
+      rows="1"
+      readOnly
+      className={getFieldClass("soft_skill")}
+    />
+  </div>
+)}
+
+
+
+        {formData?.HO_HOD_STATUS && (
+          <div>
+            <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+              {formData.HO_HOD_NAME}
+              {formData.HO_HOD_NAME_DESIGNATION &&
+                ` - ${formData.HO_HOD_NAME_DESIGNATION}`}
+            </label>
+
+            <textarea
+              value={formData.HO_HOD_REM || ""}
+              rows="1"
+              readOnly
+              className={getFieldClass("tecskill")}
+            />
+          </div>
+        )}
+{formData?.SR_MGMT_STATUS && (
+  <div>
+    <label className="block mb-0.5 text-gray-700 text-xs font-semibold">
+      {formData.SR_MGMT_NAME}
+      {formData.SR_MGMT_NAME_DESIGNATION &&
+        ` - ${formData.SR_MGMT_NAME_DESIGNATION}`}
+    </label>
+
+    <textarea
+      value={formData.SR_MGMT_REM || ""}
+      rows="1"
+      readOnly
+      className={getFieldClass("soft_skill")}
+    />
+  </div>
+)}
+      </div>
+    </div>
+
+  )}
+</motion.div>
                 </AnimatePresence>
               </form>
             </div>

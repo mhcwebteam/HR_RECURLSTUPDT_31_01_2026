@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from './Config';
 import Swal from 'sweetalert2';
 
+
 let isRedirecting = false;
 
 const axiosInstance = axios.create({
@@ -37,7 +38,7 @@ axiosInstance.interceptors.response.use(
         allowOutsideClick: false
       });
       
-      window.location.href = '/';
+      window.location.href = '/react/hrmprocess';
       
       setTimeout(() => {
         isRedirecting = false;

@@ -41,18 +41,44 @@ const navigate = useNavigate();
 
   
 
-  const formatDate = (dateStr) => {
+
+const formatDate = (dateStr) => {
   if (!dateStr) return null;
 
-  let [day, month, year] = dateStr.split('-');
-
-  // ✅ Ensure 2-digit format
-  day = day.padStart(2, '0');
-  month = month.padStart(2, '0');
-
-  return new Date(`${year}-${month}-${day}`);
+  // If already in DD-MM-YYYY format
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    let [day, month, year] = dateStr.split('-');
+    day = day.padStart(2, '0');
+    month = month.padStart(2, '0');
+    return new Date(`${year}-${month}-${day}`);
+  }
+  
+  // Try to parse with dayjs
+  const parsed = dayjs(dateStr);
+  if (parsed.isValid()) {
+    return parsed.toDate();
+  }
+  
+  return null;
 };
 
+// Helper function to format date to DD-MM-YYYY
+const formatDateDDMMYYYY = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  
+  // If it's already in DD-MM-YYYY format
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // Try to parse and format
+  const date = dayjs(dateStr);
+  if (date.isValid()) {
+    return date.format('DD-MM-YYYY');
+  }
+  
+  return 'N/A';
+};
 
   useEffect(() => {
     setSameAsPermanent(data?.address_status == 'YES');
@@ -355,83 +381,7 @@ if (refersh) await refersh();
   }
 };
 
-  // const handleSubmit = async () => {
 
-  //        const pdfBlob = await generateVerificationPDF(data, sameAsPermanent);
-  //   console.log(pdfBlob,"pdddddddddddddd")
-  //   // Create FormData to send PDF
-  //   const formData = new FormData();
-  //   formData.append('verification_pdf', pdfBlob, `verification_${data?.CHILD_CASEID}_${Date.now()}.pdf`);
-  //   const hasApproved = Object.values(approvedDocs).some(status => status === true);
-    
-  //   if (!hasApproved) {
-  //     return Swal.fire({
-  //       title: "Approval Required",
-  //       text: "Please approve at least one document before submitting!",
-  //       icon: "warning",
-  //       confirmButtonColor: "#3085d6",
-  //     });
-  //   }
-
-
-
-  //   const result = await Swal.fire({
-  //     title: "Submit Verification?",
-  //     text: "Are you sure you want to submit this verification?",
-  //     icon: "question",
-  //     showCancelButton: true,
-  //     confirmButtonColor: "#10b981",
-  //     cancelButtonColor: "#6b7280",
-  //     confirmButtonText: "Yes, Submit",
-  //     cancelButtonText: "Cancel"
-  //   });
-
-  //   if (!result.isConfirmed) return;
-
-
-
-  //   setLoading(true);
-  //   try {
-  //     const payload = {
-  //       child_caseId: data?.CHILD_CASEID,
-  //       remarks,
-  //       fileData: pdfBlob,
-  //     };
-      
-  //     const response ="" 
-  //     await axiosInstance.post(`${API_BASE_URL}/verify-update`, payload, {
-  //       headers: {
-  //         Authorization: `Bearer ${userToken.token}`,
-  //         'Content-Type': 'application/json',
-  //       },
-  //     }
-    
-  //   );
-
-  //     if (response.data) {
-  //       await Swal.fire({
-  //         icon: 'success',
-  //         title: 'Success!',
-  //         text: 'Verification submitted successfully!',
-  //         timer: 1500,
-  //         showConfirmButton: false,
-  //       });
-
-  //       if (refersh) await refersh();
-  //       setRemarks('');
-  //       onClose();
-  //     }
-  //   } catch (error) {
-  //     console.error('Error submitting form:', error);
-  //     Swal.fire({
-  //       title: 'Error!',
-  //       text: 'Failed to submit verification. Please try again.',
-  //       icon: 'error',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
 
 const handleSubmit = async () => {
@@ -1217,13 +1167,14 @@ const handleDownloadDocument = (url, label) => {
                       {/* Row 4: DOB & Age */}
                       <FieldWithApprove 
                         label="DOB (as per original) *" 
-                        value={data?.ORIGINAL_DOB} 
+                     value={formatDateDDMMYYYY(data?.ORIGINAL_DOB)} 
+
                         icon={Calendar}
                       />
                       
                       <FieldWithApprove 
                         label="DOB (as per Aadhar) *" 
-                        value={data?.DOB_ASPER_ADHAR} 
+                     value={formatDateDDMMYYYY(data?.DOB_ASPER_ADHAR)} 
 
                         icon={Calendar}
                       />
@@ -1308,7 +1259,7 @@ const handleDownloadDocument = (url, label) => {
                       {data?.PASSPORT_NUMBER && (
                         <FieldWithApprove 
                           label="Passport Expiry Date *" 
-                          value={data?.PASSPORT_EXPIRY} 
+                          value={formatDateDDMMYYYY(data?.PASSPORT_EXPIRY)} 
                           icon={Calendar}
                         />
                       )}
@@ -1324,7 +1275,7 @@ const handleDownloadDocument = (url, label) => {
                       {data?.DRIVING_LICENSE && (
                         <FieldWithApprove 
                           label="Driving Licence Expiry *" 
-                          value={data?.DRIVING_LICENSE_EXPIRY} 
+                          value={formatDateDDMMYYYY(data?.DRIVING_LICENSE_EXPIRY)} 
                           icon={Calendar}
                         />
                       )}
@@ -1506,7 +1457,7 @@ const handleDownloadDocument = (url, label) => {
                           <td style={{ padding: '6px' }}>{data?.SSC_SCHOOL_NAME || 'N/A'}</td>
                           <td style={{ padding: '6px' }}>{data?.SSC_BOARD || 'N/A'}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>{data?.SSC_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.SSC_PASSED_YEAR || 'N/A'}</td>
+                          <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.SSC_PASSED_YEAR || 'N/A')}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>
                             {data?.documents?.['10th_certi'] ? (
                               <button onClick={() => handleViewDocument(data?.documents['10th_certi'], '10th Certificate')}
@@ -1540,7 +1491,7 @@ const handleDownloadDocument = (url, label) => {
                           <td style={{ padding: '6px' }}>{data?.INTER_COLLEGE_NAME || 'N/A'}</td>
                           <td style={{ padding: '6px' }}>{data?.INTER_BOARD || 'N/A'}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>{data?.INTER_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.INTER_PASSED_YEAR || 'N/A'}</td>
+                          <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.INTER_PASSED_YEAR || 'N/A')}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>
                             {data?.documents?.Inter_certi ? (
                               <button onClick={() => handleViewDocument(data.documents.Inter_certi, 'Intermediate Certificate')}
@@ -1574,7 +1525,7 @@ const handleDownloadDocument = (url, label) => {
                           <td style={{ padding: '6px' }}>{data?.GRAD_COLLEGE_NAME || 'N/A'}</td>
                           <td style={{ padding: '6px' }}>{data?.DEGREE_UNIVERSITY || 'N/A'}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>{data?.BTECH_MARKS || 'N/A'}</td>
-                          <td style={{ padding: '6px' }}>{data?.DEGREE_PASSED_YEAR || 'N/A'}</td>
+                          <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.DEGREE_PASSED_YEAR || 'N/A')}</td>
                           <td style={{ padding: '6px', textAlign: 'center' }}>
                             {data?.documents?.Gradu_certi ? (
                               <button onClick={() => handleViewDocument(data.documents.Gradu_certi, 'Degree Certificate')}
@@ -1609,7 +1560,7 @@ const handleDownloadDocument = (url, label) => {
                             <td style={{ padding: '6px' }}>{data?.PG_COLLEGE_NAME}</td>
                             <td style={{ padding: '6px' }}>{data?.PG_UNIVERSITY}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PG_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.PG_PASSED_YEAR}</td>
+                            <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.PG_PASSED_YEAR)}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>
                               {data?.documents?.PG_FILENAME && (
                                 <button onClick={() => handleViewDocument(data.documents.PG_FILENAME, 'PG Certificate')}
@@ -1643,7 +1594,7 @@ const handleDownloadDocument = (url, label) => {
                             <td style={{ padding: '6px' }}>{data?.PHD_COLLEGE_NAME}</td>
                             <td style={{ padding: '6px' }}>{data?.PHD_UNIVERSITY}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>{data?.PHD_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.PHD_PASSED_YEAR}</td>
+                            <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.PHD_PASSED_YEAR)}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>
                               {data?.documents?.PHD_FILENAME && (
                                 <button onClick={() => handleViewDocument(data.documents.PHD_FILENAME, 'PHD Certificate')}
@@ -1680,7 +1631,7 @@ const handleDownloadDocument = (url, label) => {
                             <td style={{ padding: '6px' }}>{data?.OTHER_COLLEGE_NAME}</td>
                             <td style={{ padding: '6px' }}>{data?.OTHER_UNIVERSITY}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>{data?.OTHER_MARKS}</td>
-                            <td style={{ padding: '6px' }}>{data?.OTHER_PASSED_YEAR}</td>
+                            <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.OTHER_PASSED_YEAR)}</td>
                             <td style={{ padding: '6px', textAlign: 'center' }}>
                               {data?.documents?.OTHER_FILENAME && (
                                 <button onClick={() => handleViewDocument(data.documents.OTHER_FILENAME, 'Others Certificate')}

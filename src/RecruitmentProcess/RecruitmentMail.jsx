@@ -12,13 +12,13 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 
 import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaChartPie } from 'react-icons/fa';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
 import DataFlow from "../Components/DataFlow.jsx"
-
-import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
+import { ArrowLeftIcon, Bot, BotMessageSquare, BriefcaseIcon, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
-
 import ManPowerView from '../Components/ManPowerView.jsx';
 import axiosInstance from '../Config/axiosConfig.jsx';
+import ChatIcon from '@mui/icons-material/Chat';
+import AIChat from '../AIchat';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -34,9 +34,13 @@ const RecruitmentMail = () => {
   const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [userToken] = useState(() => JSON.parse(localStorage.getItem('userInfo')) || {})
-   const [HrData,setHrData] = useState([]);
-
-
+  const [HrData,setHrData] = useState([]);
+  
+  // Chat states
+  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [selectedCandidateEmail, setSelectedCandidateEmail] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const loadSavedEmails = () => {
     const savedEmails = localStorage.getItem(`recruitment_emails_${userToken?.Email || 'default'}`);
@@ -46,111 +50,121 @@ const RecruitmentMail = () => {
     return {};
   };
 
-
-
-
   const [emailInputs, setEmailInputs] = useState(() => loadSavedEmails());
   const [submitting, setSubmitting] = useState({});
 
-
-    useEffect(() => {
-      if (userToken?.Email) {
-        localStorage.setItem(
-          `recruitment_emails_${userToken.Email}`, 
-          JSON.stringify(emailInputs)
-        );
-      }
-    }, [emailInputs, userToken?.Email]);
-
-
-useEffect(() => {
-  if (Array.isArray(HrData?.TaskAssignmentData)) {
-
-    // Remove emails from localStorage when StatusTrack is null
-    const updatedEmails = { ...emailInputs };
-
-    HrData.TaskAssignmentData.forEach((row) => {
-      if (row.StatusTrack == null) {
-        delete updatedEmails[row.CHILD_CASEID];
-      }
-    });
-
-    setEmailInputs(updatedEmails);
-
+  useEffect(() => {
     if (userToken?.Email) {
       localStorage.setItem(
-        `recruitment_emails_${userToken.Email}`,
-        JSON.stringify(updatedEmails)
+        `recruitment_emails_${userToken.Email}`, 
+        JSON.stringify(emailInputs)
       );
     }
+  }, [emailInputs, userToken?.Email]);
 
-    const filtered = HrData.TaskAssignmentData
-      .filter((row) => {
-        return (
-          row.actionStatus === "new" &&
-          row.verifyEmail !== "sent"
-        );
-      })
-      .map((row, index) => ({
-        ...row,
-        id: row.case_id || `row_${index}`,
-        savedEmail:
-          row.StatusTrack === "WIP"
-            ? updatedEmails[row.CHILD_CASEID] || ""
-            : "",
-      }));
+  // Fetch unread count for chat
+  const fetchUnreadCount = async () => {
+    if (!userToken?.Emp_Id) return;
 
-    setData(filtered);
-    setFilteredData(filtered);
-  } else {
-    setData([]);
-    setFilteredData([]);
-  }
-
-  setLoading(false);
-}, [HrData]);
-
-
-
-useEffect(() => {
-  if (!userToken?.token) return;
-
-  const Recuritment = async () => {
     try {
-
-      
       const response = await axiosInstance.get(
-        `${API_BASE_URL}/task-Assign-GtDta`,
+        `${API_BASE_URL}/chat/unread/${userToken.Emp_Id}`,
         {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${userToken.token}`,
-          },
+          params: {
+            sender_type: 'hr'
+          }
         }
       );
-
-
-    
-
-      setHrData(response.data);
-      console.log("NOTE FOR APPROVAL API DATA:", response.data);
+      if (response.data.success) {
+        setUnreadCount(response.data.unread);
+      }
     } catch (err) {
-      console.error("Error fetching approval data", err);
+      console.error('Error fetching unread count:', err);
     }
   };
 
-  Recuritment();
-}, [userToken?.token]);
+  // Poll for unread count
+  useEffect(() => {
+    if (userToken?.Emp_Id) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [userToken?.Emp_Id]);
 
+  useEffect(() => {
+    if (Array.isArray(HrData?.TaskAssignmentData)) {
+      const updatedEmails = { ...emailInputs };
 
+      HrData.TaskAssignmentData.forEach((row) => {
+        if (row.StatusTrack == null) {
+          delete updatedEmails[row.CHILD_CASEID];
+        }
+      });
 
+      setEmailInputs(updatedEmails);
+
+      if (userToken?.Email) {
+        localStorage.setItem(
+          `recruitment_emails_${userToken.Email}`,
+          JSON.stringify(updatedEmails)
+        );
+      }
+
+      const filtered = HrData.TaskAssignmentData
+        .filter((row) => {
+          return (
+            row.actionStatus === "new" &&
+            row.verifyEmail !== "sent"
+          );
+        })
+        .map((row, index) => ({
+          ...row,
+          id: row.case_id || `row_${index}`,
+          savedEmail:
+            row.StatusTrack === "WIP"
+              ? updatedEmails[row.CHILD_CASEID] || ""
+              : "",
+        }));
+
+      setData(filtered);
+      setFilteredData(filtered);
+    } else {
+      setData([]);
+      setFilteredData([]);
+    }
+
+    setLoading(false);
+  }, [HrData]);
+
+  useEffect(() => {
+    if (!userToken?.token) return;
+
+    const Recuritment = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `${API_BASE_URL}/task-Assign-GtDta`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${userToken.token}`,
+            },
+          }
+        );
+        setHrData(response.data);
+        console.log("NOTE FOR APPROVAL API DATA:", response.data);
+      } catch (err) {
+        console.error("Error fetching approval data", err);
+      }
+    };
+
+    Recuritment();
+  }, [userToken?.token]);
 
   useEffect(() => {
     if (!userToken.token) navigate('/');
   }, [navigate, userToken?.token]);
-
- 
 
   const handleEmailChange = (caseId, email) => {
     setEmailInputs(prev => ({
@@ -158,7 +172,6 @@ useEffect(() => {
       [caseId]: email
     }));
     
-    // Also update the filteredData to reflect the email
     setFilteredData(prev => 
       prev.map(row => 
         row.CHILD_CASEID === caseId 
@@ -168,91 +181,90 @@ useEffect(() => {
     );
   };
 
-
-
- 
-
-
-
-
-
   const handleSubmitEmail = async (caseId, rowData) => {
-  const email = emailInputs[caseId];
-  if (!email) {
-    Swal.fire('Error', 'Please enter email', 'error');
-    return;
-  }
-
-  if (!validateEmail(email)) {
-    Swal.fire('Error', 'Please enter a valid email address', 'error');
-    return;
-  }
-
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Do you want to send the Recruitment form link to ${email}?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, Send Email',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#10b981',
-    cancelButtonColor: '#6b7280',
-  });
-
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  setSubmitting(prev => ({ ...prev, [caseId]: true }));
-
-  const payload2 = {
-    email: email,
-    child_caseId: caseId,
-    hrEmail: userToken?.Email
-  }
-
-  try {
-    const response = await axiosInstance.post(
-      `${API_BASE_URL}/emp-email`,
-      payload2,
-      {
-        headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (response.data) {
-      Swal.fire({
-        title: 'Success!',
-        icon: "success",
-        text: 'Recruitment form link sent to employee email!',
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setFilteredData(prev =>
-        prev.map(row =>
-          row.CHILD_CASEID === caseId
-            ? { ...row, StatusTrack: "WIP", verifyEmail: "sent", savedEmail: email }
-            : row
-        )
-      );
-      
-      // Keep email in localStorage
-      // Already saved via useEffect
+    const email = emailInputs[caseId];
+    if (!email) {
+      Swal.fire('Error', 'Please enter email', 'error');
+      return;
     }
-  } catch (error) {
-    console.error('Email send error:', error);
-    Swal.fire('Error', 'Failed to send email', 'error');
-  } finally {
-    setSubmitting(prev => ({ ...prev, [caseId]: false }));
-  }
-};
 
- 
+    if (!validateEmail(email)) {
+      Swal.fire('Error', 'Please enter a valid email address', 'error');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Send Recruitment Form',
+      text: `Send the Recruitment form link to ${email}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Send Email',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    setSubmitting(prev => ({ ...prev, [caseId]: true }));
+
+    const payload2 = {
+      email: email,
+      child_caseId: caseId,
+      hrEmail: userToken?.Email
+    }
+
+    try {
+      const response = await axiosInstance.post(
+        `${API_BASE_URL}/emp-email`,
+        payload2,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data) {
+        Swal.fire({
+          title: 'Email Sent Successfully!',
+          html: `
+            <div style="text-align: left; padding: 10px;">
+              <p style="margin: 5px 0;"><strong>📧 Sent to:</strong> ${email}</p>
+              <p style="margin: 5px 0;"><strong>🆔 Case ID:</strong> ${caseId}</p>
+              <p style="margin: 5px 0; color: #6b7280; font-size: 12px;">
+                Candidate will use Case ID to login
+              </p>
+              <hr style="margin: 10px 0;" />
+              <p style="color: #10b981; font-weight: 500;">
+                ✅ Link sent successfully!
+              </p>
+            </div>
+          `,
+          icon: 'success',
+          confirmButtonColor: '#10b981',
+          timer: 4000,
+        });
+
+        setFilteredData(prev =>
+          prev.map(row =>
+            row.CHILD_CASEID === caseId
+              ? { ...row, StatusTrack: "WIP", verifyEmail: "sent", savedEmail: email }
+              : row
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Email send error:', error);
+      Swal.fire('Error', 'Failed to send email. Please try again.', 'error');
+    } finally {
+      setSubmitting(prev => ({ ...prev, [caseId]: false }));
+    }
+  };
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -272,6 +284,29 @@ useEffect(() => {
   const handleCloseModal = () => {
     setManPowerOpen(false);
     setSelectedRowData(null);
+  };
+
+  // Open chat with specific candidate
+  const openChatWithCandidate = (caseId, email) => {
+    setSelectedCaseId(caseId);
+    setSelectedCandidateEmail(email);
+    setChatOpen(true);
+  };
+
+  // Open general chat (for all candidates)
+  const openGeneralChat = () => {
+    // If there are candidates, open chat with first candidate
+    if (filteredData.length > 0) {
+      const firstCandidate = filteredData[0];
+      const email = emailInputs[firstCandidate.CHILD_CASEID] || firstCandidate.savedEmail || '';
+      setSelectedCaseId(firstCandidate.CHILD_CASEID);
+      setSelectedCandidateEmail(email || 'Candidate');
+    } else {
+      // If no candidates, open with a default case
+      setSelectedCaseId('general');
+      setSelectedCandidateEmail('HR Chat');
+    }
+    setChatOpen(true);
   };
 
   const statusCounts = useMemo(() => {
@@ -294,9 +329,7 @@ useEffect(() => {
     return counts;
   }, [filteredData]);
 
-
-   const hasTypePlant = HrData?.TaskAssignmentData?.some(row => row.TYPE_PLANT);
-
+  const hasTypePlant = HrData?.TaskAssignmentData?.some(row => row.TYPE_PLANT);
   const recCycle = HrData?.TaskAssignmentData?.some(row => row.RECRUIT_CYCLE);
 
   const columns = [
@@ -313,8 +346,7 @@ useEffect(() => {
         </Box>
       ),
     },
-
-          {
+    {
       field: 'CHILD_CASEID',
       headerName: 'Case ID',
       flex: 1,
@@ -325,56 +357,39 @@ useEffect(() => {
         </Box>
       ),
     },
-
-
-        ...(hasTypePlant
-    ? [{
-        field: 'TYPE_PLANT',
-        headerName: 'Type Plant',
-        flex: 1.2,
-            minWidth: 80,
-        renderCell: (params) => (
-          <Box sx={{ color: '#374151' }}>
-            {params.value}
-          </Box>
-        ),
-      }]
-    : []),
-
-  // ✅ MUST be array
-  ...(recCycle
-    ? [{
-        field: 'RECRUIT_CYCLE',
-        headerName: 'Emp Level',
-        flex: 1.2,
-            minWidth: 120,
-        renderCell: (params) => (
-          <Box sx={{ color: '#374151' }}>
-            {params.value}
-          </Box>
-        ),
-      }]
-    : []),
-
-
-
-
-
-
-        {
-                field: 'CUR_REV_ID',
-                headerName: 'Rev ID',
-                flex: 1,
-                minWidth: 60,
-                renderCell: (params) => (
-                    <Box sx={{ color: '#374151' }}>
-                       {params.value || "00"} 
-                    </Box>
-                ),
-            },
-
-  
-
+    ...(hasTypePlant ? [{
+      field: 'TYPE_PLANT',
+      headerName: 'Type Plant',
+      flex: 1.2,
+      minWidth: 80,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
+    ...(recCycle ? [{
+      field: 'RECRUIT_CYCLE',
+      headerName: 'Emp Level',
+      flex: 1.2,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    }] : []),
+    {
+      field: 'CUR_REV_ID',
+      headerName: 'Rev ID',
+      flex: 1,
+      minWidth: 60,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value || "00"} 
+        </Box>
+      ),
+    },
     {
       field: 'PLANT',
       headerName: 'Plant',
@@ -386,49 +401,44 @@ useEffect(() => {
         </Box>
       ),
     },
-{
-  field: 'DEPT',
-  headerName: 'Dept',
-  flex: 1,
-  minWidth: 140,
-  renderCell: (params) => {
-    const groupCode = params.row.GROUP_CODE;
-    const dept = params.value;
-
-    return (
-      <Box sx={{ color: '#374151', fontWeight: 500 }}>
-        {groupCode ? `${groupCode} - ${dept}` : dept}
-      </Box>
-    );
-  },
-},
-
-  {
-  field: 'MANPOWER_DESG',
-  headerName: 'Desig/Position',
-  flex: 1.2,
-  minWidth: 130,
-  renderCell: (params) => {
-    const subCode = params.row.SUB_CODE;
-    const value = params.value || 'N/A';
-
-    return (
-      <Box
-        sx={{
-          color: '#374151',
-          padding: '2px 8px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          fontWeight: 600,
-        }}
-      >
-        {subCode ? `${subCode} - ${value}` : value}
-      </Box>
-    );
-  },
-},
-
-
+    {
+      field: 'DEPT',
+      headerName: 'Dept',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => {
+        const groupCode = params.row.GROUP_CODE;
+        const dept = params.value;
+        return (
+          <Box sx={{ color: '#374151', fontWeight: 500 }}>
+            {groupCode ? `${groupCode} - ${dept}` : dept}
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'MANPOWER_DESG',
+      headerName: 'Desig/Position',
+      flex: 1.2,
+      minWidth: 130,
+      renderCell: (params) => {
+        const subCode = params.row.SUB_CODE;
+        const value = params.value || 'N/A';
+        return (
+          <Box
+            sx={{
+              color: '#374151',
+              padding: '2px 8px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            {subCode ? `${subCode} - ${value}` : value}
+          </Box>
+        );
+      },
+    },
     {
       field: 'RAISER',
       headerName: 'Raiser',
@@ -445,26 +455,21 @@ useEffect(() => {
       headerName: 'Raiser Dt',
       flex: 1,
       minWidth: 80,
-     renderCell: (params) => {
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-
-    const [day, month, year] = parts;
-
-    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
-  };
-
-  return (
-    <Box sx={{ color: '#6b7280' }}>
-      {formatDate(params.value)}
-    </Box>
-  );
-}
+      renderCell: (params) => {
+        const formatDate = (dateStr) => {
+          if (!dateStr) return '';
+          const parts = dateStr.split('/');
+          if (parts.length !== 3) return '';
+          const [day, month, year] = parts;
+          return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+        };
+        return (
+          <Box sx={{ color: '#6b7280' }}>
+            {formatDate(params.value)}
+          </Box>
+        );
+      }
     },
-    
     {
       field: 'ACTION_STATUS',
       headerName: 'Status',
@@ -495,141 +500,183 @@ useEffect(() => {
       ),
     },
     {
-  field: 'verifyEmail',
-  headerName: 'Mail Status',
-  flex: 0.8,
-  minWidth: 120,
-  renderCell: (params) => {
-    const status = params.row.StatusTrack;
-
-
-    return (
-      <Button
-        variant="contained"
-        size="small"
-        sx={{
-          background: status == "WIP" ? '#10b981' : '#522952',
-          color: 'white',
-          fontSize: '11px',
-          padding: '3px 10px',
-          borderRadius: '4px',
-          textTransform: 'capitalize',
-          fontWeight: 600,
-          minWidth: 'auto',
-          boxShadow: 'none',
-        }}
-      >
-        {status ? 'Email Sent' : 'Pending'}
-      </Button>
-    );
-  },
-},
+      field: 'verifyEmail',
+      headerName: 'Mail Status',
+      flex: 0.8,
+      minWidth: 120,
+      renderCell: (params) => {
+        const status = params.row.StatusTrack;
+        return (
+          <Button
+            variant="contained"
+            size="small"
+            sx={{
+              background: status == "WIP" ? '#10b981' : '#522952',
+              color: 'white',
+              fontSize: '11px',
+              padding: '3px 10px',
+              borderRadius: '4px',
+              textTransform: 'capitalize',
+              fontWeight: 600,
+              minWidth: 'auto',
+              boxShadow: 'none',
+            }}
+          >
+            {status ? 'Email Sent' : 'Pending'}
+          </Button>
+        );
+      },
+    },
     {
-        field: 'USER_EMAIL',
-        headerName: 'User Email',
-        flex: 1.5,
-        minWidth: 180,
-        renderCell: (params) => {
-          // Use saved email from emailInputs or from row data
-          const currentEmail = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
-          return (
-            <Tooltip 
-              title={currentEmail || 'No email entered'} 
-              arrow 
-              placement="top"
-              componentsProps={{
-                tooltip: {
-                  sx: {
-                    backgroundColor: '#1f2937',
-                    fontSize: '12px',
-                    padding: '6px 10px',
-                    borderRadius: '4px',
-                    '& .MuiTooltip-arrow': {
-                      color: '#1f2937',
-                    },
+      field: 'USER_EMAIL',
+      headerName: 'User Email',
+      flex: 1.5,
+      minWidth: 180,
+      renderCell: (params) => {
+        const currentEmail = emailInputs[params.row.CHILD_CASEID] || params.row.savedEmail || '';
+        return (
+          <Tooltip 
+            title={currentEmail || 'No email entered'} 
+            arrow 
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: '#1f2937',
+                  fontSize: '12px',
+                  padding: '6px 10px',
+                  borderRadius: '4px',
+                  '& .MuiTooltip-arrow': {
+                    color: '#1f2937',
+                  },
+                },
+              },
+            }}
+          >
+            <TextField
+              size="small"
+              type="email"
+              placeholder="Enter email address"
+              value={currentEmail}
+              onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '12px',
+                  height: '32px',
+                  '& fieldset': {
+                    borderColor: '#d1d5db',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#667eea',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
                   },
                 },
               }}
-            >
-              <TextField
-                size="small"
-                type="email"
-                placeholder="Enter email address"
-                value={currentEmail}
-                onChange={(e) => handleEmailChange(params.row.CHILD_CASEID, e.target.value)}
-                sx={{
-                  width: '100%',
-                  '& .MuiOutlinedInput-root': {
-                    fontSize: '12px',
-                    height: '32px',
-                    '& fieldset': {
-                      borderColor: '#d1d5db',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#667eea',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#667eea',
-                    },
-                  },
-                }}
-              />
-            </Tooltip>
-          );
-        },
+            />
+          </Tooltip>
+        );
       },
+    },
     {
       field: 'ACTIONS',
       headerName: 'Actions',
-      flex: 1,
-      minWidth: 110,
+      flex: 1.2,
+      minWidth: 130,
       sortable: false,
       filterable: false,
       renderCell: (params) => {
         const isSubmitting = submitting[params.row.CHILD_CASEID] || false;
         const email = emailInputs[params.row.CHILD_CASEID] || '';
         return (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => handleSubmitEmail(params.row.CHILD_CASEID, params.row)}
-            disabled={isSubmitting || !email}
-            sx={{
-              background: isSubmitting
-                ? '#9ca3af'
-                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              fontSize: '10px',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              textTransform: 'capitalize',
-              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
-              minWidth: '90px',
-              '&:hover': {
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => handleSubmitEmail(params.row.CHILD_CASEID, params.row)}
+              disabled={isSubmitting || !email}
+              sx={{
                 background: isSubmitting
                   ? '#9ca3af'
-                  : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                transform: isSubmitting ? 'none' : 'translateY(-1px)',
-                boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
-              },
-              '&:disabled': {
-                background: '#9ca3af',
-                color: '#e5e7eb',
-              }
-            }}
-          >
-            {isSubmitting ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <CircularProgress size={12} sx={{ color: 'white' }} />
-                Sending...
-              </Box>
-            ) : (
-              'Send Email'
-            )}
-          </Button>
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                fontSize: '10px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                textTransform: 'capitalize',
+                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                minWidth: '90px',
+                '&:hover': {
+                  background: isSubmitting
+                    ? '#9ca3af'
+                    : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  transform: isSubmitting ? 'none' : 'translateY(-1px)',
+                  boxShadow: isSubmitting ? 'none' : '0 4px 10px rgba(16, 185, 129, 0.4)',
+                },
+                '&:disabled': {
+                  background: '#9ca3af',
+                  color: '#e5e7eb',
+                }
+              }}
+            >
+              {isSubmitting ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <CircularProgress size={12} sx={{ color: 'white' }} />
+                  Sending...
+                </Box>
+              ) : (
+                'Send Email'
+              )}
+            </Button>
+            {/* Chat Button */}
+          
+          </Box>
         );
       },
     },
+
+   {
+      field: 'AI Assistance',
+      headerName: 'AI Assistance',
+      flex: 1,
+      minWidth: 100,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+         <Tooltip title="Chat with Candidate">
+<Button
+  variant="outlined"
+  size="small"
+  onClick={() => openChatWithCandidate(params.row.CHILD_CASEID, emailInputs[params.row.CHILD_CASEID] || '')}
+  disabled={!emailInputs[params.row.CHILD_CASEID]}
+  sx={{
+    minWidth: '30px',
+    minHeight: '28px',
+    padding: 0,
+    borderRadius: '50%',
+    borderColor: '#050416',
+    color: '#46455b',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 0,
+    '&:hover': {
+      backgroundColor: '#e0e7ff',
+      borderColor: '#4f46e5',
+    },
+    '&:disabled': {
+      borderColor: '#d1d5db',
+      color: '#d1d5db',
+    }
+  }}
+>
+  <BotMessageSquare size={20} strokeWidth={2} fill="none" style={{ display: 'block' }} />
+</Button>
+            </Tooltip>
+        </Box>
+      ),
+    }
   ];
 
   const modalStyle = {
@@ -648,15 +695,6 @@ useEffect(() => {
     overflow: 'hidden'
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen gap-2">
-  //       <RefreshCw className={`w-5 h-5 text-blue-600 ${loading ? "animate-spin" : ""}`} />
-  //       <span className="text-gray-600">Loading...</span>
-  //     </div>
-  //   );
-  // }
-
   const handleBack = () => {
     navigate('/');
   };
@@ -667,87 +705,83 @@ useEffect(() => {
       margin: "0 auto",
       padding: "12px",
     }}>
-     
-      
+   
 
-        <Box sx={{
-          width: "100%",
-          borderRadius: "10px",
-          overflow: "hidden",
-          border: "1px solid #dfe5f1ff",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-        }}>
-          <DataGrid
-            rows={filteredData}
-            columns={columns}
-        getRowId={(row) => row.task_assignment_id}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={[10, 20, 50]}
-       rowHeight={40}
-       loading={loading}
-
-            columnHeaderHeight={40}
-
-             slots={{
-    loadingOverlay: () => (
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '50px',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          zIndex: 10,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
-          <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
-            Loading...
-          </Typography>
-        </Box>
+      <Box sx={{
+        width: "100%",
+        borderRadius: "10px",
+        overflow: "hidden",
+        border: "1px solid #dfe5f1ff",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+      }}>
+        <DataGrid
+          rows={filteredData}
+          columns={columns}
+          getRowId={(row) => row.task_assignment_id}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          pageSizeOptions={[10, 20, 50]}
+          rowHeight={40}
+          loading={loading}
+          columnHeaderHeight={40}
+          slots={{
+            loadingOverlay: () => (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50px',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  zIndex: 10,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                  <Typography sx={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
+                    Loading...
+                  </Typography>
+                </Box>
+              </Box>
+            ),
+          }}
+          sx={{
+            border: "none",
+            "& .MuiDataGrid-columnHeaders": {
+              borderBottom: "2px solid #e2e8f0",
+            },
+            "& .MuiDataGrid-columnHeader": {
+              fontWeight: 600,
+              fontSize: "13px",
+              color: "#1e293b",
+              backgroundColor: "rgba(188, 198, 238, 0.5)",
+              borderRight: "1px solid #e2e8f0",
+            },
+            "& .MuiDataGrid-cell": {
+              borderBottom: "1px solid #f1f5f9",
+              borderRight: "1px solid #f1f5f9",
+              fontSize: "12px",
+              color: "#374151",
+              padding: "0 8px",
+              display: "flex",
+              alignItems: "center",
+            },
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "#f0f9ff",
+              cursor: "pointer",
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "1px solid #e2e8f0",
+              backgroundColor: "#f8fafc",
+              minHeight: "48px",
+            },
+          }}
+        />
       </Box>
-    ),
-  }}
-            sx={{
-              border: "none",
-              "& .MuiDataGrid-columnHeaders": {
-                borderBottom: "2px solid #e2e8f0",
-              },
-              "& .MuiDataGrid-columnHeader": {
-                fontWeight: 600,
-                fontSize: "13px",
-                color: "#1e293b",
-                backgroundColor: "rgba(188, 198, 238, 0.5)",
-                borderRight: "1px solid #e2e8f0",
-              },
-              "& .MuiDataGrid-cell": {
-                borderBottom: "1px solid #f1f5f9",
-                borderRight: "1px solid #f1f5f9",
-                fontSize: "12px",
-                color: "#374151",
-                padding: "0 8px",
-                display: "flex",
-                alignItems: "center",
-              },
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "#f0f9ff",
-                cursor: "pointer",
-              },
-              "& .MuiDataGrid-footerContainer": {
-                borderTop: "1px solid #e2e8f0",
-                backgroundColor: "#f8fafc",
-                minHeight: "48px",
-              },
-            }}
-          />
-        </Box>
-     
 
       {/* Manpower Modal */}
       <Modal open={manpowerOpen} onClose={handleCloseModal}>
@@ -785,32 +819,25 @@ useEffect(() => {
               <CloseIcon />
             </IconButton>
           </Box>
-          <Box sx={{
-            padding: '20px',
-            maxHeight: 'calc(80vh - 80px)',
-            overflowY: 'auto',
-            backgroundColor: '#f8fafc',
-          }}>
-            {processCaseId.type === "view" ? (
-              <DataFlow
-                processname={processCaseId.processname ?? ""}
-                caseId={processCaseId.caseId ?? ""}
-                mode={processCaseId.type ?? ""}
-              />
-            ) : (
-              <ManPowerView caseId={processCaseId.caseId ?? ""} />
-            )}
-          </Box>
+         
         </Box>
       </Modal>
+
+      {/* Chat Component for HR */}
+      <AIChat 
+        open={chatOpen} 
+        onClose={() => {
+          setChatOpen(false);
+          fetchUnreadCount();
+        }}
+        caseId={selectedCaseId}
+        userRole="hr"
+        senderId={userToken?.Emp_Id || 'hr_001'}
+        hrName="HR Team"
+        candidateName={selectedCandidateEmail || 'Candidate'}
+      />
     </Box>
   );
 };
 
 export default RecruitmentMail;
-
-
-
-
-
-

@@ -148,7 +148,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
-const SessionTimeout = ({ timeoutMinutes = 15}) => {
+const SessionTimeout = ({ timeoutMinutes = 10}) => {
   const timerRef = useRef(null);
   const isExpired = useRef(false);
   const navigate = useNavigate();

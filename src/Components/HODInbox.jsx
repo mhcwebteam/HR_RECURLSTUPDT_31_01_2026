@@ -10,148 +10,415 @@ import { Box, Paper, Modal, IconButton, Typography, Button, CircularProgress, Te
 import CloseIcon from '@mui/icons-material/Close';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import SearchIcon from '@mui/icons-material/Search';
-import { ArrowLeftIcon, BriefcaseIcon, RefreshCw } from 'lucide-react';
+import { ArrowLeftIcon, BriefcaseIcon, RefreshCw,ChevronRight, UserPlus, PauseCircle, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../Config/Config.jsx';
 import axiosInstance from '../Config/axiosConfig.jsx';
 
 const AssignToMenu = ({ row, hrEmployees, userToken, onAssignmentComplete }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedName, setSelectedName] = useState('');
+  const [assignAnchorEl, setAssignAnchorEl] = useState(null);
 
+  const currentStatus = row.status;
+  const currentAssignee = row.assigned_to;
 
-  
-  const handleClick = (event) => {
-    event.stopPropagation(); 
+  const getButtonConfig = () => {
+    if (currentStatus === 'Cancelled') return { label: 'Cancelled', color: '#dc2626' };
+    if (currentStatus === 'Hold') return { label: 'On Hold', color: '#f59e0b' };
+    if (currentAssignee) return { label: currentAssignee, color: '#10b981' };
+    return { label: 'Assign To', color: '#667eea' };
+  };
+
+  const { label, color } = getButtonConfig();
+
+  const handleMainClick = (event) => {
+    event.stopPropagation();
     event.preventDefault();
     setAnchorEl(event.currentTarget);
   };
-  
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleMainClose = () => setAnchorEl(null);
+
+  const handleAssignSubClick = (event) => {
+    event.stopPropagation();
+    setAssignAnchorEl(event.currentTarget);
+  };
+  const handleAssignSubClose = () => setAssignAnchorEl(null);
+
+  const callApi = async (payload, successTitle, fallbackText) => {
+    try {
+      const response = await axiosInstance.post(
+        `${API_BASE_URL}/task-Assign-StoreData`,
+        payload,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${userToken.token}`,
+          },
+        }
+      );
+
+      await Swal.fire({
+        icon: 'success',
+        title: successTitle,
+        text: response.data?.message || fallbackText,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      if (onAssignmentComplete) {
+        await onAssignmentComplete();
+      }
+    } catch (error) {
+      console.error('Action failed:', error.response?.data || error);
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'Action failed',
+        icon: 'error',
+        confirmButtonColor: '#ef4444',
+      });
+    }
   };
 
+  const handleAssign = async (employee) => {
+    handleAssignSubClose();
+    handleMainClose();
 
-  const handleSelect = async (employee) => {
-     handleClose();
+    const result = await Swal.fire({
+      title: 'Confirm Assignment?',
+      text: `Are you sure you want to assign ${employee.EMP_NAME} to HR?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#1e40af',
+      cancelButtonColor: '#dc2626',
+      confirmButtonText: '✓ Yes',
+      cancelButtonText: '✕ Cancel',
+      customClass: { container: 'swal-on-top' },
+      didOpen: () => { document.querySelector('.swal-on-top').style.zIndex = 99999; },
+      allowOutsideClick: false,
+    });
+    if (!result.isConfirmed) return;
 
-  const result = await Swal.fire({
-              title: 'Confirm Transfer?',
-               text: `Are you sure you want to assign ${employee.EMP_NAME} to HR?`,
-              icon: 'question',
-              showCancelButton: true,
-              confirmButtonColor: '#1e40af',
-              cancelButtonColor: '#dc2626',
-              confirmButtonText: '✓ Yes',
-              cancelButtonText: '✕ Cancel',
-              customClass: { container: 'swal-on-top' },
-              didOpen: () => { document.querySelector('.swal-on-top').style.zIndex = 99999; },
-              allowOutsideClick: false,
-          });
-
-  
-  if (!result.isConfirmed) return;
-
-  try {
-    const response = await axiosInstance.post(
-      `${API_BASE_URL}/task-Assign-StoreData`,
+    await callApi(
       {
         case_id: row.CHILD_CASEID,
+        action: 'assign',
         assigned_to: employee.EMP_NAME,
         legacy_id: employee.EMP_ID,
-        current_task: "HR",
-        status: "Pending",
+        current_task: 'HR',
       },
-      {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${userToken.token}`,
-        },
-      }
+      'Assigned!',
+      `CaseID assigned to ${employee.EMP_NAME}`
     );
+  };
 
-    const message =
-      response.data?.message || `Case assigned to ${employee.Emp_Name}`;
+ 
+  const handleHold = async () => {
+  handleMainClose();
 
-    setSelectedName(employee.Emp_Name);
-    handleClose();
+  const result = await Swal.fire({
+    title: '',
+    html: `
+      <div class="text-left font-sans">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div>
+            <div class="text-base font-bold text-slate-800 leading-tight">
+              Hold CaseID: <span class="text-amber-600">${row.CHILD_CASEID} ?</span>
+            </div>
+            <div class="text-xs text-slate-400">You can assign or cancel it later</div>
+          </div>
+        </div>
 
-    // ✅ Success alert
-    await Swal.fire({
-      icon: "success",
-      title: "Assigned!",
-      text: message,
-      timer: 1500,
-      showConfirmButton: false,
-    });
+        <label class="block mt-4 mb-1.5 text-xs font-semibold text-slate-700">
+          Remarks <span class="text-amber-600">*</span>
+        </label>
+        <textarea
+          id="hold-remarks"
+          rows="1"
+          placeholder="Enter reason for hold..."
+          class="w-full box-border resize-y min-h-[42px] max-h-40 px-3 py-2.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition"
+          oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'; document.getElementById('hold-remarks-error').classList.add('hidden');"
+        ></textarea>
+        <div id="hold-remarks-error" class="hidden mt-1.5 text-xs font-medium text-amber-600">
+          Remarks are required to hold this CaseID
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Hold CaseID',
+    cancelButtonText: 'Cancel',
+    buttonsStyling: false,
+    reverseButtons: true,
+    focusConfirm: false,
+    customClass: {
+      container: 'swal-on-top',
+      popup: 'rounded-2xl px-6 pt-5 pb-4',
+      confirmButton: 'bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition',
+      cancelButton: 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold px-5 py-2.5 rounded-lg transition',
+      actions: 'gap-2.5 mt-4',
+    },
+    didOpen: () => {
+      const container = document.querySelector('.swal-on-top');
+      if (container) container.style.zIndex = 99999;
+      document.getElementById('hold-remarks')?.focus();
+    },
+    preConfirm: () => {
+      const value = document.getElementById('hold-remarks')?.value?.trim();
+      if (!value) {
+        document.getElementById('hold-remarks-error')?.classList.remove('hidden');
+        return false;
+      }
+      return value;
+    },
+    allowOutsideClick: false,
+  });
 
-    // ✅ Refresh parent data
-    if (onAssignmentComplete) {
-      await onAssignmentComplete();
-    }
-  } catch (error) {
-    console.error("Assignment failed:", error.response?.data || error);
+  if (!result.isConfirmed) return;
 
-    Swal.fire({
-      title: 'Error',
-      text: error.response?.data?.message || 'Assignment failed',
-      icon: 'error',
-      confirmButtonColor: '#ef4444',
-    });
+  await callApi(
+    { case_id: row.CHILD_CASEID, action: 'hold', hr_assigned_remarks: result.value },
+    'On Hold',
+    'CaseID put on hold'
+  );
+};
+
+
+const handleCancel = async () => {
+  handleMainClose();
+
+  const result = await Swal.fire({
+    title: '',
+    html: `
+      <div class="text-left font-sans">
+        <div id="cancel-form-content">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div>
+              <div class="text-base font-bold text-slate-800 leading-tight">
+                Cancel this CaseID: <span class="text-red-600">${row.CHILD_CASEID} ?</span>
+              </div>
+              <div class="text-xs text-slate-400">This action cannot be undone</div>
+            </div>
+          </div>
+
+          <label class="block mt-4 mb-1.5 text-xs font-semibold text-slate-700">
+            Remarks <span class="text-red-600">*</span>
+          </label>
+          <textarea
+            id="cancel-remarks"
+            rows="1"
+            placeholder="Enter reason for cancellation..."
+            class="w-full box-border resize-y min-h-[42px] max-h-40 px-3 py-2.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition disabled:bg-slate-50 disabled:text-slate-400"
+            oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'; document.getElementById('cancel-remarks-error').classList.add('hidden');"
+          ></textarea>
+          <div id="cancel-remarks-error" class="hidden mt-1.5 text-xs font-medium text-red-600">
+            Remarks are required to cancel this caseId
+          </div>
+        </div>
+
+        <div id="cancel-loading" class="hidden flex-col items-center justify-center py-6">
+          <svg class="animate-spin h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <div class="mt-3 text-sm font-medium text-slate-600">Cancelling case, please wait...</div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Cancel CaseID',
+    cancelButtonText: 'Back',
+    buttonsStyling: false,
+    reverseButtons: true,
+    focusConfirm: false,
+    allowOutsideClick: () => !Swal.isLoading(),
+    allowEscapeKey: () => !Swal.isLoading(),
+    customClass: {
+      container: 'swal-on-top',
+      popup: 'rounded-2xl px-6 pt-5 pb-4',
+      confirmButton: 'bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed',
+      cancelButton: 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed',
+      actions: 'gap-2.5 mt-4',
+    },
+    didOpen: () => {
+      const container = document.querySelector('.swal-on-top');
+      if (container) container.style.zIndex = 99999;
+      document.getElementById('cancel-remarks')?.focus();
+    },
+    preConfirm: async () => {
+      const value = document.getElementById('cancel-remarks')?.value?.trim();
+      if (!value) {
+        document.getElementById('cancel-remarks-error')?.classList.remove('hidden');
+        return false;
+      }
+
+      // Switch UI into loading state
+      const formContent = document.getElementById('cancel-form-content');
+      const loadingBlock = document.getElementById('cancel-loading');
+      const confirmBtn = Swal.getConfirmButton();
+      const cancelBtn = Swal.getCancelButton();
+
+      formContent?.classList.add('hidden');
+      loadingBlock?.classList.remove('hidden');
+      loadingBlock?.classList.add('flex');
+      confirmBtn?.setAttribute('disabled', 'true');
+      cancelBtn?.setAttribute('disabled', 'true');
+
+      try {
+        const response = await axiosInstance.post(
+          `${API_BASE_URL}/task-Assign-StoreData`,
+          { case_id: row.CHILD_CASEID, action: 'cancel', hr_assigned_remarks: value },
+          {
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${userToken.token}`,
+            },
+          }
+        );
+        return response.data?.message || 'CaseID cancelled';
+      } catch (error) {
+        // Revert UI back to form so user can retry
+        formContent?.classList.remove('hidden');
+        loadingBlock?.classList.add('hidden');
+        loadingBlock?.classList.remove('flex');
+        confirmBtn?.removeAttribute('disabled');
+        cancelBtn?.removeAttribute('disabled');
+
+        Swal.showValidationMessage(
+          error.response?.data?.message || 'Failed to cancel caseID'
+        );
+        return false;
+      }
+    },
+  });
+
+  if (!result.isConfirmed) return;
+
+  await Swal.fire({
+    icon: 'success',
+    title: 'Cancelled',
+    text: result.value,
+    timer: 1500,
+    showConfirmButton: false,
+  });
+
+  if (onAssignmentComplete) {
+    await onAssignmentComplete();
   }
 };
 
-  
   return (
     <div>
       <Button
         variant="contained"
         size="small"
-        onClick={handleClick}
+        onClick={handleMainClick}
         sx={{
-          background: '#667eea',
+          background: color,
           color: 'white',
           fontSize: '11px',
           padding: '4px 12px',
           borderRadius: '6px',
           textTransform: 'none',
           minWidth: '100px',
-          '&:hover': {
-            background: '#5a67d8',
-          }
+          '&:hover': { background: color, opacity: 0.9 },
         }}
       >
-        {selectedName || 'Assign To'} ▼
+        {label} ▼
       </Button>
-      
+
+<Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleMainClose}
+  PaperProps={{
+    sx: {
+      mt: 1,
+      borderRadius: '10px',
+      minWidth: '190px',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+    },
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
+  <MenuItem
+    onClick={handleAssignSubClick}
+    sx={{
+      fontSize: '12.5px',
+      fontWeight: 500,
+      py: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 1,
+      color: '#374151',
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <UserPlus size={15} color="#667eea" />
+      Assign to HR
+    </Box>
+    <ChevronRight size={14} color="#9ca3af" />
+  </MenuItem>
+
+  <MenuItem
+    onClick={handleHold}
+    sx={{
+      fontSize: '12.5px',
+      fontWeight: 500,
+      py: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      color: '#d97706',
+    }}
+  >
+    <PauseCircle size={15} />
+    Hold
+  </MenuItem>
+
+  <MenuItem
+    onClick={handleCancel}
+    sx={{
+      fontSize: '12.5px',
+      fontWeight: 500,
+      py: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      color: '#dc2626',
+    }}
+  >
+    <XCircle size={15} />
+    Cancel
+  </MenuItem>
+</Menu>
+
       <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            maxHeight: '200px',
-            overflow: 'auto',
-            minWidth: '200px',
-          }
-        }}
+        anchorEl={assignAnchorEl}
+        open={Boolean(assignAnchorEl)}
+        onClose={handleAssignSubClose}
+        PaperProps={{ sx: { mt: 1, borderRadius: '8px', maxHeight: '200px', overflow: 'auto', minWidth: '200px' } }}
         onClick={(e) => e.stopPropagation()}
       >
         {hrEmployees && hrEmployees.length > 0 ? (
           hrEmployees.map((employee, index) => (
-            <MenuItem 
+            <MenuItem
               key={`${employee.EMP_NAME}_${index}_${row.CHILD_CASEID}`}
-              onClick={() => handleSelect(employee)}
-              sx={{
-                fontSize: '12px',
-                padding: '6px 16px',
-                '&:hover': {
-                  backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                }
-              }}
+              onClick={() => handleAssign(employee)}
+              sx={{ fontSize: '12px', padding: '6px 16px' }}
             >
               {employee.EMP_NAME} ({employee.EMP_ID})
             </MenuItem>
@@ -364,32 +631,36 @@ const HODInbox = () => {
     );
   },
 },
-
-  {
-  field: 'MANPOWER_DESG',
-  headerName: 'Designation',
+{
+  field: "MANPOWER_DESG",
+  headerName: "Designation",
   flex: 1.2,
   minWidth: 130,
   renderCell: (params) => {
     const subCode = params.row.SUB_CODE;
-    const value = params.value || 'N/A';
+    const subPost = params.row.SUB_POST;
+    const designation = params.value;
+
+    const displayValue =
+      subPost && subPost !== "N/A"
+        ? subPost
+        : designation || "N/A";
 
     return (
       <Box
         sx={{
-          color: '#374151',
-          padding: '2px 8px',
-          borderRadius: '6px',
-          fontSize: '12px',
+          color: "#374151",
+          padding: "2px 8px",
+          borderRadius: "6px",
+          fontSize: "12px",
           fontWeight: 600,
         }}
       >
-        {subCode ? `${subCode} - ${value}` : value}
+        {subCode ? `${subCode} - ${displayValue}` : displayValue}
       </Box>
     );
   },
 },
-
 
 
     {
@@ -521,7 +792,49 @@ const HODInbox = () => {
           onAssignmentComplete={onBoarding}
         />
       ),
-    }
+    },
+
+    
+       {
+      field: 'hr_assigned_status',
+      headerName: 'Hold Status',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+       
+       {
+      field: 'hr_assigned_remarks',
+      headerName: 'Hold Remarks',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+    {
+      field: 'Hold_Date',
+      headerName: 'Hold Date',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ color: '#374151' }}>
+          {params.value}
+        </Box>
+      ),
+    },
+
+
+
+
   ];
 
   const modalStyle = {
@@ -651,7 +964,7 @@ const HODInbox = () => {
             overflowY: 'auto',
             backgroundColor: '#f8fafc',
           }}>
-            <Typography>Case details would be shown here</Typography>
+            <Typography>CaseID details would be shown here</Typography>
           </Box>
         </Box>
       </Modal>
