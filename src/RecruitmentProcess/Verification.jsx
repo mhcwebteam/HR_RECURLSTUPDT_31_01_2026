@@ -23,9 +23,10 @@ import { DataGrid } from '@mui/x-data-grid';
 import { ContextData } from '../Context/ContextData';
 import VerificationDetailsModal from './VerificationDetailsModal';
 import axios from 'axios';
-import { API_BASE_URL } from '../Config/Config';
+import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axiosInstance from '../Config/axiosConfig.jsx'
 import Swal from 'sweetalert2';
+import { FileCheck, FolderKanban } from 'lucide-react';
 
 const Verification = () => 
 {
@@ -57,15 +58,16 @@ const [personalData, setPersonalData] = useState([]);
     
 console.log(response,"submitOnly");
   
-    const submitOnly = (response.data?.data || []).filter(
-      (item) => item.status?.toLowerCase() == "submit"
-    );
-
+const submitOnly = (response.data?.data || []).filter(
+  (item) =>
+    item.status?.toLowerCase() === "submit" ||
+    item.status?.toLowerCase() === "edit"
+);
  
 
     setPersonalData(submitOnly);
 
-    console.log("Filtered submit data:", submitOnly);
+    console.log("Filtered submit data:", response.data?.data);
 
   } catch (err) {
     console.error("Error fetching verify data", err);
@@ -89,7 +91,7 @@ useEffect(() => {
 
     result = result.filter(item => item.verification_status !== "1");
 
-    console.log(result,"terssssssssssss");
+
 
     if (searchTerm) {
       result = result.filter(user =>
@@ -196,6 +198,11 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
   INTER_PASSED_YEAR: item.INTER_PASSED_YEAR || 'N/A',
   INTER_MARKS: item.inter_marks || 'N/A',
 
+
+    DIP_BOARD: item.DIP_BOARD || 'N/A',
+  DIP_COLLEGE_NAME: item.DIP_COLLEGE_NAME || 'N/A',
+  DIP_PASSED_YEAR: item.DIP_PASSED_YEAR || 'N/A',
+  DIP_MARKS: item.DIP_MARKS || 'N/A',
   // Graduation
   GRAD_COLLEGE_NAME: item.GRAD_COLLEGE_NAME || 'N/A',
   DEGREE_UNIVERSITY: item.DEGREE_UNIVERSITY || 'N/A',
@@ -240,7 +247,9 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
 
   // Extra
   documents: item.documents || {},
-  experienceData: item.experienceData || {}
+  experienceData: item.experienceData || {},
+  //added by ajith
+  EVOLUTION_FILE: item.hrEvaluationFile,
 }));
   }, [personalData, searchTerm, statusFilter]);
   const getStatusChip = (status) => {
@@ -557,7 +566,65 @@ minWidth: 50,
       ),
     },
 
+    //added by ajith 20/8/2026
 
+{
+    field: 'EVOLUTION_FILE',
+    headerName: 'Evaluation File',
+    width: 110,
+    sortable: false,
+    filterable: false,
+
+    renderCell: (params) => {
+        const fileName = params.value;
+       
+        const fileUrl = fileName
+            ? `${API_BASE_URLss}/verification_files/${encodeURIComponent(fileName)}`
+            : null;
+
+        return (
+            <Tooltip
+                title={"Evaluation File"}
+                arrow
+            >
+                <span>
+                    <IconButton
+                        size="small"
+                        disabled={!fileName}
+                        onClick={() => {
+                            if (!fileUrl) return;
+
+                            window.open(
+                                fileUrl,
+                                "_blank",
+                                "noopener,noreferrer"
+                            );
+                        }}
+                        sx={{
+                            width: 32,
+                            height: 32,
+                            color: fileName
+                                ? '#6a9bea'
+                                : '#9ca3af',
+
+                            '&:hover': {
+                                backgroundColor: fileName
+                                    ? 'rgba(59, 130, 246, 0.1)'
+                                    : 'transparent',
+                            },
+
+                            '&.Mui-disabled': {
+                                color: '#cbd5e1',
+                            },
+                        }}
+                    >
+                        <FolderKanban fontSize="small" />
+                    </IconButton>
+                </span>
+            </Tooltip>
+        );
+    },
+},
 
 
     

@@ -121,12 +121,11 @@ const Sidebar = () => {
       {/* Header */}
       <div
         className='h-[80px] flex items-center px-4 border-b border-purple-400/20 cursor-pointer group relative overflow-hidden'
-        onClick={handleBack}
+        // onClick={handleBack}
       >
         {/* Animated background on hover */}
         <div className='absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700'></div>
-
-        <div className='flex items-center gap-3 w-full relative z-10'>
+  <div className='flex items-center gap-3 w-full relative z-10'>
           <div className='relative'>
             {/* Animated ring */}
             <div className='absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 animate-pulse blur-sm'></div>
@@ -149,6 +148,7 @@ const Sidebar = () => {
             </div>
           )}
         </div>
+
       </div>
 
       {/* Navigation Menu */}

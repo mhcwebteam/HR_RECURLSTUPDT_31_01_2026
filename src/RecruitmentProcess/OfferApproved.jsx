@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import axios from "axios";
 import Swal from 'sweetalert2';
@@ -16,7 +19,10 @@ import {
   DialogContent,
   DialogActions,
   DialogTitle,
-   Chip
+  Chip,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import {
   Search,
@@ -34,7 +40,6 @@ import axiosInstance from '../Config/axiosConfig.jsx';
 import dayjs from 'dayjs';
 import HRMView from './HRMView.jsx';
 
-
 const OfferApproved = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,6 +56,12 @@ const OfferApproved = () => {
   const [editingRows, setEditingRows] = useState({});
   const [refNumberValues, setRefNumberValues] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  // State for MHC HR List
+  const [hrEmployees, setHrEmployees] = useState([]);
+ const [selectedHR, setSelectedHR] = useState(hrEmployees[0]?.EMP_ID || "");
+
+  const [isHRDialogOpen, setIsHRDialogOpen] = useState(false);
+  const [currentRowData, setCurrentRowData] = useState(null);
 
   const [token] = useState(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -63,6 +74,13 @@ const OfferApproved = () => {
       [caseId]: date
     }));
   };
+
+
+  useEffect(() => {
+  if (hrEmployees.length > 0 && !selectedHR) {
+    setSelectedHR(hrEmployees[0].EMP_ID);
+  }
+}, [hrEmployees, selectedHR]);
   
   // Handle edit click for REF_NUMBER
   const handleEditClick = (rowId) => {
@@ -134,24 +152,38 @@ const OfferApproved = () => {
       setIsSaving(false);
     }
   };
- 
+
+  useEffect(() => {
+    if (!token?.token) return;
+
+    const fetchHrEmployees = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `${API_BASE_URL}/mhc-hr-list`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${token?.token}`,
+            },
+          }
+        );
+
+        const hrList = response.data?.hrDropDownListData || [];
+        setHrEmployees(hrList);
+        console.log("HR Employees List:", hrList);
+      } catch (err) {
+        console.error("Error fetching HR employees list", err);
+      }
+    };
+
+    fetchHrEmployees();
+  }, [token?.token]);
+
   const handleOfferLterEmail = async (rowData) => {
     try {
-      const confirm = await Swal.fire({
-        title: "Are you sure?",
-        text: "You want to Move to Onboarding?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Send",
-        cancelButtonText: "Cancel",
-        confirmButtonColor: "#2563eb",
-      });
-      
-      if (!confirm.isConfirmed) return;
-
       // Get the REF_NUMBER from state
       const refNumber = refNumberValues[rowData.CHILD_CASEID] || rowData.REF_NUMBER;
-    
       
       if (!refNumber || refNumber.trim() === "") {
         await Swal.fire({
@@ -163,37 +195,11 @@ const OfferApproved = () => {
         return;
       }
 
-     
+      // Open HR selection dialog instead of simple confirmation
+      setCurrentRowData(rowData);
+      setSelectedHR('');
+      setIsHRDialogOpen(true);
 
-      const payload = {
-        CHILD_CASEID: rowData.CHILD_CASEID,
-        REF_NO: refNumber  // Send REF_NUMBER to backend
-      }
-      
-      const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/move-To-OnBoard`, payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token.token}`
-          }
-        })
-
-      if (ofrMailSend.data.message) {
-        await Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: "Move to OnBoarding!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-
-        if (fetchOfrData) {
-          await fetchOfrData();
-        }
-      } else {
-        await Swal.fire("Failed", ofrMailSend.data.message, "error");
-      }
     } catch (error) {
       console.error(error);
       await Swal.fire(
@@ -202,8 +208,219 @@ const OfferApproved = () => {
         "error"
       );
     }
+  };
+
+  // Handle HR selection confirmation
+  // const handleConfirmMoveToOnboarding = async () => {
+  //  const selectedHrObject = hrEmployees.find(hr => hr.EMP_ID === selectedHR);
+  // console.log("Selected HR Object:", selectedHrObject);
+  // console.log("Selected HR Name:", selectedHrObject?.EMP_NAME);
+    
+  //   if (!selectedHR) {
+  //     await Swal.fire({
+  //       icon: "warning",
+  //       title: "Validation Error",
+  //       text: "Please select an MHC HR before proceeding",
+  //       confirmButtonColor: "#2563eb",
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     const refNumber = refNumberValues[currentRowData.CHILD_CASEID] || currentRowData.REF_NUMBER;
+      
+  //     const payload = {
+  //       CHILD_CASEID: currentRowData.CHILD_CASEID,
+  //       REF_NO: refNumber,
+  //       reassign_to: selectedHrObject?.EMP_NAME,
+  //       prevassign_to: token.employee,
+  //     };
+      
+  //     console.log("Payload being sent:", payload);
+      
+  //     // Uncomment when backend is ready
+  //     const ofrMailSend = await axiosInstance.post(`${API_BASE_URL}/move-To-OnBoard`, payload, {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Accept": "application/json",
+  //         "Authorization": `Bearer ${token.token}`
+  //       }
+  //     });
+
+  //     if (ofrMailSend.data.message) {
+  //       await Swal.fire({
+  //         icon: "success",
+  //         title: "Success",
+  //         text: "Successfully moved to OnBoarding!",
+  //         timer: 1500,
+  //         showConfirmButton: false,
+  //       });
+
+  //       setIsHRDialogOpen(false);
+  //       setSelectedHR('');
+  //       setCurrentRowData(null);
+
+  //       if (fetchOfrData) {
+  //         await fetchOfrData();
+  //       }
+  //     } else {
+  //       await Swal.fire("Failed", ofrMailSend.data.message, "error");
+  //     }
+      
+  //     // For testing - show success
+  //     await Swal.fire({
+  //       icon: "success",
+  //       title: "Success",
+  //       text: `Moved to OnBoarding with HR: ${selectedHR}`,
+  //       timer: 1500,
+  //       showConfirmButton: false,
+  //     });
+
+  //     setIsHRDialogOpen(false);
+  //     setSelectedHR('');
+  //     setCurrentRowData(null);
+
+  //   } catch (error) {
+  //     console.error(error);
+  //     await Swal.fire(
+  //       "Error",
+  //       error.response?.data?.message || "Something went wrong",
+  //       "error"
+  //     );
+  //   }
+  // };
+
+const handleConfirmMoveToOnboarding = async () => {
+  const selectedHrObject = hrEmployees.find(
+    (hr) => hr.EMP_ID === selectedHR
+  );
+
+  if (!selectedHR) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Validation Error",
+      text: "Please select an MHC HR before proceeding",
+      confirmButtonColor: "#2563eb",
+    });
   }
-  
+
+  // Confirmation Popup
+  const confirmResult = await Swal.fire({
+    title: "Move to Onboarding?",
+    text: "Are you sure you want to move this candidate to onboarding?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Submit",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#10b981",
+    cancelButtonColor: "#6b7280",
+    customClass: {
+      container: "swal2-container-custom",
+    },
+    didOpen: () => {
+      const swalContainer = document.querySelector(".swal2-container");
+      if (swalContainer) {
+        swalContainer.style.zIndex = "9999";
+      }
+    },
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    // Loading Popup
+    Swal.fire({
+      title: "Moving Candidate...",
+      text: "Please wait...",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      customClass: {
+        container: "swal2-container-custom",
+      },
+      didOpen: () => {
+        const swalContainer = document.querySelector(".swal2-container");
+        if (swalContainer) {
+          swalContainer.style.zIndex = "9999";
+        }
+
+        Swal.showLoading();
+      },
+    });
+
+    const refNumber =
+      refNumberValues[currentRowData.CHILD_CASEID] ||
+      currentRowData.REF_NUMBER;
+
+    const payload = {
+      CHILD_CASEID: currentRowData.CHILD_CASEID,
+      REF_NO: refNumber,
+      reassign_to: selectedHrObject?.EMP_NAME,
+      prevassign_to: token.employee,
+    };
+
+    const response = await axiosInstance.post(
+      `${API_BASE_URL}/move-To-OnBoard`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token.token}`,
+        },
+      }
+    );
+
+    Swal.close();
+
+    if (response.data.success) {
+      
+ await Swal.fire({
+    icon: "success",
+    title: "Success",
+    text: "Candidate moved to Onboarding successfully.",
+    showConfirmButton: false, // Hide OK button
+    timer: 2000,              // Auto close after 2 seconds
+    timerProgressBar: true,
+    customClass: {
+      container: "swal2-container-custom",
+    },
+    didOpen: () => {
+      const swalContainer = document.querySelector(".swal2-container");
+      if (swalContainer) {
+        swalContainer.style.zIndex = "9999";
+      }
+    },
+  });
+
+
+      setIsHRDialogOpen(false);
+      setSelectedHR("");
+      setCurrentRowData(null);
+
+      if (fetchOfrData) {
+        await fetchOfrData();
+      }
+    } else {
+      await Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: response.data.message || "Failed to move candidate.",
+        confirmButtonColor: "#ef4444",
+      });
+    }
+  } catch (error) {
+    Swal.close();
+
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error.response?.data?.message || "Something went wrong.",
+      confirmButtonColor: "#ef4444",
+    });
+  }
+};
+
   const fetchOfrData = async () => {
     try {
       const response = await axiosInstance.get(
@@ -521,17 +738,14 @@ const OfferApproved = () => {
         );
       },
     },
-   
-
-  {
+    {
       field: 'CUR_STATUS',
       headerName: 'Approval Status',
       flex: 0.9,
       minWidth: 120,
-      
       renderCell: (params) => getStatusChip(params.value),
     },
-  {
+    {
       field: "viewFlow",
       headerName: "NFA Flow",
       flex: 1,
@@ -564,7 +778,6 @@ const OfferApproved = () => {
         </Button>
       ),
     },
-
     {
       field: 'joiningDate',
       headerName: 'Date of Joining',
@@ -599,9 +812,6 @@ const OfferApproved = () => {
         </Tooltip>
       ),
     },
-
-        // NEW REF_NUMBER COLUMN - Replace EMP_ID with this
-  
     {
       field: "candidOfrLtrSigned",
       headerName: "C.ofrLtrSigned",
@@ -628,8 +838,7 @@ const OfferApproved = () => {
         );
       }
     },
-
-      {
+    {
       field: 'REF_NUMBER',
       headerName: 'Ref Number',
       width: 280,
@@ -793,38 +1002,37 @@ const OfferApproved = () => {
         );
       }
     },
-{
-  field: 'actions',
-  headerName: 'Actions',
-  width: 180,  // Increased width to accommodate longer text
-  sortable: false,
-  renderCell: (params) => {
-    // Check if REF_NUMBER exists (either saved or being edited)
-    const hasRefNumber = params.row.REF_NUMBER && params.row.REF_NUMBER.trim() !== '';
-    
-    return (
-      <Tooltip title={!hasRefNumber ? "Please add Reference Number first (Click Edit button)" : "Move to Onboarding"}>
-        <Button
-          size="small"
-          variant="contained"
-          onClick={() => handleOfferLterEmail(params.row)}
-          disabled={!hasRefNumber}  // Disable button if no REF_NUMBER
-          sx={{
-            backgroundColor: !hasRefNumber ? '#9ca3af' : '#10b981',
-            textTransform: 'none',
-            fontSize: '9px',
-            '&:hover': {
-              backgroundColor: !hasRefNumber ? '#9ca3af' : '#059669',
-            },
-          }}
-        >
-          {!hasRefNumber ? "Add Ref No First" : "Move To Onboarding"}
-        </Button>
-      </Tooltip>
-    );
-  }
-}
-  ], [ofrList, editingRows, refNumberValues, isSaving,joiningDates]);
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => {
+        const hasRefNumber = params.row.REF_NUMBER && params.row.REF_NUMBER.trim() !== '';
+        
+        return (
+          <Tooltip title={!hasRefNumber ? "Please add Reference Number first (Click Edit button)" : "Move to Onboarding"}>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => handleOfferLterEmail(params.row)}
+              disabled={!hasRefNumber}
+              sx={{
+                backgroundColor: !hasRefNumber ? '#9ca3af' : '#10b981',
+                textTransform: 'none',
+                fontSize: '9px',
+                '&:hover': {
+                  backgroundColor: !hasRefNumber ? '#9ca3af' : '#059669',
+                },
+              }}
+            >
+              {!hasRefNumber ? "Add Ref No First" : "Move To Onboarding"}
+            </Button>
+          </Tooltip>
+        );
+      }
+    }
+  ], [ofrList, editingRows, refNumberValues, isSaving, joiningDates]);
 
   return (
     <Box sx={{
@@ -832,6 +1040,271 @@ const OfferApproved = () => {
       margin: "0 auto",
       padding: "12px",
     }}>
+      {/* Single HR Selection Dialog - Fixed Version */}
+      <Dialog
+        open={isHRDialogOpen}
+        onClose={() => {
+          setIsHRDialogOpen(false);
+          setSelectedHR('');
+          setCurrentRowData(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
+            background: 'linear-gradient(to bottom, #ffffff, #fafbfc)',
+          }
+        }}
+      >
+        {/* Header with gradient */}
+        <Box sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          padding: '24px 28px',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.1 }}>
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </Box>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 700, 
+            color: 'white',
+            fontSize: '1.25rem',
+            letterSpacing: '0.5px'
+          }}>
+            🚀 Move to Onboarding
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'rgba(255,255,255,0.9)',
+            mt: 0.5,
+            fontSize: '0.875rem'
+          }}>
+            Assign MHC HR to manage the onboarding process
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ pt: 3, pb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+                  {/* <Typography variant="caption" color="textSecondary">
+                  Case ID: {currentRowData.CHILD_CASEID}
+                </Typography> */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ 
+                fontWeight: 600,
+                color: '#1e293b',
+                mb: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <span style={{ color: '#ef4444' }}>*</span> Select OnBoarding HR
+              </Typography>
+              
+          
+
+              <FormControl fullWidth>
+                <Select
+                  value={selectedHR}
+                  onChange={(e) => {
+                    console.log("Selected value:", e.target.value);
+                    setSelectedHR(e.target.value);
+                  }}
+                  displayEmpty
+                  sx={{
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                    '& .MuiSelect-select': {
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.95rem',
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#e2e8f0',
+                      borderWidth: 2,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#667eea',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#667eea',
+                    },
+                  }}
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return <Typography color="textSecondary">Choose an HR representative</Typography>;
+                    }
+                    const selectedHr = hrEmployees.find(hr => hr.EMP_ID === selected);
+
+                    console.log("Selected HR object in render:", selectedHr);
+                    if (!selectedHr) return <Typography>Loading...</Typography>;
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          width: 28, 
+                          height: 28, 
+                          borderRadius: '50%', 
+                          bgcolor: '#667eea20',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="#667eea">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {selectedHr?.EMP_NAME}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {selectedHr?.EMP_ID}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                >
+                  <MenuItem disabled value="">
+                    <Typography color="textSecondary">Choose an HR representative</Typography>
+                  </MenuItem>
+                  {hrEmployees.map((hr) => (
+                    <MenuItem 
+                      key={hr.EMP_ID} 
+                      value={hr.EMP_ID}
+                      sx={{
+                        py: 1.5,
+                        '&:hover': {
+                          bgcolor: '#f1f5f9',
+                        },
+                        '&.Mui-selected': {
+                          bgcolor: '#667eea10',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                        <Box sx={{ 
+                          width: 36, 
+                          height: 36, 
+                          borderRadius: '50%', 
+                          bgcolor: '#667eea15',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="#667eea">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a202c' }}>
+                            {hr.EMP_NAME}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            ID: {hr.EMP_ID}
+                          </Typography>
+                        </Box>
+                        {selectedHR === hr.EMP_ID && (
+                          <Box sx={{ color: '#667eea' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                            </svg>
+                          </Box>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              {!selectedHR && (
+                <Typography variant="caption" sx={{ 
+                  color: '#ef4444',
+                  mt: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5
+                }}>
+                  <span>⚠</span> Please select an HR to proceed
+                </Typography>
+              )}
+            </Box>
+
+        
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ 
+          px: 3, 
+          py: 2.5,
+          borderTop: '1px solid #e2e8f0',
+          bgcolor: '#f8fafc',
+          gap: 1.5
+        }}>
+          <Button
+            onClick={() => {
+              setIsHRDialogOpen(false);
+              setSelectedHR('');
+              setCurrentRowData(null);
+            }}
+            variant="outlined"
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              color: '#64748b',
+              borderColor: '#e2e8f0',
+              px: 3,
+              py: 1,
+              borderRadius: 2,
+              '&:hover': {
+                borderColor: '#cbd5e1',
+                bgcolor: '#f1f5f9',
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          
+          <Button
+            onClick={handleConfirmMoveToOnboarding}
+            variant="contained"
+            disabled={!selectedHR}
+            startIcon={selectedHR ? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> : null}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              px: 4,
+              py: 1,
+              borderRadius: 2,
+              background: selectedHR 
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                : '#9ca3af',
+              boxShadow: selectedHR ? '0 4px 15px rgba(16, 185, 129, 0.4)' : 'none',
+              '&:hover': {
+                background: selectedHR 
+                  ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                  : '#9ca3af',
+                boxShadow: selectedHR ? '0 6px 20px rgba(16, 185, 129, 0.4)' : 'none',
+              },
+              '&.Mui-disabled': {
+                bgcolor: '#9ca3af',
+                color: '#e5e7eb',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            {selectedHR ? 'Confirm & Move' : 'Select HR First'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Box sx={{
         width: "100%",
         borderRadius: "10px",
@@ -883,74 +1356,75 @@ const OfferApproved = () => {
         />
       </Box>
 
-    <Dialog
-  open={flowModalOpen}
-  onClose={() => setFlowModalOpen(false)}
-  fullWidth
-  maxWidth="md"
-  PaperProps={{
-    sx: {
-      borderRadius: 2,
-      maxHeight: '90vh',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
-    }
-  }}
->
-  <DialogTitle sx={{ 
-    pb: 1,
-    borderBottom: '1px solid #e5e7eb',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-        Approval Flow Details
-      </Typography>
-      <Chip 
-        label={selectedUser?.CHILD_CASEID || ''}
-        size="small"
-        sx={{ 
-          backgroundColor: '#667eea',
-          color: 'white',
-          fontWeight: 500,
-          fontSize: '10px'
+      <Dialog
+        open={flowModalOpen}
+        onClose={() => setFlowModalOpen(false)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '90vh',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+          }
         }}
-      />
-    </Box>
-    <IconButton 
-      onClick={() => setFlowModalOpen(false)}
-      sx={{ 
-        color: '#6b7280',
-        '&:hover': { backgroundColor: '#f3f4f6' }
-      }}
-    >
-      {/* <CloseIcon /> */}
-    </IconButton>
-  </DialogTitle>
-  
-  <DialogContent dividers sx={{ py: 3 }}>
-    <HRMView 
-      ID={selectedUser?.CHILD_CASEID || selectedUser?.id}
-      isMaximized={true}
-    />
-  </DialogContent>
-  
-  <DialogActions sx={{ px: 3, py: 2 }}>
-    <Button
-      onClick={() => setFlowModalOpen(false)}
-      variant="contained"
-      sx={{
-        textTransform: 'none',
-        fontWeight: 300,
-        backgroundColor: '#667eea',
-        '&:hover': { backgroundColor: '#5563d6' }
-      }}
-    >
-      Close
-    </Button>
-  </DialogActions>
-</Dialog>
+      >
+        <DialogTitle sx={{ 
+          pb: 1,
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+              Approval Flow Details
+            </Typography>
+            <Chip 
+              label={selectedUser?.CHILD_CASEID || ''}
+              size="small"
+              sx={{ 
+                backgroundColor: '#667eea',
+                color: 'white',
+                fontWeight: 500,
+                fontSize: '10px'
+              }}
+            />
+          </Box>
+          <IconButton 
+            onClick={() => setFlowModalOpen(false)}
+            sx={{ 
+              color: '#6b7280',
+              '&:hover': { backgroundColor: '#f3f4f6' }
+            }}
+          >
+            {/* <CloseIcon /> */}
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent dividers sx={{ py: 3 }}>
+          <HRMView 
+            ID={selectedUser?.CHILD_CASEID || selectedUser?.id}
+            isMaximized={true}
+          />
+        </DialogContent>
+        
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setFlowModalOpen(false)}
+            variant="contained"
+            sx={{
+              textTransform: 'none',
+              fontWeight: 300,
+              backgroundColor: '#667eea',
+              '&:hover': { backgroundColor: '#5563d6' }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <OfferLetterModal
         open={offerLetterOpen}
         onClose={() => setOfferLetterOpen(false)}

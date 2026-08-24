@@ -42,6 +42,8 @@ const JoiningReportList = () => {
   const [formData, setFormData] = useState({
     reporting_to: '',
     probation: '',
+    notice_period: "",
+
   });
 
   const [remarksModal, setRemarksModal] = useState({
@@ -109,6 +111,7 @@ const JoiningReportList = () => {
     setFormData({
       reporting_to: "",
       probation: "",
+      notice_period:"",
     });
     setSelectedCompany("");
     setSelectedPlant("");
@@ -166,6 +169,7 @@ const JoiningReportList = () => {
         case_id: selectedRow?.CHILD_CASEID,
         REPORTING_TO: formData.reporting_to,
         PROBITION: formData.probation,
+        NOTICEPERIOD:formData.notice_period,
         ONBOARD_PLANT: `${selectedPlantObj.plant_code}-${selectedPlantObj.plant_name}`,
         COMPANY  : `${selectedPlantObj.BUKRS}-${selectedPlantObj.COMP_CODE_DESC}`,
         assigned_to: Token?.employee,
@@ -517,7 +521,8 @@ const handleRemarksNext = async () => {
       CHILD_CASEID: row?.CHILD_CASEID,
       RevisionTrackStatus: "joining report",
       remarks,
-      deletecase: "01"
+      deletecase: "01",
+     
     };
 
     const response = await axiosInstance.post(
@@ -556,6 +561,8 @@ const handleRemarksNext = async () => {
     setFormData({
       reporting_to: row.existingDetails?.REPORTING_TO || '',
       probation: row.existingDetails?.PROBITION || '',
+      notice_period:row.existingDetails?.NOTICEPERIOD ||'',
+
     });
 
     if (row.existingDetails?.ONBOARD_PLANT) {
@@ -1401,102 +1408,146 @@ const handleRemarksNext = async () => {
           )}
 
           {/* Reporting To and Probation - 2 Column Layout */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: '1fr 1fr',
-              },
-              gap: 2.5,
-            }}
-          >
-            {/* Reporting To */}
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#374151',
-                  mb: 1,
-                }}
-              >
-                👤 Reporting To <span style={{ color: 'red' }}>*</span>
-              </Typography>
+        <Box
+  sx={{
+    display: 'grid',
+    gridTemplateColumns: {
+      xs: '1fr',
+      sm: '1fr 1fr',
+      md: '1fr 1fr 1fr',
+    },
+    gap: 2.5,
+  }}
+>
+  {/* Reporting To */}
+  <Box>
+    <Typography
+      sx={{
+        fontSize: '13px',
+        fontWeight: 600,
+        color: '#374151',
+        mb: 1,
+      }}
+    >
+      👤 Reporting To <span style={{ color: 'red' }}>*</span>
+    </Typography>
 
-              <TextField
-                fullWidth
-                placeholder="e.g., John Smith"
-                name="reporting_to"
-                value={formData.reporting_to}
-                onChange={handleChange}
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: '#fafafa',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: '#f5f3ff',
-                      '& fieldset': {
-                        borderColor: '#735dc9',
-                      },
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: '#ffffff',
-                      '& fieldset': {
-                        borderColor: '#735dc9',
-                        borderWidth: '2px',
-                      },
-                    },
-                  },
-                }}
-              />
-            </Box>
+    <TextField
+      fullWidth
+      placeholder="e.g., John Smith"
+      name="reporting_to"
+      value={formData.reporting_to}
+      onChange={handleChange}
+      size="small"
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '12px',
+          backgroundColor: '#fafafa',
+          transition: 'all 0.2s',
+          '&:hover': {
+            backgroundColor: '#f5f3ff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+            },
+          },
+          '&.Mui-focused': {
+            backgroundColor: '#ffffff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+              borderWidth: '2px',
+            },
+          },
+        },
+      }}
+    />
+  </Box>
 
-            {/* Probation Period */}
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#374151',
-                  mb: 1,
-                }}
-              >
-                ⏱️ Probation Period <span style={{ color: 'red' }}>*</span>
-              </Typography>
+  {/* Probation Period */}
+  <Box>
+    <Typography
+      sx={{
+        fontSize: '13px',
+        fontWeight: 600,
+        color: '#374151',
+        mb: 1,
+      }}
+    >
+      ⏱️ Probation Period <span style={{ color: 'red' }}>*</span>
+    </Typography>
 
-              <TextField
-                fullWidth
-                placeholder="e.g., 6 months"
-                name="probation"
-                value={formData.probation}
-                onChange={handleChange}
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: '#fafafa',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: '#f5f3ff',
-                      '& fieldset': {
-                        borderColor: '#735dc9',
-                      },
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: '#ffffff',
-                      '& fieldset': {
-                        borderColor: '#735dc9',
-                        borderWidth: '2px',
-                      },
-                    },
-                  },
-                }}
-              />
-            </Box>
-          </Box>
+    <TextField
+      fullWidth
+      placeholder="e.g., 6 Months"
+      name="probation"
+      value={formData.probation}
+      onChange={handleChange}
+      size="small"
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '12px',
+          backgroundColor: '#fafafa',
+          transition: 'all 0.2s',
+          '&:hover': {
+            backgroundColor: '#f5f3ff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+            },
+          },
+          '&.Mui-focused': {
+            backgroundColor: '#ffffff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+              borderWidth: '2px',
+            },
+          },
+        },
+      }}
+    />
+  </Box>
+
+  {/* Notice Period */}
+  <Box>
+    <Typography
+      sx={{
+        fontSize: '13px',
+        fontWeight: 600,
+        color: '#374151',
+        mb: 1,
+      }}
+    >
+      📅 Notice Period <span style={{ color: 'red' }}>*</span>
+    </Typography>
+
+    <TextField
+      fullWidth
+      placeholder="e.g., 30 Days"
+      name="notice_period"
+      value={formData.notice_period}
+      onChange={handleChange}
+      size="small"
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: '12px',
+          backgroundColor: '#fafafa',
+          transition: 'all 0.2s',
+          '&:hover': {
+            backgroundColor: '#f5f3ff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+            },
+          },
+          '&.Mui-focused': {
+            backgroundColor: '#ffffff',
+            '& fieldset': {
+              borderColor: '#735dc9',
+              borderWidth: '2px',
+            },
+          },
+        },
+      }}
+    />
+  </Box>
+</Box>
 
           {/* Optional: Help text */}
           <Typography
@@ -1552,6 +1603,7 @@ const handleRemarksNext = async () => {
               !selectedPlant ||
               !formData.reporting_to ||
               !formData.probation ||
+              !formData.notice_period ||
               submitLoading
             }
             startIcon={

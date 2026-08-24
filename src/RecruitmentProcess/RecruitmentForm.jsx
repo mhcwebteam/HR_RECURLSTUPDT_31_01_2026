@@ -20,11 +20,12 @@ const [updatedFiles, setUpdatedFiles] = useState([])
 
   // ✅ CORRECT ORDER
   const [formStatus, setFormStatus] = useState('');
-    const isPending = formStatus === 'pending' || formStatus === 'submit';
+    const isPending = formStatus == 'pending' || formStatus == 'submit';
   const [removedFiles, setRemovedFiles] = useState([]); // ✅ NEW: Track removed files with their metadata
   const [formData, setFormData] = useState({
     CHILD_CASEID: "",
     PLANT: "",
+    MANPOWER_DESG: "",
     FIRST_NAME: '',
     LAST_NAME: '',
     EMAIL: '',
@@ -71,10 +72,15 @@ const [updatedFiles, setUpdatedFiles] = useState([])
     SSC_PASSED_YEAR: '',
     '10TH_FILENAME': null,
     INTER_COLLEGE_NAME: '',
+    DIP_COLLEGE_NAME: '',
     INTER_BOARD: '',
+    DIP_BOARD: '',
     INTER_MARKS: '',
+    DIP_MARKS: '',
     INTER_PASSED_YEAR: '',
+    DIP_PASSED_YEAR: '',
     INTER_FILENAME: null,
+    DIP_FILENAME: null,
     GRAD_COLLEGE_NAME: '',
     DEGREE_UNIVERSITY: '',
     BTECH_MARKS: '',
@@ -223,8 +229,10 @@ const responsiveStyles = `
             HIGHEST_QUA: (val) => val.replace(/[^a-zA-Z ,\.]/g, ''),   
              SSC_SCHOOL_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),     
         SSC_BOARD: (val) => val.replace(/[^a-zA-Z0-9 .,-]/g, ''), 
-            INTER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
-             INTER_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''),   
+            INTER_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+            DIP_COLLEGE_NAME:  (val) => val.replace(/[^a-zA-Z ]/g, ''),
+             INTER_BOARD: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
+             DIP_BOARD:  (val) => val.replace(/[^a-zA-Z ]/g, ''), 
             GRAD_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
              DEGREE_UNIVERSITY: (val) => val.replace(/[^a-zA-Z ]/g, ''),  
               PG_COLLEGE_NAME: (val) => val.replace(/[^a-zA-Z ]/g, ''), 
@@ -245,33 +253,30 @@ const EmpVerify = async () => {
       headers: { Authorization: `Bearer ${userToken.token}` },
     });
 
-    console.log("Draft Data Response:", response);
-
     if (response.data?.success && response.data?.data) {
       const userCaseId = userToken?.Manpower?.CHILD_CASEID || userToken?.CHILD_CASEID;
 
       const draftRecords = response.data.data.filter(
         item => String(item.child_caseid || '').trim() === String(userCaseId || '').trim() &&
-          (item.status?.toLowerCase() === "draft" || 
-           item.status?.toLowerCase() === "pending" ||item.status?.toLowerCase() === "submit" ||
+          (item.status?.toLowerCase() == "draft" || 
+           item.status?.toLowerCase() == "pending" ||item.status?.toLowerCase() == "submit" ||
            item.Status_Edit === "Edit")
       );
 
       if (draftRecords.length > 0) {
         const draftData = draftRecords[0];
 
-        console.log("draaaaaaaaaaaaaa",draftData)
         setFormStatus(draftData.status?.toLowerCase() || '');
         setStatusEdit(draftData.Status_Edit || null);
 
         const documents = draftData.documents || {};
         const documentMetadata = {};
 
-        // ----- MAPPING FOR CERTIFICATE FILES (actual file paths) -----
         const certificateMapping = {
           // Education
           '10th_certi': '10TH_FILENAME',
           'Inter_certi': 'INTER_FILENAME',
+          'Dip_certi':     'DIP_FILENAME',
           'Gradu_certi': 'BTECH_FILENAME',
           'PG_FILENAME': 'PG_FILENAME',
           'PHD_FILENAME': 'PHD_FILENAME',
@@ -297,6 +302,7 @@ const EmpVerify = async () => {
           'UAN': 'UAN_FILE',          // matches "UAN_DocId"
           'Tenth': '10TH_FILENAME',
           'Inter': 'INTER_FILENAME',
+           'Dip' : 'DIP_FILENAME',
           'grad': 'BTECH_FILENAME',   // matches "grad_DocId"
           'Pg': 'PG_FILENAME',
           'PHD_FILENAME': 'PHD_FILENAME',
@@ -359,6 +365,7 @@ const EmpVerify = async () => {
           LANG_KNOWN: draftData.LANG_KNOWN || '',
           MOTHER_TONGUE: draftData.MOTHER_TONGUE || '',
           DEPT: draftData.DEPT || '',
+          MANPOWER_DESG: draftData.MANPOWER_DESG || '',
           HNO: draftData.HNO || '',
           CITY: draftData.CITY || '',
           MANDAL: draftData.MANDAL || '',
@@ -378,6 +385,7 @@ const EmpVerify = async () => {
           // Document files (real paths or null)
           '10TH_FILENAME': documents['10th_certi'] || null,
           'INTER_FILENAME': documents['Inter_certi'] || null,
+          'DIP_FILENAME':   documents['Dip_certi']  || null,
           'BTECH_FILENAME': documents['Gradu_certi'] || null,
           'PG_FILENAME': documents['PG_FILENAME'] || null,
           'PHD_FILENAME': documents['PHD_FILENAME'] || null,
@@ -409,9 +417,13 @@ const EmpVerify = async () => {
             SSC_MARKS: draftData.ssc_marks || '',
             SSC_PASSED_YEAR: draftData.SSC_PASSED_YEAR || '',
             INTER_COLLEGE_NAME: draftData.INTER_COLLEGE_NAME || '',
+            DIP_COLLEGE_NAME: draftData.DIP_COLLEGE_NAME || '',
             INTER_BOARD: draftData.INTER_BOARD || '',
+            DIP_BOARD: draftData.DIP_BOARD || '',
             INTER_MARKS: draftData.inter_marks || '',
+            DIP_MARKS:draftData.DIP_MARKS || '',
             INTER_PASSED_YEAR: draftData.INTER_PASSED_YEAR || '',
+            DIP_PASSED_YEAR: draftData.DIP_PASSED_YEAR || '',
             GRAD_COLLEGE_NAME: draftData.GRAD_COLLEGE_NAME || '',
             DEGREE_UNIVERSITY: draftData.DEGREE_UNIVERSITY || '',
             BTECH_MARKS: draftData.btech_marks || '',
@@ -524,6 +536,7 @@ const openFile = async (file, fileName = 'Document') => {
         PLANT: userToken?.Manpower?.PLANT || "",
         CHILD_CASEID: userToken?.Manpower?.CHILD_CASEID,
         DEPT: userToken?.Manpower?.DEPT,
+        MANPOWER_DESG: userToken?.Manpower?.MANPOWER_DESG,
        EMP: userToken?.Manpower?.RECRUIT_CYCLE,
        TYPE_PLANT: userToken?.Manpower?.TYPE_PLANT,
 
@@ -573,6 +586,7 @@ const handleInputChange = (e) => {
     "PASSPORT_EXPIRY",
     "DRIVING_LICENSE_EXPIRY",
     "INTER_PASSED_YEAR",
+    "DIP_PASSED_YEAR",
     "SSC_PASSED_YEAR",
     "DEGREE_PASSED_YEAR",
      "PG_PASSED_YEAR",
@@ -775,10 +789,58 @@ const handleFileChange = (e) => {
 
 
 
-const handleRemoveFile = (name, filePath = null, verificationId = null, fileStatus = null, certfi = null) => {
-  // Prefer docID – it's the reliable key for deletion
+const handleRemoveFile = (name, filePath = null, verificationId = null, fileStatus = null, certfi = null, expId = null) => {
+  // ✅ If this is an experience-specific file (has expId)
+  if (expId) {
+    // Find the experience and remove the file from its arrays
+    setExperiences(prev => prev.map(exp => {
+      if (exp.id === expId) {
+        const updatedExp = { ...exp };
+        
+        // Check which array the file belongs to
+        if (name.includes('payslips')) {
+          // Remove the specific file from PAYSLIPS array
+          const currentPayslips = updatedExp.PAYSLIPS || [];
+          updatedExp.PAYSLIPS = currentPayslips.filter(f => {
+            if (typeof f === 'string') {
+              // If it's a string path, match by path
+              return f !== filePath && f !== verificationId;
+            } else if (f instanceof File) {
+              // If it's a File object, match by name or reference
+              return f.name !== filePath && f !== verificationId;
+            }
+            return true;
+          });
+          console.log(`Removed payslip from experience ${expId}:`, filePath);
+          console.log(`Remaining payslips:`, updatedExp.PAYSLIPS.length);
+        } else if (name.includes('bank_statements')) {
+          const currentStatements = updatedExp.BANK_STATEMENTS || [];
+          updatedExp.BANK_STATEMENTS = currentStatements.filter(f => {
+            if (typeof f === 'string') {
+              return f !== filePath && f !== verificationId;
+            } else if (f instanceof File) {
+              return f.name !== filePath && f !== verificationId;
+            }
+            return true;
+          });
+          console.log(`Removed bank statement from experience ${expId}:`, filePath);
+        } else if (name.includes('offer_letter')) {
+          updatedExp.offer_letter = null;
+        } else if (name.includes('relieving_letter')) {
+          updatedExp.relieving_letter = null;
+        } else if (name.includes('exp_letter')) {
+          updatedExp.EXP_LETTER = null;
+        }
+        
+        return updatedExp;
+      }
+      return exp;
+    }));
+    
+    return;
+  }
 
-
+  // ✅ If it's a main form file (original logic)
   if (verificationId) {
     setRemovedFiles(prev => [...prev, {
       Doc_Type: name,
@@ -786,7 +848,6 @@ const handleRemoveFile = (name, filePath = null, verificationId = null, fileStat
       removedAt: new Date().toISOString()
     }]);
   } else if (filePath && filePath.includes('/')) {
-    // Fallback to real file path if docID missing (should not happen)
     setRemovedFiles(prev => [...prev, {
       Doc_Type: name,
       filePath: filePath,
@@ -815,49 +876,121 @@ const experienceFieldValidations = {
     COMPANY_NAME: (val) => val.replace(/[^a-zA-Z0-9 ]/g, ''),
     DESIGNATION: (val) => val.replace(/[^a-zA-Z ]/g, ''),
 };
+// const handleExperienceChange = (id, field, value) => {
+//     // ✅ Apply validation if rule exists
+//     const sanitized = experienceFieldValidations[field]
+//         ? experienceFieldValidations[field](value)
+//         : value;
+
+//     setExperiences(prev => prev.map(exp => {
+//         if (exp.id == id) {
+//             const updated = { ...exp, [field]: sanitized }; // ✅ use sanitized
+
+//             if (field === 'FROM_DATE' || field === 'TO_DATE') {
+//                 if (updated.FROM_DATE && updated.TO_DATE) {
+//                     const fromDate = new Date(updated.FROM_DATE);
+//                     const toDate = new Date(updated.TO_DATE);
+
+//                     let years = toDate.getFullYear() - fromDate.getFullYear();
+//                     let months = toDate.getMonth() - fromDate.getMonth();
+//                     let days = toDate.getDate() - fromDate.getDate();
+
+//                     if (days < 0) {
+//                         months--;
+//                         const lastMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
+//                         days += lastMonth.getDate();
+//                     }
+//                     if (months < 0) {
+//                         years--;
+//                         months += 12;
+//                     }
+
+//                     const totalMonths = years * 12 + months;
+//                     if (totalMonths > 0 || days > 0) {
+//                         updated.DURATION = days > 0
+//                             ? `${totalMonths + 1} (${totalMonths} months ${days} days)`
+//                             : totalMonths.toString();
+//                     } else {
+//                         updated.DURATION = '';
+//                     }
+//                 }
+//            }
+//             return updated;
+//         }
+//         return exp;
+//     }));
+
+//     if (showErrors && errors[`exp_${id}_${field}`]) {
+//         setErrors(prev => {
+//             const newErrors = { ...prev };
+//             delete newErrors[`exp_${id}_${field}`];
+//             return newErrors;
+//         });
+//     }
+// };
+
+
 const handleExperienceChange = (id, field, value) => {
     // ✅ Apply validation if rule exists
     const sanitized = experienceFieldValidations[field]
         ? experienceFieldValidations[field](value)
         : value;
 
-    setExperiences(prev => prev.map(exp => {
-        if (exp.id == id) {
-            const updated = { ...exp, [field]: sanitized }; // ✅ use sanitized
+    setExperiences(prev => {
+        const updatedExperiences = prev.map(exp => {
+            if (exp.id == id) {
+                const updated = { ...exp, [field]: sanitized };
 
-            if (field === 'FROM_DATE' || field === 'TO_DATE') {
-                if (updated.FROM_DATE && updated.TO_DATE) {
-                    const fromDate = new Date(updated.FROM_DATE);
-                    const toDate = new Date(updated.TO_DATE);
+                if (field === 'FROM_DATE' || field === 'TO_DATE') {
+                    if (updated.FROM_DATE && updated.TO_DATE) {
+                        const fromDate = new Date(updated.FROM_DATE);
+                        const toDate = new Date(updated.TO_DATE);
 
-                    let years = toDate.getFullYear() - fromDate.getFullYear();
-                    let months = toDate.getMonth() - fromDate.getMonth();
-                    let days = toDate.getDate() - fromDate.getDate();
+                        let years = toDate.getFullYear() - fromDate.getFullYear();
+                        let months = toDate.getMonth() - fromDate.getMonth();
+                        let days = toDate.getDate() - fromDate.getDate();
 
-                    if (days < 0) {
-                        months--;
-                        const lastMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
-                        days += lastMonth.getDate();
-                    }
-                    if (months < 0) {
-                        years--;
-                        months += 12;
-                    }
+                        if (days < 0) {
+                            months--;
+                            const lastMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
+                            days += lastMonth.getDate();
+                        }
+                        if (months < 0) {
+                            years--;
+                            months += 12;
+                        }
 
-                    const totalMonths = years * 12 + months;
-                    if (totalMonths > 0 || days > 0) {
-                        updated.DURATION = days > 0
-                            ? `${totalMonths + 1} (${totalMonths} months ${days} days)`
-                            : totalMonths.toString();
-                    } else {
-                        updated.DURATION = '';
+                        const totalMonths = years * 12 + months;
+                        if (totalMonths > 0 || days > 0) {
+                            updated.DURATION = days > 0
+                                ? `${totalMonths + 1} (${totalMonths} months ${days} days)`
+                                : totalMonths.toString();
+                        } else {
+                            updated.DURATION = '';
+                        }
                     }
                 }
-           }
-            return updated;
-        }
-        return exp;
-    }));
+                return updated;
+            }
+            return exp;
+        });
+
+        // ✅ Calculate total experience (sum of all experiences)
+        const totalMonths = updatedExperiences.reduce((total, exp) => {
+            if (exp.DURATION && !isNaN(parseInt(exp.DURATION))) {
+                return total + parseInt(exp.DURATION);
+            }
+            return total;
+        }, 0);
+
+        // ✅ Update TOTAL_EXP in formData
+        setFormData(prev => ({
+            ...prev,
+            TOTAL_EXP: totalMonths.toString()
+        }));
+
+        return updatedExperiences;
+    });
 
     if (showErrors && errors[`exp_${id}_${field}`]) {
         setErrors(prev => {
@@ -867,9 +1000,6 @@ const handleExperienceChange = (id, field, value) => {
         });
     }
 };
-
-
-
 
 
   const handleDraft = async () => {
@@ -1036,8 +1166,99 @@ experiences.forEach((exp, index) => {
     }]);
   };
 
-const removeExperience = async (id) => {
 
+
+// const removeExperience = async (id) => {
+
+
+//   if (experiences.length == 1) {
+//     Swal.fire({
+//       title: "Cannot Remove",
+//       text: "At least one experience entry is required",
+//       icon: "warning",
+//     });
+//     return;
+//   }
+
+//   // Confirmation popup
+//   const result = await Swal.fire({
+//     title: "Are you sure?",
+//     text: `Do you want to delete this experience? (ID: ${id})`,
+//     icon: "warning",
+//     showCancelButton: true,
+//     confirmButtonColor: "#d33",
+//     cancelButtonColor: "#3085d6",
+//     confirmButtonText: "Yes, delete it!",
+//     cancelButtonText: "Cancel",
+//   });
+
+//   if (!result.isConfirmed) return;
+
+
+
+
+//   const payload = { EMP_COMP_ID: id };
+
+//   try {
+//     const response = await axiosInstance.post(
+//       `${API_BASE_URL}/EmpExpDelete`,
+//       payload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${userToken.token}`,
+//           "Content-Type": "application/json",
+//           Accept: "application/json",
+//         },
+//       }
+//     );
+
+//     if (response?.data?.status === 200) {
+//       Swal.fire({
+//         icon: "success",
+//         title: "Deleted Successfully!",
+//         text: response?.data?.message,
+//         timer: 1500,
+//         showConfirmButton: false,
+//       });
+
+//       // Remove from state
+//       setExperiences((prev) =>
+//         prev.filter((exp) => exp.EMP_COMP_ID !== id)
+//       );
+//     } else {
+//       Swal.fire({
+//         icon: "error",
+//         title: "Failed!",
+//         text: response?.data?.message || "Something went wrong",
+//         timer: 2500,
+//         showConfirmButton: false,
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Delete error:", error);
+//     Swal.fire({
+//       title: "Delete Failed",
+//       text:
+//         error.response?.data?.message ||
+//         "Something went wrong. Please try again.",
+//       icon: "error",
+//       confirmButtonColor: "#dc2626",
+//     });
+//   }
+// };
+
+const removeExperience = async (id) => {
+  // Find the experience to check if it's already saved in DB
+  const expToRemove = experiences.find(exp => exp.id === id || exp.EMP_COMP_ID === id);
+  
+  if (!expToRemove) {
+    Swal.fire({
+      title: "Error",
+      text: "Experience not found",
+      icon: "error"
+    });
+    return;
+  }
 
   if (experiences.length == 1) {
     Swal.fire({
@@ -1051,7 +1272,7 @@ const removeExperience = async (id) => {
   // Confirmation popup
   const result = await Swal.fire({
     title: "Are you sure?",
-    text: `Do you want to delete this experience? (ID: ${id})`,
+    text: `Do you want to delete this experience?`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#d33",
@@ -1062,61 +1283,100 @@ const removeExperience = async (id) => {
 
   if (!result.isConfirmed) return;
 
+  // ✅ Check if this experience has EMP_COMP_ID (already saved in DB)
+  if (expToRemove.EMP_COMP_ID) {
+    // ✅ If it has EMP_COMP_ID, delete from database
+    const payload = { EMP_COMP_ID: expToRemove.EMP_COMP_ID };
 
-
-
-  const payload = { EMP_COMP_ID: id };
-
-  try {
-    const response = await axiosInstance.post(
-      `${API_BASE_URL}/EmpExpDelete`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${userToken.token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (response?.data?.status === 200) {
-      Swal.fire({
-        icon: "success",
-        title: "Deleted Successfully!",
-        text: response?.data?.message,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      // Remove from state
-      setExperiences((prev) =>
-        prev.filter((exp) => exp.EMP_COMP_ID !== id)
+    try {
+      const response = await axiosInstance.post(
+        `${API_BASE_URL}/EmpExpDelete`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
       );
-    } else {
+
+      if (response?.data?.status === 200) {
+        Swal.fire({
+          icon: "success",
+          title: "Deleted Successfully!",
+          text: response?.data?.message,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        // Remove from state
+        setExperiences((prev) => {
+          const updated = prev.filter((exp) => exp.id !== id && exp.EMP_COMP_ID !== id);
+          
+          // Recalculate total experience
+          const totalMonths = updated.reduce((total, exp) => {
+            if (exp.DURATION && !isNaN(parseInt(exp.DURATION))) {
+              return total + parseInt(exp.DURATION);
+            }
+            return total;
+          }, 0);
+          
+          setFormData(prevForm => ({
+            ...prevForm,
+            TOTAL_EXP: totalMonths.toString()
+          }));
+          
+          return updated;
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed!",
+          text: response?.data?.message || "Something went wrong",
+          timer: 2500,
+          showConfirmButton: false,
+        });
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
       Swal.fire({
+        title: "Delete Failed",
+        text: error.response?.data?.message || "Something went wrong. Please try again.",
         icon: "error",
-        title: "Failed!",
-        text: response?.data?.message || "Something went wrong",
-        timer: 2500,
-        showConfirmButton: false,
+        confirmButtonColor: "#dc2626",
       });
     }
-  } catch (error) {
-    console.error("Delete error:", error);
+  } else {
+    // ✅ If it's a new experience (not saved in DB), just remove from state
     Swal.fire({
-      title: "Delete Failed",
-      text:
-        error.response?.data?.message ||
-        "Something went wrong. Please try again.",
-      icon: "error",
-      confirmButtonColor: "#dc2626",
+      icon: "info",
+      title: "Removed",
+      text: "New experience entry removed",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    setExperiences((prev) => {
+      const updated = prev.filter((exp) => exp.id !== id && exp.EMP_COMP_ID !== id);
+      
+      // Recalculate total experience
+      const totalMonths = updated.reduce((total, exp) => {
+        if (exp.DURATION && !isNaN(parseInt(exp.DURATION))) {
+          return total + parseInt(exp.DURATION);
+        }
+        return total;
+      }, 0);
+      
+      setFormData(prevForm => ({
+        ...prevForm,
+        TOTAL_EXP: totalMonths.toString()
+      }));
+      
+      return updated;
     });
   }
 };
-
-
-
   const scrollToError = (fieldName) => {
     // ── 1. Determine which section owns this field and open it ──
     const basicInfoFields = [
@@ -1131,7 +1391,7 @@ const removeExperience = async (id) => {
     ];
     const educationFields = [
       'SSC_SCHOOL_NAME','SSC_BOARD','SSC_MARKS','SSC_PASSED_YEAR','10TH_FILENAME',
-      'INTER_COLLEGE_NAME','INTER_BOARD','INTER_MARKS','INTER_PASSED_YEAR','INTER_FILENAME',
+      'INTER_COLLEGE_NAME', 'DIP_COLLEGE_NAME','INTER_BOARD','DIP_BOARD','INTER_MARKS', 'DIP_MARKS','INTER_PASSED_YEAR','DIP_PASSED_YEAR','INTER_FILENAME', 'DIP_FILENAME',
       'GRAD_COLLEGE_NAME','DEGREE_UNIVERSITY','BTECH_MARKS','DEGREE_PASSED_YEAR','BTECH_FILENAME',
       'PG_COLLEGE_NAME','PG_UNIVERSITY','PG_MARKS','PG_PASSED_YEAR','PG_FILENAME',
       'PHD_COLLEGE_NAME','PHD_UNIVERSITY','PHD_MARKS','PHD_PASSED_YEAR','PHD_FILENAME',
@@ -1290,92 +1550,125 @@ if (!formData.AADHAR_PATH) newErrors.AADHAR_PATH = "Aadhaar Card is required";
     if (!formData.PAN_PATH) newErrors.PAN_PATH = "PAN Card is required";
     if (!formData.PHOTO) newErrors.PHOTO = "Photo is required";
    
+//  experiences.forEach((exp, index) => {
+//       if (!exp.COMPANY_NAME?.trim()) {
+//         newErrors[`exp_${exp.id}_COMPANY_NAME`] = "Company name is required";
+//       }
+//       if (!exp.DESIGNATION?.trim()) {
+//         newErrors[`exp_${exp.id}_DESIGNATION`] = "Designation is required";
+//       }
+//       if (!exp.FROM_DATE) {
+//         newErrors[`exp_${exp.id}_FROM_DATE`] = "From date is required";
+//       }
+//       if (!exp.TO_DATE) {
+//         newErrors[`exp_${exp.id}_TO_DATE`] = "To date is required";
+//       }
+//       if (exp.FROM_DATE && exp.TO_DATE) {
+//         const fromDate = new Date(exp.FROM_DATE);
+//         const toDate = new Date(exp.TO_DATE);
+//         if (toDate < fromDate) {
+//           newErrors[`exp_${exp.id}_TO_DATE`] = "To date cannot be before from date";
+//         }
+//       }
+//       if (exp.isCurrent) {
+//         if (!exp.NOTICE_PERIOD?.toString().trim()) {
+//           newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period is required for current company";
+//         } else if (exp.NOTICE_PERIOD < 0) {
+//           newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period cannot be negative";
+//         }
+//       }
+//     });
 
 
+const manpowerDesig = formData.MANPOWER_DESG?.trim()?.toUpperCase();
 
-    // ID proofs
-    
-    
-    
-    // Education
-    // if (!formData.SSC_SCHOOL_NAME?.trim()) newErrors.SSC_SCHOOL_NAME = "SSC School is required";
-    //     if (!formData.SSC_BOARD?.trim()) newErrors.SSC_BOARD = "SSC Board is required";
-    // if (!formData.SSC_MARKS?.toString().trim()) newErrors.SSC_MARKS = "SSC %";
-    // if(!formData.SSC_PASSED_YEAR) newErrors.SSC_PASSED_YEAR = "SSC passed yr is required";
-    // if (!formData['10TH_FILENAME']) newErrors['10TH_FILENAME'] = "10th Marksheet is required";
 
-    // if (formData.EMP !== "Work Man") {
-    //   if (!formData.INTER_COLLEGE_NAME?.trim()) newErrors.INTER_COLLEGE_NAME = "Intermediate College is required";
-    //     if (!formData.INTER_BOARD?.trim()) newErrors.INTER_BOARD = "Inter Board is required";
-    //   if (!formData.INTER_MARKS?.toString().trim()) newErrors.INTER_MARKS = "Inter %";
-    //      if(!formData.INTER_PASSED_YEAR) newErrors.INTER_PASSED_YEAR = "Inter passed yr is required";
+const isJuniorDesig = ["PGET", "DET", "GET"].includes(manpowerDesig);
 
-    //   if (!formData.INTER_FILENAME) newErrors.INTER_FILENAME = "Inter Marksheet is required";
-      
+// =====================================================
+// EXPERIENCE VALIDATION
+// =====================================================
+if (!isJuniorDesig) {
+  experiences.forEach((exp) => {
 
-    //   if (!formData.GRAD_COLLEGE_NAME?.trim()) newErrors.GRAD_COLLEGE_NAME = "Degree/B.Tech College is required";
-    //        if (!formData.DEGREE_UNIVERSITY?.trim()) newErrors.DEGREE_UNIVERSITY = "Degree univ is required";
-
-    //   if (!formData.BTECH_MARKS?.toString().trim()) newErrors.BTECH_MARKS = "B.Tech/Degree % ";
-    //    if (!formData.DEGREE_PASSED_YEAR?.trim()) newErrors.DEGREE_PASSED_YEAR = "Degree passed yr is required";
-    //   if (!formData.BTECH_FILENAME) newErrors.BTECH_FILENAME = "B.Tech/Degree Marksheet is required";
-    // }
-
-   
-   
- experiences.forEach((exp, index) => {
-      if (!exp.COMPANY_NAME?.trim()) {
-        newErrors[`exp_${exp.id}_COMPANY_NAME`] = "Company name is required";
-      }
-      if (!exp.DESIGNATION?.trim()) {
-        newErrors[`exp_${exp.id}_DESIGNATION`] = "Designation is required";
-      }
-      if (!exp.FROM_DATE) {
-        newErrors[`exp_${exp.id}_FROM_DATE`] = "From date is required";
-      }
-      if (!exp.TO_DATE) {
-        newErrors[`exp_${exp.id}_TO_DATE`] = "To date is required";
-      }
-      if (exp.FROM_DATE && exp.TO_DATE) {
-        const fromDate = new Date(exp.FROM_DATE);
-        const toDate = new Date(exp.TO_DATE);
-        if (toDate < fromDate) {
-          newErrors[`exp_${exp.id}_TO_DATE`] = "To date cannot be before from date";
-        }
-      }
-      if (exp.isCurrent) {
-        if (!exp.NOTICE_PERIOD?.toString().trim()) {
-          newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period is required for current company";
-        } else if (exp.NOTICE_PERIOD < 0) {
-          newErrors[`exp_${exp.id}_NOTICE_PERIOD`] = "Notice period cannot be negative";
-        }
-      }
-    });
-
-    
-
-    // CTC
-    if (!formData.CURRENT_CTC?.toString().trim()) newErrors.CURRENT_CTC = "Current CTC is required";
-    if (!formData.EXP_CTC?.toString().trim()) newErrors.EXP_CTC = "Expected CTC is required";
-    if (!formData.TOTAL_EXP?.trim()) newErrors.TOTAL_EXP = "Total Experience is required";
-
-   
-
-   
-   
-   
-
-   const hasCurrentCompany = experiences.some(exp => exp.isCurrent);
-    if (hasCurrentCompany && !formData.bank_statements) {
-      newErrors.bank_statements = "Bank Statements are required";
-    }
-    if (hasCurrentCompany && !formData.payslips) {
-      newErrors.payslips = "payslips are required";
+    if (!exp.COMPANY_NAME?.trim()) {
+      newErrors[`exp_${exp.id}_COMPANY_NAME`] =
+        "Company name is required";
     }
 
-    return newErrors;
-  };
+    if (!exp.DESIGNATION?.trim()) {
+      newErrors[`exp_${exp.id}_DESIGNATION`] =
+        "Designation is required";
+    }
 
+    if (!exp.FROM_DATE) {
+      newErrors[`exp_${exp.id}_FROM_DATE`] =
+        "From date is required";
+    }
+
+    if (!exp.TO_DATE) {
+      newErrors[`exp_${exp.id}_TO_DATE`] =
+        "To date is required";
+    }
+
+    // Date validation
+    if (exp.FROM_DATE && exp.TO_DATE) {
+      const fromDate = new Date(exp.FROM_DATE);
+      const toDate = new Date(exp.TO_DATE);
+
+      if (toDate < fromDate) {
+        newErrors[`exp_${exp.id}_TO_DATE`] =
+          "To date cannot be before from date";
+      }
+    }
+
+    // Notice period for current company
+    if (exp.isCurrent) {
+      if (!exp.NOTICE_PERIOD?.toString().trim()) {
+        newErrors[`exp_${exp.id}_NOTICE_PERIOD`] =
+          "Notice period is required for current company";
+      } else if (Number(exp.NOTICE_PERIOD) < 0) {
+        newErrors[`exp_${exp.id}_NOTICE_PERIOD`] =
+          "Notice period cannot be negative";
+      }
+    }
+  });
+
+  // =====================================================
+  // CTC VALIDATION
+  // =====================================================
+  if (!formData.CURRENT_CTC?.toString().trim()) {
+    newErrors.CURRENT_CTC = "Current CTC is required";
+  }
+
+  if (!formData.EXP_CTC?.toString().trim()) {
+    newErrors.EXP_CTC = "Expected CTC is required";
+  }
+
+  if (!formData.TOTAL_EXP?.toString().trim()) {
+    newErrors.TOTAL_EXP = "Total Experience is required";
+  }
+
+  // =====================================================
+  // CURRENT COMPANY DOCUMENTS
+  // =====================================================
+  const hasCurrentCompany = experiences.some(
+    (exp) => exp.isCurrent
+  );
+
+  if (hasCurrentCompany && !formData.bank_statements) {
+    newErrors.bank_statements =
+      "Bank Statements are required";
+  }
+
+  if (hasCurrentCompany && !formData.payslips) {
+    newErrors.payslips =
+      "Payslips are required";
+  }
+}
+
+return newErrors;
+  }
 
 
     const handleSubmit = async () => {
@@ -1538,6 +1831,7 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
       LANG_KNOWN: '',
       MOTHER_TONGUE: '',
       DEPT: '',
+      MANPOWER_DESG: '',
       EMP: '',
       HNO: '',
       CITY: '',
@@ -1572,10 +1866,15 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
       SSC_PASSED_YEAR: '',
       '10TH_FILENAME': null,
       INTER_COLLEGE_NAME: '',
+      DIP_COLLEGE_NAME: '',
       INTER_BOARD: '',
+      DIP_BOARD: '',
       INTER_MARKS: '',
+      DIP_MARKS: '',
       INTER_PASSED_YEAR: '',
+      DIP_PASSED_YEAR: '',
       INTER_FILENAME: null,
+      DIP_FILENAME: null,
       GRAD_COLLEGE_NAME: '',
       DEGREE_UNIVERSITY: '',
       BTECH_MARKS: '',
@@ -1654,7 +1953,8 @@ data.append(`experiences[${index}][EMP_COMP_ID]`, exp.EMP_COMP_ID);
     background: '#ffffff',
     boxSizing: 'border-box'
   };
-const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPending, onOpenFile }) => {
+
+  const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPending, onOpenFile, expId, fileIndex = 0 }) => {
   const inputRef = React.useRef();
   
   // ✅ Get metadata from documentMetadata
@@ -1664,53 +1964,55 @@ const FileUpload = ({ label, name, onChange, onRemove, error, selectedFile, isPe
     certfi: null
   };
 
-const getFileNameFromPath = (path) => {
-  if (!path) return null;
+  const getFileNameFromPath = (path) => {
+    if (!path) return null;
 
-  let fullName = '';
-  if (typeof path === 'string') {
-    const parts = path.split('/');
-    fullName = parts[parts.length - 1];
-  } else {
-    fullName = path?.name || '';
-  }
+    let fullName = '';
+    if (typeof path === 'string') {
+      const parts = path.split('/');
+      fullName = parts[parts.length - 1];
+    } else {
+      fullName = path?.name || '';
+    }
 
-  if (!fullName) return null;
+    if (!fullName) return null;
 
-  const dotIndex = fullName.lastIndexOf('.');
-  const ext = dotIndex !== -1 ? fullName.slice(dotIndex) : '';      // e.g. ".pdf"
-  const baseName = dotIndex !== -1 ? fullName.slice(0, dotIndex) : fullName;
+    const dotIndex = fullName.lastIndexOf('.');
+    const ext = dotIndex !== -1 ? fullName.slice(dotIndex) : '';
+    const baseName = dotIndex !== -1 ? fullName.slice(0, dotIndex) : fullName;
 
-  // ✅ Show up to 6 chars of base name + extension
- const truncated = baseName.length > 15
-    ? baseName.slice(0, 15) + ext        // e.g. "resume.pdf", "aadhar.pdf"
-    : fullName;                       // short names shown as-is
+    const truncated = baseName.length > 15
+      ? baseName.slice(0, 15) + ext
+      : fullName;
 
-  return truncated;
-};
+    return truncated;
+  };
 
   const handleChange = (e) => onChange(e);
   
   const handleRemove = () => {
     if (inputRef.current) inputRef.current.value = '';
     
-    // ✅ IMPORTANT: Use the ACTUAL file path from selectedFile or metadata
     let filePath = null;
     let docId = metadata?.docId || null;
     let status = metadata?.status || null;
     let certfi = metadata?.certfi || null;
 
-    // Priority: selectedFile (if string) > certfi > null
-    if (selectedFile && typeof selectedFile === 'string') {
-      filePath = selectedFile;  // This is the actual file path from server
-    } else if (certfi) {
-      filePath = certfi;  // Fallback to certfi
-    } else if (selectedFile && selectedFile instanceof File) {
-      filePath = selectedFile.name;
+    // Get the actual file path/name
+    if (selectedFile) {
+      if (typeof selectedFile === 'string') {
+        filePath = selectedFile;
+      } else if (selectedFile instanceof File) {
+        filePath = selectedFile.name;
+        // Also store the file reference for comparison
+        docId = selectedFile;
+      }
     }
     
-    console.log(`Removing ${name}:`, { filePath, docId, status, certfi });
-    onRemove(name, filePath, docId, status, certfi);
+    console.log(`Removing ${name}:`, { filePath, docId, status, certfi, expId, fileIndex });
+    
+    // ✅ Pass expId and fileIndex to onRemove
+    onRemove(name, filePath, docId, status, certfi, expId);
   };
 
   const fileName = selectedFile ? getFileNameFromPath(selectedFile) : '';
@@ -1973,6 +2275,15 @@ const getFileNameFromPath = (path) => {
           onChange={handleInputChange} 
           disabled 
           inputRef={(el) => registerRef('DEPT', el)}
+        />
+
+              <InputField 
+          label="Designation" 
+          name="MANPOWER_DESG" 
+          value={formData.MANPOWER_DESG} 
+          onChange={handleInputChange} 
+          disabled 
+          inputRef={(el) => registerRef('MANPOWER_DESG', el)}
         />
         <InputField 
           label="Employee level" 
@@ -2649,7 +2960,7 @@ const getFileNameFromPath = (path) => {
                       <tr style={{ background: '#f9f9f9' }}>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
                           <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
-                            Intermediate/Diploma 
+                            Intermediate
                           </span>
                         </td>
                         <td style={{ padding: '6px' }}>
@@ -2676,7 +2987,36 @@ const getFileNameFromPath = (path) => {
                           <TableFileUpload name="INTER_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile}  isPending={isPending} selectedFile={formData.INTER_FILENAME} error={showErrors ? errors.INTER_FILENAME : ''} />
                         </td>
                       </tr>
+  <tr style={{ background: '#f9f9f9' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', width: '150px', padding: '5px 8px', background: '#e0edff', border: '1px solid #93c5fd', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                            Diploma 
+                          </span>
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="text" name="DIP_COLLEGE_NAME"   ref={(el) => registerRef('DIP_COLLEGE_NAME', el)} value={formData.DIP_COLLEGE_NAME}    onChange={handleInputChange} placeholder="School/College" style={{ ...inputStyle, borderColor: showErrors && errors.INTER_COLLEGE_NAME ? '#ef4444' : '#93c5fd' }} />
+                           {showErrors && errors.DIP_COLLEGE_NAME && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>
+                            {/* {errors.INTER_COLLEGE_NAME} */}
+                            </p>}
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          
+                          <input type="text" name="DIP_BOARD"  ref={(el) => registerRef('DIP_BOARD', el)} value={formData.DIP_BOARD || ''} onChange={handleInputChange} placeholder="University/Board" style={{ ...inputStyle, borderColor: showErrors && errors.DIP_BOARD ? '#ef4444' : '#93c5fd' }} />
+                          {/* {showErrors && errors.INTER_BOARD && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_BOARD}</p>} */}
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <input type="number" name="DIP_MARKS" ref={(el) => registerRef('DIP_MARKS', el)} value={formData.DIP_MARKS} onChange={handleInputChange} placeholder="%" style={{ ...inputStyle, width: '70px', textAlign: 'center', borderColor: showErrors && errors.DIP_MARKS ? '#ef4444' : '#93c5fd' }} />
+                          {/* {showErrors && errors.INTER_MARKS && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_MARKS}</p>} */}
 
+                        </td>
+                        <td style={{ padding: '6px' }}>
+                          <input type="date" name="DIP_PASSED_YEAR" value={formData.DIP_PASSED_YEAR || ''} onChange={handleInputChange} style={{ ...inputStyle, borderColor: showErrors && errors.DIP_PASSED_YEAR ? '#ef4444' : '#93c5fd' }} />
+                           {/* {showErrors && errors.INTER_PASSED_YEAR && <p style={{ color: '#ef4444', fontSize: '10px', marginTop: '1px' }}>{errors.INTER_PASSED_YEAR}</p>} */}
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <TableFileUpload name="DIP_FILENAME" onChange={handleFileChange} onRemove={handleRemoveFile} onOpenFile={openFile}  isPending={isPending} selectedFile={formData.DIP_FILENAME} error={showErrors ? errors.DIP_FILENAME : ''} />
+                        </td>
+                      </tr>
                       {/* Graduation */}
                       <tr style={{ background: '#ffffff' }}>
                         <td style={{ padding: '6px', textAlign: 'center' }}>
@@ -2821,80 +3161,457 @@ const getFileNameFromPath = (path) => {
               </div>
             </div>
             <div style={{ pointerEvents: isPending ? 'none' : 'auto', opacity: isPending ? 0.85 : 1 }}>
-              {openSections.experience && experiences.map((exp, index) => (
-                <div key={exp.id} style={{ marginBottom: '10px', padding: '10px', border: '1.5px solid rgba(147,197,253,0.5)', borderRadius: '10px', background: exp.isCurrent ? 'linear-gradient(135deg, #fdfdfd 0%, #ffffff 60%, #ffffff 100%)' : 'linear-gradient(135deg, #ffffff 0%, #ffffff 100%)', boxShadow: exp.isCurrent ? '0 2px 8px rgba(37,99,235,0.10), inset 0 1px 0 rgba(255,255,255,0.8)' : '0 1px 4px rgba(147,197,253,0.15)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '3px', background: exp.isCurrent ? 'linear-gradient(to bottom, #1e40af, #3b82f6)' : 'linear-gradient(to bottom, #93c5fd, #bfdbfe)', borderRadius: '10px 0 0 10px' }} />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingLeft: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ display: 'inline-block', padding: '2px 10px', background: exp.isCurrent ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)', border: `1.5px solid ${exp.isCurrent ? 'rgba(59,130,246,0.35)' : 'rgba(147,197,253,0.5)'}`, borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: exp.isCurrent ? '#1d4ed8' : '#3b82f6', letterSpacing: '0.3px' }}>
-                        {exp.isCurrent ? 'Current Company' : `Previous Company`}
-                      </span>
-                    </div>
-                    {experiences.length > 1 && (
-                      <button type="button" onClick={() => removeExperience(exp?.EMP_COMP_ID)} style={{ color: '#ef4444', background: 'rgba(254,226,226,0.6)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', cursor: 'pointer', padding: '3px 6px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}>
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
+{openSections.experience && experiences.map((exp, index) => (
+  <div key={exp.id} style={{ 
+    marginBottom: '10px', 
+    padding: '10px', 
+    border: '1.5px solid rgba(147,197,253,0.5)', 
+    borderRadius: '10px', 
+    background: exp.isCurrent ? 'linear-gradient(135deg, #fdfdfd 0%, #ffffff 60%, #ffffff 100%)' : 'linear-gradient(135deg, #f8faff 0%, #f0f7ff 100%)', 
+    boxShadow: exp.isCurrent ? '0 2px 8px rgba(37,99,235,0.10), inset 0 1px 0 rgba(255,255,255,0.8)' : '0 1px 4px rgba(147,197,253,0.15)', 
+    position: 'relative', 
+    overflow: 'hidden' 
+  }}>
+    <div style={{ 
+      position: 'absolute', top: 0, left: 0, bottom: 0, width: '3px', 
+      background: exp.isCurrent ? 'linear-gradient(to bottom, #1e40af, #3b82f6)' : 'linear-gradient(to bottom, #93c5fd, #bfdbfe)', 
+      borderRadius: '10px 0 0 10px' 
+    }} />
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
-             <InputField label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_COMPANY_NAME`} value={exp.COMPANY_NAME}  inputRef={(el) => registerRef(`exp_${exp.id}_COMPANY_NAME`, el)}  onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}/>
-                    <InputField label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_DESIGNATION`} value={exp.DESIGNATION}  inputRef={(el) => registerRef(`exp_${exp.id}_DESIGNATION`, el)} onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} />
-                   <InputField
-    label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>}
-    name={`exp_${exp.id}_FROM_DATE`}
-    type="date"
-    value={exp.FROM_DATE}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingLeft: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ 
+          display: 'inline-block', padding: '2px 10px', 
+          background: exp.isCurrent ? 'rgba(37,99,235,0.10)' : 'rgba(147,197,253,0.20)', 
+          border: `1.5px solid ${exp.isCurrent ? 'rgba(59,130,246,0.35)' : 'rgba(147,197,253,0.5)'}`, 
+          borderRadius: '20px', fontSize: '11px', fontWeight: '700', 
+          color: exp.isCurrent ? '#1d4ed8' : '#3b82f6', letterSpacing: '0.3px' 
+        }}>
+          {exp.isCurrent ? 'Current Company' : `Previous Company ${index}`}
+        </span>
+        {exp.isCurrent && (
+          <span style={{ 
+            fontSize: '10px', color: '#059669', 
+            background: 'rgba(5,150,105,0.10)', padding: '1px 8px', 
+            borderRadius: '12px', fontWeight: '600' 
+          }}>
+            Active
+          </span>
+        )}
+      </div>
+      {experiences.length > 1 && !isPending && (
+        <button 
+          type="button" 
+          onClick={() => removeExperience(exp.id)}
+          style={{ 
+            color: '#ef4444', 
+            background: 'rgba(254,226,226,0.6)', 
+            border: '1px solid rgba(239,68,68,0.25)', 
+            borderRadius: '6px', 
+            cursor: 'pointer', 
+            padding: '3px 6px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            transition: 'all 0.2s' 
+          }}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
+    </div>
 
-      inputRef={(el) => registerRef(`exp_${exp.id}_FROM_DATE`, el)}
-    max={new Date().toISOString().split('T')[0]}  // ✅ cannot select future date
-    onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)}
-    error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''}
-/>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '8px', paddingLeft: '6px' }}>
+      <InputField 
+        label={<>Company Name <span style={{ color: '#ef4444' }}>*</span></>} 
+        name={`exp_${exp.id}_COMPANY_NAME`} 
+        value={exp.COMPANY_NAME} 
+        inputRef={(el) => registerRef(`exp_${exp.id}_COMPANY_NAME`, el)} 
+        onChange={(e) => handleExperienceChange(exp.id, 'COMPANY_NAME', e.target.value)} 
+        error={showErrors ? errors[`exp_${exp.id}_COMPANY_NAME`] : ''}
+      />
+      
+      <InputField 
+        label={<>Designation <span style={{ color: '#ef4444' }}>*</span></>} 
+        name={`exp_${exp.id}_DESIGNATION`} 
+        value={exp.DESIGNATION} 
+        inputRef={(el) => registerRef(`exp_${exp.id}_DESIGNATION`, el)} 
+        onChange={(e) => handleExperienceChange(exp.id, 'DESIGNATION', e.target.value)} 
+        error={showErrors ? errors[`exp_${exp.id}_DESIGNATION`] : ''} 
+      />
+      
+      <InputField
+        label={<>From Date <span style={{ color: '#ef4444' }}>*</span></>}
+        name={`exp_${exp.id}_FROM_DATE`}
+        type="date"
+        value={exp.FROM_DATE}
+        inputRef={(el) => registerRef(`exp_${exp.id}_FROM_DATE`, el)}
+        max={new Date().toISOString().split('T')[0]}
+        onChange={(e) => handleExperienceChange(exp.id, 'FROM_DATE', e.target.value)}
+        error={showErrors ? errors[`exp_${exp.id}_FROM_DATE`] : ''}
+      />
 
-<InputField
-    label={<>To Date <span style={{ color: '#ef4444' }}>*</span></>}
-    name={`exp_${exp.id}_TO_DATE`}
-    type="date"
-    value={exp.TO_DATE}
-       inputRef={(el) => registerRef(`exp_${exp.id}_TO_DATE`, el)}
-    min={exp.FROM_DATE || ''}                      // ✅ cannot select before From Date
-    max={new Date().toISOString().split('T')[0]}   // ✅ cannot select future date
-    onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)}
-    error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}
-/>  <InputField label="Duration" name={`exp_${exp.id}_DURATION`} value={exp.DURATION} disabled />
-                    {exp.isCurrent && (
-                      <InputField label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} name={`exp_${exp.id}_NOTICE_PERIOD`} type="number" value={exp.NOTICE_PERIOD} onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)}    inputRef={(el) => registerRef(`exp_${exp.id}_NOTICE_PERIOD`, el)} error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} />
-                    )}
-                    {exp.isCurrent && (
-                      <>
-                        <InputField label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} name="CURRENT_CTC" type="number" value={formData.CURRENT_CTC} onChange={handleInputChange}     inputRef={(el) => registerRef('CURRENT_CTC', el)} error={showErrors ? errors.CURRENT_CTC : ''} />
-                        <InputField label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} name="EXP_CTC" type="number" value={formData.EXP_CTC} onChange={handleInputChange}   inputRef={(el) => registerRef('EXP_CTC', el)} error={showErrors ? errors.EXP_CTC : ''} />
-                        <InputField label={<>Total Experience (years) <span style={{ color: '#ef4444' }}>*</span></>} name="TOTAL_EXP" type="number" value={formData.TOTAL_EXP} onChange={handleInputChange}    inputRef={(el) => registerRef('TOTAL_EXP', el)} error={showErrors ? errors.TOTAL_EXP : ''} />
-                      </>
-                    )}
-                  </div>
+      <InputField
+        label={<>To Date <span style={{ color: '#ef4444' }}>*</span></>}
+        name={`exp_${exp.id}_TO_DATE`}
+        type="date"
+        value={exp.TO_DATE}
+        inputRef={(el) => registerRef(`exp_${exp.id}_TO_DATE`, el)}
+        min={exp.FROM_DATE || ''}
+        max={new Date().toISOString().split('T')[0]}
+        onChange={(e) => handleExperienceChange(exp.id, 'TO_DATE', e.target.value)}
+        error={showErrors ? errors[`exp_${exp.id}_TO_DATE`] : ''}
+      />
+      
+      <InputField 
+        label="Duration (months)" 
+        name={`exp_${exp.id}_DURATION`} 
+        value={exp.DURATION} 
+        disabled 
+      />
+      
+      {exp.isCurrent && (
+        <InputField 
+          label={<>Notice Period (Days) <span style={{ color: '#ef4444' }}>*</span></>} 
+          name={`exp_${exp.id}_NOTICE_PERIOD`} 
+          type="number" 
+          value={exp.NOTICE_PERIOD} 
+          onChange={(e) => handleExperienceChange(exp.id, 'NOTICE_PERIOD', e.target.value)} 
+          inputRef={(el) => registerRef(`exp_${exp.id}_NOTICE_PERIOD`, el)} 
+          error={showErrors ? errors[`exp_${exp.id}_NOTICE_PERIOD`] : ''} 
+        />
+      )}
+      
+      {exp.isCurrent && (
+        <>
+          <InputField 
+            label={<>Current CTC <span style={{ color: '#ef4444' }}>*</span></>} 
+            name="CURRENT_CTC" 
+            type="number" 
+            value={formData.CURRENT_CTC} 
+            onChange={handleInputChange} 
+            inputRef={(el) => registerRef('CURRENT_CTC', el)} 
+            error={showErrors ? errors.CURRENT_CTC : ''} 
+          />
+          <InputField 
+            label={<>Expected CTC <span style={{ color: '#ef4444' }}>*</span></>} 
+            name="EXP_CTC" 
+            type="number" 
+            value={formData.EXP_CTC} 
+            onChange={handleInputChange} 
+            inputRef={(el) => registerRef('EXP_CTC', el)} 
+            error={showErrors ? errors.EXP_CTC : ''} 
+          />
+        </>
+      )}
+    </div>
 
-                  {exp.isCurrent && (
-                    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', padding: '8px 10px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', borderRadius: '8px', border: '1.5px dashed #93c5fd', boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' }}>
-                      <div style={{ gridColumn: '1 / -1', fontSize: '10px', fontWeight: '700', color: '#0f3f8b', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '1px', paddingBottom: '3px', borderBottom: '1px solid rgba(147,197,253,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <FileUp size={13} color="#0f3f8b" />
-                        Document Uploads
-                      </div>
+    {/* ✅ Documents for ALL experiences (not just current) */}
+    <div style={{ 
+      gridColumn: '1 / -1', 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+      gap: '8px', 
+      padding: '8px 10px', 
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(252, 252, 252, 0.7) 100%)', 
+      borderRadius: '8px', 
+      border: '1.5px dashed #93c5fd', 
+      boxShadow: 'inset 0 1px 3px rgba(147,197,253,0.10)' 
+    }}>
+      <div style={{ 
+        gridColumn: '1 / -1', 
+        fontSize: '10px', 
+        fontWeight: '700', 
+        color: '#0f3f8b', 
+        letterSpacing: '0.8px', 
+        textTransform: 'uppercase', 
+        marginBottom: '1px', 
+        paddingBottom: '3px', 
+        borderBottom: '1px solid rgba(147,197,253,0.4)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '6px' 
+      }}>
+        <FileUp size={13} color="#0f3f8b" />
+        Document Uploads {exp.isCurrent ? '(Current)' : `(Previous ${index})`}
+      </div>
 
-                      <FileUpload label={<>Pay Slips (6 ms) <span style={{ color: '#ef4444' }}>*</span></>} name="payslips" onChange={handleFileChange}  onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData.payslips}   error={showErrors ? errors.payslips : ''}  />
+      {exp.isCurrent ? (
+        // Current company documents
+        <>
+          <FileUpload 
+            label={<>Pay Slips (6 ms) <span style={{ color: '#ef4444' }}>*</span></>} 
+            name="payslips" 
+            onChange={handleFileChange} 
+            onOpenFile={openFile} 
+            isPending={isPending} 
+            onRemove={handleRemoveFile} 
+            selectedFile={formData.payslips} 
+            error={showErrors ? errors.payslips : ''} 
+          />
+          <FileUpload 
+            label="Offer Letter" 
+            name="offer_letter" 
+            onChange={handleFileChange} 
+            onOpenFile={openFile} 
+            isPending={isPending} 
+            onRemove={handleRemoveFile} 
+            selectedFile={formData?.offer_letter} 
+          />
+          <FileUpload 
+            label="Experience Letter" 
+            name="exp_letter" 
+            onChange={handleFileChange} 
+            onOpenFile={openFile} 
+            isPending={isPending} 
+            onRemove={handleRemoveFile} 
+            selectedFile={formData?.exp_letter} 
+          />
+          <FileUpload 
+            label="Relieving Letter" 
+            name="relieving_letter" 
+            onChange={handleFileChange} 
+            onOpenFile={openFile} 
+            isPending={isPending} 
+            onRemove={handleRemoveFile} 
+            selectedFile={formData?.relieving_letter} 
+          />
+          <FileUpload 
+            label={<>Bank Statements (3 ms) <span style={{ color: '#ef4444' }}>*</span></>} 
+            name="bank_statements" 
+            onChange={handleFileChange} 
+            onOpenFile={openFile} 
+            isPending={isPending} 
+            onRemove={handleRemoveFile} 
+            selectedFile={formData?.bank_statements} 
+            maxSize="500kb" 
+            error={showErrors ? errors.bank_statements : ''} 
+          />
+        </>
+      ) : (
+        // Previous company documents (per experience) - THIS IS THE NEW PART
 
-                      <FileUpload label="Offer Letter" name="offer_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.offer_letter} />
-                      <FileUpload label="Experience Letter" name="exp_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.exp_letter} />
 
-                      <FileUpload label="Relieving Letter" name="relieving_letter" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.relieving_letter} />
-                      <FileUpload label={<>Bank Statements (3 ms) <span style={{ color: '#ef4444' }}>*</span></>} name="bank_statements" onChange={handleFileChange} onOpenFile={openFile} isPending={isPending} onRemove={handleRemoveFile} selectedFile={formData?.bank_statements} maxSize="500kb"   error={showErrors ? errors.bank_statements : ''} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div></div>
+  <>
+    <div style={{ 
+      gridColumn: '1 / -1', 
+      fontSize: '10px', 
+      fontWeight: '700', 
+      color: '#0f3f8b', 
+      letterSpacing: '0.8px', 
+      textTransform: 'uppercase', 
+      marginBottom: '1px', 
+      paddingBottom: '3px', 
+      borderBottom: '1px solid rgba(147,197,253,0.4)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '6px' 
+    }}>
+  
+    </div>
+    
+    {/* Pay Slips */}
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        Pay Slips (6 ms)
+      </label>
+      <FileUpload 
+        label="" 
+        name={`payslips_${exp.id}`} 
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setExperiences(prev => prev.map(expItem => {
+              if (expItem.id === exp.id) {
+                const exists = (expItem.PAYSLIPS || []).some(f => 
+                  f instanceof File ? f.name === file.name : f === file
+                );
+                if (!exists) {
+                  return { ...expItem, PAYSLIPS: [...(expItem.PAYSLIPS || []), file] };
+                }
+                return expItem;
+              }
+              return expItem;
+            }));
+          }
+        }} 
+        onOpenFile={openFile} 
+        isPending={isPending} 
+        onRemove={handleRemoveFile} 
+        selectedFile={exp.PAYSLIPS && exp.PAYSLIPS.length > 0 ? exp.PAYSLIPS[0] : null} 
+        expId={exp.id}
+      />
+    </div>
+
+    {/* Offer Letter */}
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        Offer Letter
+      </label>
+      <FileUpload 
+        label="" 
+        name={`offer_letter_${exp.id}`} 
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setExperiences(prev => prev.map(expItem => {
+              if (expItem.id === exp.id) {
+                return { ...expItem, offer_letter: file };
+              }
+              return expItem;
+            }));
+          }
+        }} 
+        onOpenFile={openFile} 
+        isPending={isPending} 
+        onRemove={handleRemoveFile} 
+        selectedFile={exp.offer_letter} 
+        expId={exp.id}
+      />
+    </div>
+    
+    {/* Experience Letter */}
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        Experience Letter
+      </label>
+      <FileUpload 
+        label="" 
+        name={`exp_letter_${exp.id}`} 
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setExperiences(prev => prev.map(expItem => {
+              if (expItem.id === exp.id) {
+                return { ...expItem, EXP_LETTER: file };
+              }
+              return expItem;
+            }));
+          }
+        }} 
+        onOpenFile={openFile} 
+        isPending={isPending} 
+        onRemove={handleRemoveFile} 
+        selectedFile={exp.EXP_LETTER} 
+        expId={exp.id}
+      />
+    </div>
+    
+    {/* Relieving Letter */}
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        Relieving Letter
+      </label>
+      <FileUpload 
+        label="" 
+        name={`relieving_letter_${exp.id}`} 
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setExperiences(prev => prev.map(expItem => {
+              if (expItem.id === exp.id) {
+                return { ...expItem, relieving_letter: file };
+              }
+              return expItem;
+            }));
+          }
+        }} 
+        onOpenFile={openFile} 
+        isPending={isPending} 
+        onRemove={handleRemoveFile} 
+        selectedFile={exp.relieving_letter} 
+        expId={exp.id}
+      />
+    </div>
+    
+    {/* Bank Statements */}
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#1e40af', marginBottom: '3px' }}>
+        Bank Statements (3 ms)
+      </label>
+      <FileUpload 
+        label="" 
+        name={`bank_statements_${exp.id}`} 
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setExperiences(prev => prev.map(expItem => {
+              if (expItem.id === exp.id) {
+                const exists = (expItem.BANK_STATEMENTS || []).some(f => 
+                  f instanceof File ? f.name === file.name : f === file
+                );
+                if (!exists) {
+                  return { ...expItem, BANK_STATEMENTS: [...(expItem.BANK_STATEMENTS || []), file] };
+                }
+                return expItem;
+              }
+              return expItem;
+            }));
+          }
+        }} 
+        onOpenFile={openFile} 
+        isPending={isPending} 
+        onRemove={handleRemoveFile} 
+        selectedFile={exp.BANK_STATEMENTS && exp.BANK_STATEMENTS.length > 0 ? exp.BANK_STATEMENTS[0] : null} 
+        expId={exp.id}
+      />
+    </div>
+  </>
+
+)}
+  
+    </div>
+  </div>
+))}
+{/* ✅ Overall Total Experience Field - shown below all experiences */}
+<div style={{ 
+  marginTop: '15px', 
+  padding: '12px 15px', 
+  background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)', 
+  borderRadius: '8px', 
+  border: '2px solid #1e40af',
+  display: 'flex', 
+  justifyContent: 'space-between', 
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: '10px'
+}}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <Briefcase size={18} color="white" />
+    <span style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>
+      Overall Total Experience
+    </span>
+    <span style={{ 
+      color: '#93c5fd', 
+      fontSize: '11px', 
+      fontWeight: '500' 
+    }}>
+      (Current + Previous)
+    </span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+    <span style={{ 
+      color: 'white', 
+      fontSize: '18px', 
+      fontWeight: '800',
+      background: 'rgba(255,255,255,0.15)',
+      padding: '4px 15px',
+      borderRadius: '6px'
+    }}>
+      {formData.TOTAL_EXP || '0'} months
+    </span>
+    <span style={{ 
+      color: '#bfdbfe', 
+      fontSize: '11px', 
+      fontWeight: '400' 
+    }}>
+      ({experiences.length} {experiences.length === 1 ? 'entry' : 'entries'})
+    </span>
+  </div>
+</div>
+            
+            </div>
+            </div>
 
 
         </form>

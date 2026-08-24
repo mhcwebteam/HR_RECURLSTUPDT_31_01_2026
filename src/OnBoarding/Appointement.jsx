@@ -16,7 +16,10 @@ import html2canvas from 'html2canvas';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { CheckCircle2, Download } from 'lucide-react';
 import axiosInstance from '../Config/axiosConfig.jsx';
+import dayjs from 'dayjs';
+
 import { Close } from '@mui/icons-material';
+import myHomeHead from "../../src/assets/myHomeHeader.jpg"
 
 const AppointmentLetter = () => {
   const [joiningData, setJoiningData] = useState([]);
@@ -30,6 +33,7 @@ const AppointmentLetter = () => {
   const [openReportModal, setOpenReportModal] = useState(false);
   const [openAppointmentModal, setOpenAppointmentModal] = useState(false);
   const [appointmentLetterData, setAppointmentLetterData] = useState(null);
+
   const [accepted, setAccepted] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
@@ -53,7 +57,27 @@ const [formData, setFormData] = useState({
     return userToken ? userToken : null;
   })
 
-  console.log(Token,"tokennnnvalue!!!!!!!!!!");
+
+
+  
+const companyCode = "TTPL";
+const plantCode = "APTL"; // Example
+
+const currentDate = new Date();
+
+const currentMonth = currentDate.toLocaleString("en-US", {
+  month: "long",
+});
+const currentDay = String(currentDate.getDate()).padStart(2, "0");
+const currentYear = currentDate.getFullYear();
+const nextYear = currentYear + 1;
+
+const refNo = `${appointmentLetterData?.Company || ""}/${plantCode}/${currentMonth} - ${joiningData?.[0]?.REFNO}/F10/${currentYear} - ${nextYear}`;
+
+
+
+
+
 
   //----------------------------JoiningDataStart------------------------//
   const joinData = async () => {
@@ -105,6 +129,7 @@ const [formData, setFormData] = useState({
           hr_owner: item.CURRENT_USER,
           created_at: item.created_at,
           fullData: item,
+          REFNO: item?.REF_NO,
         //    appointmentDetailsFilled: !!(
         //   item.ONBOARD_PLANT && 
         //   item.REPORTING_TO && 
@@ -133,6 +158,8 @@ const [formData, setFormData] = useState({
     }
   }, [Token.token]);
 
+
+
   // Function to convert number to words
   const convertToWords = (amount) => {
     if (!amount || amount === 'Not Specified') return 'Not Specified';
@@ -159,48 +186,194 @@ const [formData, setFormData] = useState({
     return result ? result + ' Rupees Only' : 'Zero Rupees Only';
   };
 
+;
 
+  
+const handleAppointmentClick = (rowData) => {
+ 
+  
+  // Reset acceptance status when opening new appointment letter
+  setAccepted(false);
+  
+  let companyDesc = 'My Home Constructions';
+  let plantCodeOnly = '';
+    let companyCode = "MHCPL";
+  // Get plant value from PLANT or location
+  const plantValue = rowData.fullData.ONBOARD_PLANT || rowData.fullData?.PLANT
+  console.log("Plant value:", plantValue);
+  
+  if (plantValue) {
+    // Extract numeric code
+    const match = plantValue.match(/^(\d+)/);
+    console.log("Match result:", match);
 
-  const handleAppointmentClick = (rowData) => {
-      console.log("rowwwwwwwwwwwww",rowData);
-    // Reset acceptance status when opening new appointment letter
-    setAccepted(false);
     
-    // Generate appointment letter data from row data
-    const appointmentData = {
-      reference_no_App: `HR/APPT/${new Date().getFullYear()}/${rowData.CHILD_CASEID}`,
-      DO_App: new Date().toLocaleDateString('en-GB'),
-      Name_of_the_candidate: rowData.employee_name,
+    
+    if (match) {
+      plantCodeOnly = match[1]; // This will be "2158"
+      console.log("Plant code extracted:", plantCodeOnly);
+      
+      // FIRST: Try to find by plant_code (NOT BUKRS)
+      const selectedPlantObj = plants.find(p => String(p.plant_code) == String(plantCodeOnly));
+      console.log("Selected plant from API (by plant_code):", selectedPlantObj);
+
+      if (selectedPlantObj) {
+  companyDesc = selectedPlantObj.COMP_CODE_DESC || companyDesc;
+
+  switch (String(selectedPlantObj.BUKRS)) {
+    case "2000":
+      companyCode = "MHCPL";
+      break;
+    case "2050":
+      companyCode = "MHCTD";
+      break;
+    case "2100":
+      companyCode = "ASDPL";
+      break;
+    case "2150":
+      companyCode = "MHIPL";
+      break;
+    case "2250":
+      companyCode = "HDPL";
+      break;
+    case "2350":
+      companyCode = "TTPL";
+      break;
+    case "3100":
+      companyCode = "MHPSPL";
+      break;
+    default:
+      companyCode = "MHCPL";
+  }
+}
+console.log("Company Code:", companyCode);
+
+
+      
+      if (selectedPlantObj && selectedPlantObj.COMP_CODE_DESC) {
+        // Use COMP_CODE_DESC from API
+        companyDesc = selectedPlantObj.COMP_CODE_DESC;
+        console.log("Company description from API:", companyDesc);
+      } else {
+        // If not found by plant_code, try by BUKRS as fallback
+        const byBUKRS = plants.find(p => String(p.BUKRS) === String(plantCodeOnly));
+        if (byBUKRS && byBUKRS.COMP_CODE_DESC) {
+          companyDesc = byBUKRS.COMP_CODE_DESC;
+          console.log("Company description from API (by BUKRS):", companyDesc);
+        } else {
+          // Use default if nothing found
+          companyDesc = 'My Home Constructions';
+          console.log("Using default company description");
+        }
+      }
+    }
+  }
+  
+  console.log("Final companyDesc:", companyDesc);
+  
+  // Generate appointment letter data from row data
+  const appointmentData = {
+    reference_no_App: `HR/APPT/${new Date().getFullYear()}/${rowData.CHILD_CASEID}`,
+    DO_App: new Date().toLocaleDateString('en-GB'),
+    Name_of_the_candidate: rowData.employee_name,
     Address_of_The_CandidateP1: `
-  ${rowData.fullData?.PRESENT_HNO || ''},
-  ${rowData.fullData?.PRESENT_CITY || ''},
-  ${rowData.fullData?.PRESENT_MANDAL || ''},
-  ${rowData.fullData?.PRESENT_DISTRICT || ''},
-  ${rowData.fullData?.PRESENT_STATE || ''} - 
-  ${rowData.fullData?.PRESENT_PINCODE || ''}
-`.replace(/\s+/g, ' ').trim(),
-Designation:
-  rowData?.DESIG !== 'N/A'
-    ? rowData.DESIG
-    : rowData?.MANPOWER_DESG || 'Not Specified',
-
-      DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
-      Location:   rowData.location,
-
-      Reporting_to: rowData.fullData?.REPORTING_TO || 'HOD',
-      offer_ctc: rowData?.fullData?.offer_ctc,
-      CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
-      Probation: rowData?.fullData?.PROBITION,
-      Company: rowData?.fullData?.ONBOARD_PLANT,
-      email: rowData.email,
-      phone: rowData.phone,
-      caseId: rowData.CHILD_CASEID,
-      date:rowData.joining_date,
-    };
-    
-    setAppointmentLetterData(appointmentData);
-    setOpenAppointmentModal(true);
+      ${rowData.fullData?.PRESENT_HNO || ''},
+      ${rowData.fullData?.PRESENT_CITY || ''},
+      ${rowData.fullData?.PRESENT_MANDAL || ''},
+      ${rowData.fullData?.PRESENT_DISTRICT || ''},
+      ${rowData.fullData?.PRESENT_STATE || ''} - 
+      ${rowData.fullData?.PRESENT_PINCODE || ''}
+    `.replace(/\s+/g, ' ').trim(),
+    Designation: rowData?.DESIG !== 'N/A' ? rowData.DESIG : rowData?.MANPOWER_DESG || 'Not Specified',
+    DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
+    Location: rowData.location,
+    Reporting_to: rowData.fullData?.REPORTING_TO || 'HOD',
+    offer_ctc: rowData?.fullData?.offer_ctc,
+    CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
+    Probation: rowData?.fullData?.PROBITION,
+    Company: plantCodeOnly,
+    CompanyName: plantValue,
+    email: rowData.email,
+    phone: rowData.phone,
+    caseId: rowData.CHILD_CASEID,
+    date: rowData.joining_date,
+    CompanyCode: rowData?.COMP_CODE_DESC,
+    companyDesc: companyDesc, // This will be "My Home Infra Pvt Ltd"
+    plantCode: plantCodeOnly,
+      Company: companyCode,
   };
+  
+  console.log("Final appointment data:", appointmentData);
+  
+  setAppointmentLetterData(appointmentData);
+  setOpenAppointmentModal(true);
+};
+//   const handleAppointmentClick = (rowData) => {
+    
+//   let companyDesc = '';
+//   let plantCodeOnly = '';
+  
+//  console.log("rowwwwwwwwwwwww", rowData);
+//   console.log("Current plants data:", plants);
+//   if (rowData.fullData?.PLANT) {
+//     // ONBOARD_PLANT format: "2000-My Home Constructions HO" or "2000 - My Home Constructions HO"
+//     const match = rowData.fullData.PLANT.match(/^(\d+)/);
+
+//     console.log(match,"77777777777");
+//     if (match) {
+//       plantCodeOnly = match[1]; // This will be "2000"
+//       const selectedPlantObj = plants.find(p => p.BUKRS === plantCodeOnly);
+
+//       console.log("selectedPlantObj",selectedPlantObj);
+//       if (selectedPlantObj) {
+//         companyDesc = selectedPlantObj.COMP_CODE_DESC || 'My Home Constructions';
+//       }
+//     }
+//   }
+//   console.log(companyDesc,"plantCodeOnlyplantCodeOnlyplantCodeOnly",plantCodeOnly)
+
+
+
+//     setAccepted(false);
+    
+//     // Generate appointment letter data from row data
+//     const appointmentData = {
+//       reference_no_App: `HR/APPT/${new Date().getFullYear()}/${rowData.CHILD_CASEID}`,
+//       DO_App: new Date().toLocaleDateString('en-GB'),
+//       Name_of_the_candidate: rowData.employee_name,
+//     Address_of_The_CandidateP1: `
+//   ${rowData.fullData?.PRESENT_HNO || ''},
+//   ${rowData.fullData?.PRESENT_CITY || ''},
+//   ${rowData.fullData?.PRESENT_MANDAL || ''},
+//   ${rowData.fullData?.PRESENT_DISTRICT || ''},
+//   ${rowData.fullData?.PRESENT_STATE || ''} - 
+//   ${rowData.fullData?.PRESENT_PINCODE || ''}
+// `.replace(/\s+/g, ' ').trim(),
+// Designation:
+//   rowData?.DESIG !== 'N/A'
+//     ? rowData.DESIG
+//     : rowData?.MANPOWER_DESG || 'Not Specified',
+
+//       DO_Offer: rowData.fullData?.offer_date || new Date().toLocaleDateString('en-GB'),
+//       Location:   rowData.location,
+
+//       Reporting_to: rowData.fullData?.REPORTING_TO || 'HOD',
+//       offer_ctc: rowData?.fullData?.offer_ctc,
+//       CTC_in_words: convertToWords(rowData?.fullData?.offer_ctc || rowData.current_ctc || '0'),
+//       Probation: rowData?.fullData?.PROBITION,
+//       Company: rowData?.fullData?.ONBOARD_PLANT,
+//       email: rowData.email,
+//       phone: rowData.phone,
+//       caseId: rowData.CHILD_CASEID,
+//       date:rowData.joining_date,
+//           companyDesc: companyDesc, // This will have "MyHome Constructions P Lt"
+//     plantCode: plantCodeOnly, 
+
+//     };
+    
+//     setAppointmentLetterData(appointmentData);
+//     setOpenAppointmentModal(true);
+//   };
 
   const handleCloseAppointmentModal = () => {
     setOpenAppointmentModal(false);
@@ -1543,7 +1716,7 @@ const handleViewRejectedDetails = (row) => {
         <Box sx={modalStyle}>
   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '1px solid #e2e8f0' }}>
     <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
-      Appointment Letter
+ 
     </Typography>
     <IconButton onClick={handleCloseAppointmentModal} size="small">
       <CloseIcon />
@@ -1552,8 +1725,8 @@ const handleViewRejectedDetails = (row) => {
   
   <Box id="appointment-letter-content" sx={{ fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: 1.6, p: 2 }}>
     {/* Header with Reference Number */}
-    <Box sx={{ textAlign: 'right', mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-      <strong>Ref No:</strong> {appointmentLetterData?.reference_no_App}
+    {/* <Box sx={{ textAlign: 'right', mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      <strong>Ref No:</strong>{refNo}
     </Box>
     
     <Box sx={{ textAlign: 'right', mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
@@ -1561,9 +1734,16 @@ const handleViewRejectedDetails = (row) => {
       {appointmentLetterData?.date
         ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
         : ''}
-    </Box>
+    </Box> */}
 
-    {/* Recipient Address */}
+ 
+    
+ 
+
+      <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>{refNo}</Box>
+     <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+  {new Date().toLocaleDateString('en-GB')}
+</Box>
     <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>To,</Box>
     <Box sx={{ mb: 1, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
       {appointmentLetterData?.Name_of_the_candidate},
@@ -1584,7 +1764,7 @@ const handleViewRejectedDetails = (row) => {
 
     {/* Introduction */}
     <Box sx={{ mb: 4, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-      With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>"{   appointmentLetterData?.Location}"</strong>. Your employment will be governed by the following terms and conditions:
+      With reference to our offer letter dated: {appointmentLetterData?.DO_Offer}, we are pleased to appoint you as <strong>{appointmentLetterData?.Designation}</strong> at <strong>{appointmentLetterData?.CompanyName}</strong>. Your employment will be governed by the following terms and conditions:
     </Box>
 
     {/* Terms and Conditions */}
@@ -1601,7 +1781,9 @@ const handleViewRejectedDetails = (row) => {
       <Box sx={{ mb: 2 }}>
         <Box sx={{ fontWeight: 'bold', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>2. Place of Posting & Transfer:</Box>
         <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          Your initial place of posting will be at our {appointmentLetterData?.Location}. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future.
+          Your initial place of posting will be at our   <Box component="span" sx={{ fontWeight: "bold" }}>
+    {appointmentLetterData?.Location}
+  </Box>. The Company reserves its right to transfer your services to any of its Sites / Subsidiaries / Associates / Offices at any place existing at present or which may be established in future.
         </Box>
       </Box>
 
@@ -1745,50 +1927,64 @@ const handleViewRejectedDetails = (row) => {
         <Box sx={{ pl: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
           Please acknowledge the receipt of Appointment Order by signing and returning the duplicate copy.
         </Box>
+     
       </Box>
+         We welcome you and wish all success in your assignment with us
     </Box>
+    Thanking you,
 
     {/* Signature Section */}
-    <Box sx={{ mt: 6 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          <Box sx={{ mb: 1 }}>{appointmentLetterData?.Company}</Box>
-          <Box sx={{ mb: 4, fontWeight: 'bold' }}>Sudeep Kumar K</Box>
-          <Box>Vice President - HR</Box>
-        </Box>
-        
-        <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          <Divider sx={{ width: 200, mb: 2 }} />
-          <Box>Signature of the Employee</Box>
-        </Box>
+<Box sx={{ mt: 6 }}>
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+    <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      <Box sx={{ mb: 1, fontWeight: '600' }}>
+        {appointmentLetterData?.companyDesc || 'My Home Constructions'}
       </Box>
 
-      {/* Acceptance Checkbox */}
-      <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              color="primary"
-            />
-          }
-          label={
-            <Box sx={{ fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-              I have read and understood all the above terms and conditions of the Appointment Letter and the same are acceptable to me.
-            </Box>
-          }
-        />
+      <Box sx={{ mb: 4, fontWeight: 'bold' }}>
+        Sudeep Kumar K
       </Box>
 
-      {accepted && (
-        <Alert severity="success" sx={{ mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
-          Terms accepted on {appointmentLetterData?.date
-            ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
-            : ''}
-        </Alert>
-      )}
+      <Box>Vice President - HR</Box>
     </Box>
+
+    <Box sx={{ textAlign: 'center', fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+      <Divider sx={{ width: 200, mb: 2 }} />
+      <Box>Signature of the Employee</Box>
+    </Box>
+  </Box>
+
+  {/* Acceptance Checkbox */}
+  <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 1, mb: 3 }}>
+    <FormControlLabel
+      control={
+        <Checkbox
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          color="primary"
+        />
+      }
+      label={
+        <Box sx={{ fontSize: '14px', fontFamily: 'Arial, sans-serif' }}>
+          I have read and understood all the above terms and conditions of the
+          Appointment Letter and the same are acceptable to me.
+        </Box>
+      }
+    />
+  </Box>
+
+  {accepted && (
+    <Alert
+      severity="success"
+      sx={{ mb: 2, fontSize: '14px', fontFamily: 'Arial, sans-serif' }}
+    >
+      Terms accepted on{' '}
+      {appointmentLetterData?.date
+        ? new Date(appointmentLetterData.date).toLocaleDateString('en-GB')
+        : ''}
+    </Alert>
+  )}
+</Box>
   </Box>
 
   <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 flex-wrap">

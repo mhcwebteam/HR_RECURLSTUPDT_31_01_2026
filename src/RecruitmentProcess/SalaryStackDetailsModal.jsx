@@ -4,12 +4,13 @@
 
 
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState,useMemo } from "react";
 import { API_BASE_URL } from "../Config/Config";
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
-import { Eye } from 'lucide-react';
+import { Eye, X } from 'lucide-react';
 import axiosInstance from "../Config/axiosConfig";
+import SalaryStackUpSheet from "./Salarystackupsheet";
 
 const InfoRow = ({ label, value, valueColor = 'text-gray-700' }) => (
     <div className="flex items-center gap-2 text-xs">
@@ -57,7 +58,7 @@ const InfoRow = ({ label, value, valueColor = 'text-gray-700' }) => (
     </td>
   </tr>
 );
-const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
+const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange, plantType = [] }) => {
 
   console.log(":fdgdfgggggggggggg",data);
 
@@ -69,6 +70,14 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [existingSalaryBreakupId, setExistingSalaryBreakupId] = useState(null);
   const [newSalaryBreakupId, setNewSalaryBreakupId] = useState(null);
+   const [showStackUpPreview, setShowStackUpPreview] = useState(false); //added by ajit
+
+
+  const handlePreviewPDF = () => {
+  setShowStackUpPreview(true);
+};
+
+
 
   const generateRandomId = () => {
     return 'SB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
@@ -215,237 +224,39 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
     setSalaryComponents(breakdown);
   };
 
-  // Generate PROPERLY ALIGNED PDF Preview
-  const handlePreviewPDF = () => {
-    try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 10;
-
-      // Header
-      doc.setFillColor(16, 185, 129);
-      doc.rect(0, 0, pageWidth, 20, 'F');
-      
-      // Title
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SALARY BREAKUP DOCUMENT', pageWidth / 2, 10, { align: 'center' });
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, pageWidth / 2, 16, { align: 'center' });
-      
-      yPos = 26;
-
-      // Employee Information Section
-      doc.setTextColor(0, 0, 0);
-      doc.setFillColor(243, 244, 246);
-      doc.rect(10, yPos, pageWidth - 20, 7, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('EMPLOYEE INFORMATION', 15, yPos + 5);
-      
-      yPos += 10;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      
-      // Employee details with FIXED alignment
-      const employeeInfo = [
-        ['Name:', String(data?.NAME || 'N/A'), 'Case ID:', String(data.CHILD_CASEID || 'N/A')],
-        ['Email:', String(data?.EMAIL || 'N/A'), 'Phone:', String(data?.PHONE_NUMBER || 'N/A')],
-        ['Job Title:', String(data?.DESIG || data?.MANPOWER_DESG ||  'N/A'), 'Location:', String(data?.PLANT || 'N/A')]
-      ];
-
-      employeeInfo.forEach((row) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[0], 15, yPos);
-        doc.setFont('helvetica', 'normal');
-        const label1Text = doc.splitTextToSize(row[1], 55);
-        doc.text(label1Text, 38, yPos);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[2], 105, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text(row[3], 128, yPos);
-        
-        yPos += 5;
-      });
-
-      yPos += 3;
-
-      // Salary Summary Section
-      doc.setFillColor(254, 243, 199);
-      doc.rect(10, yPos, pageWidth - 20, 7, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(146, 64, 14);
-      doc.text('SALARY SUMMARY', 15, yPos + 5);
-      
-      yPos += 10;
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(8);
-      
-      const salarySummary = [
-        ['Offer CTC (Annual):', `Rs ${offerCTC.toLocaleString('en-IN')}`],
-        ['Gross Salary (Monthly):', `Rs ${calculations.grossSalary.toLocaleString('en-IN')}`],
-        ['Total Deductions (Monthly):', `Rs ${calculations.totalDeductions.toLocaleString('en-IN')}`],
-        ['Net Salary (Monthly):', `Rs ${calculations.netSalaryMonthly.toLocaleString('en-IN')}`],
-        ['Net Salary (Annual):', `Rs ${calculations.netSalaryAnnual.toLocaleString('en-IN')}`]
-      ];
-
-      salarySummary.forEach((row, index) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(row[0], 15, yPos);
-        doc.setFont('helvetica', index >= 3 ? 'bold' : 'normal');
-        doc.text(row[1], pageWidth - 35, yPos, { align: 'right' });
-        yPos += 5;
-      });
-
-      yPos += 3;
-
-      // Detailed Breakdown Section Header
-      doc.setFillColor(16, 185, 129);
-      doc.rect(10, yPos, pageWidth - 20, 7, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DETAILED SALARY BREAKDOWN', 15, yPos + 5);
-      
-      yPos += 10;
-      doc.setTextColor(0, 0, 0);
-
-      // PROPERLY ALIGNED Table Headers
-      const col1X = 10;
-      const col1Width = 100;
-      const col2X = col1X + col1Width;
-      const col2Width = 45;
-      const col3X = col2X + col2Width;
-      const col3Width = 45;
-      
-      doc.setFillColor(16, 185, 129);
-      doc.setTextColor(255, 255, 255);
-      doc.rect(col1X, yPos, col1Width, 6, 'F');
-      doc.rect(col2X, yPos, col2Width, 6, 'F');
-      doc.rect(col3X, yPos, col3Width, 6, 'F');
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Component', col1X + 5, yPos + 4);
-      doc.text('Monthly (INR)', col2X + col2Width/2, yPos + 4, { align: 'center' });
-      doc.text('Annual (INR)', col3X + col3Width/2, yPos + 4, { align: 'center' });
-      
-      yPos += 6;
-      doc.setTextColor(0, 0, 0);
-
-      // Helper function to draw a table row with PROPER alignment
-      const drawRow = (label, monthly, annual, isBold = false, bgColor = null, isHeader = false) => {
-        if (bgColor) {
-          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-          doc.rect(col1X, yPos, col1Width + col2Width + col3Width, 5, 'F');
-        }
-        
-        doc.setFont('helvetica', isBold || isHeader ? 'bold' : 'normal');
-        doc.setFontSize(isHeader ? 8 : 7);
-        
-        if (isHeader) {
-          doc.text(label, col1X + 5, yPos + 3.5);
-        } else {
-          doc.text(label, col1X + 5, yPos + 3.5);
-          doc.text(String(monthly), col2X + col2Width/2, yPos + 3.5, { align: 'center' });
-          doc.text(String(annual), col3X + col3Width/2, yPos + 3.5, { align: 'center' });
-        }
-        
-        // Draw borders
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(col1X, yPos, col1Width, 5);
-        doc.rect(col2X, yPos, col2Width, 5);
-        doc.rect(col3X, yPos, col3Width, 5);
-        
-        yPos += 5;
-      };
-
-      // Section I - Compensation Components
-      drawRow('I. COMPENSATION COMPONENTS', '', '', false, [229, 231, 235], true);
-      drawRow('Basic Salary', salaryComponents.basic_salary.toLocaleString('en-IN'), (salaryComponents.basic_salary * 12).toLocaleString('en-IN'));
-      drawRow('HRA', salaryComponents.hra.toLocaleString('en-IN'), (salaryComponents.hra * 12).toLocaleString('en-IN'));
-      drawRow('Conveyance (Fixed)', salaryComponents.conveyance.toLocaleString('en-IN'), (salaryComponents.conveyance * 12).toLocaleString('en-IN'));
-      drawRow('Education Allowance (Fixed)', salaryComponents.education_allowance.toLocaleString('en-IN'), (salaryComponents.education_allowance * 12).toLocaleString('en-IN'));
-      drawRow('Special Allowance', calculations.special_allowance.toLocaleString('en-IN'), (calculations.special_allowance * 12).toLocaleString('en-IN'));
-      drawRow('GROSS SALARY', calculations.grossSalary.toLocaleString('en-IN'), calculations.grossSalaryAnnual.toLocaleString('en-IN'), true, [243, 244, 246]);
-
-      // Section II - Other Benefits
-      drawRow('II. OTHER BENEFITS', '', '', false, [229, 231, 235], true);
-      drawRow('Bonus', calculations.bonus.toLocaleString('en-IN'), (calculations.bonus * 12).toLocaleString('en-IN'));
-      drawRow('Leave Travel Allowance', salaryComponents.leave_travel_allowance.toLocaleString('en-IN'), (salaryComponents.leave_travel_allowance * 12).toLocaleString('en-IN'));
-      drawRow('Meal Vouchers', salaryComponents.meal_vouchers.toLocaleString('en-IN'), (salaryComponents.meal_vouchers * 12).toLocaleString('en-IN'));
-      drawRow('Employer PF Contribution', salaryComponents.employer_pf_contribution.toLocaleString('en-IN'), (salaryComponents.employer_pf_contribution * 12).toLocaleString('en-IN'));
-      drawRow('Employer ESI Contribution', salaryComponents.employer_esi_contribution.toLocaleString('en-IN'), (salaryComponents.employer_esi_contribution * 12).toLocaleString('en-IN'));
-
-      // Check if we need a new page
-      if (yPos > pageHeight - 60) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      // Section III - Deductions
-      drawRow('III. DEDUCTIONS ON GROSS SALARY', '', '', false, [229, 231, 235], true);
-      drawRow('Employee PF Contribution', salaryComponents.employee_pf_contribution.toLocaleString('en-IN'), (salaryComponents.employee_pf_contribution * 12).toLocaleString('en-IN'));
-      drawRow('Employee ESI Contribution', salaryComponents.employeeESIContribution.toLocaleString('en-IN'), (salaryComponents.employeeESIContribution * 12).toLocaleString('en-IN'));
-      drawRow('Professional Tax', salaryComponents.professional_tax.toLocaleString('en-IN'), (salaryComponents.professional_tax * 12).toLocaleString('en-IN'));
-      drawRow('TOTAL DEDUCTIONS', calculations.totalDeductions.toLocaleString('en-IN'), calculations.totalDeductionsAnnual.toLocaleString('en-IN'), true, [243, 244, 246]);
-
-      // Section IV - Net Salary
-      drawRow('IV. NET SALARY', '', '', false, [229, 231, 235], true);
-      drawRow('NET SALARY (I+II-III)', calculations.netSalaryMonthly.toLocaleString('en-IN'), calculations.netSalaryAnnual.toLocaleString('en-IN'), true, [243, 244, 246]);
-
-      // Section V - Fixed Cost to Company
-      drawRow('V. FIXED COST TO COMPANY', '', '', false, [229, 231, 235], true);
-      drawRow('FIXED COST TO COMPANY', (offerCTC / 12).toLocaleString('en-IN'), offerCTC.toLocaleString('en-IN'), true, [243, 244, 246]);
-
-      yPos += 3;
-
-      // Remarks Section
-      if (remarks) {
-        if (yPos > pageHeight - 40) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFillColor(249, 250, 251);
-        doc.rect(10, yPos, pageWidth - 20, 6, 'F');
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('REMARKS', 15, yPos + 4);
-        
-        yPos += 8;
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        const splitRemarks = doc.splitTextToSize(String(remarks), pageWidth - 30);
-        doc.text(splitRemarks, 15, yPos);
-      }
-
-      // Footer
-      const footerY = pageHeight - 12;
-      doc.setFontSize(7);
-      doc.setTextColor(128, 128, 128);
-      doc.text('This is a computer-generated document. No signature is required.', pageWidth / 2, footerY, { align: 'center' });
-      doc.text(`Page 1 of ${doc.internal.getNumberOfPages()}`, pageWidth - 15, footerY, { align: 'right' });
-
-      // Open PDF in new window
-      window.open(doc.output('bloburl'), '_blank');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to generate PDF preview: ' + error.message,
-        confirmButtonColor: '#ef4444'
-      });
-    }
-  };
+    const stackUpSalaryData = useMemo(() => ([{
+      NAME: data?.NAME,
+      DESIG: data?.DESIG || data?.MANPOWER_DESG,
+      MANPOWER_DESG: data?.MANPOWER_DESG,
+      PLANT: data?.PLANT,
+      BUKRS: data?.BUKRS,
+      LOCATION: data?.PLANT,
+      REF_NO: data?.REF_NO,
+      VERSION: data?.VERSION,
+      DATE: data?.DATE,
+  
+      basic_salary: salaryComponents.basic_salary,
+      hra: salaryComponents.hra,
+      conveyance: salaryComponents.conveyance,
+      education_allowance: salaryComponents.education_allowance,
+      special_allowance: calculations.special_allowance,
+      Gross_Salary: calculations.grossSalary,
+  
+      bonus: calculations.bonus,
+      employer_pf_contribution: salaryComponents.employer_pf_contribution,
+      employer_esi_contribution: salaryComponents.employer_esi_contribution,
+  
+      employee_pf_contribution: salaryComponents.employee_pf_contribution,
+      employee_esi_contribution: salaryComponents.employeeESIContribution,
+      professional_tax: salaryComponents.professional_tax,
+      Total_Deductions: calculations.totalDeductions,
+  
+      Net_Salary: calculations.netSalaryMonthly,
+  
+      offer_ctc: offerCTC || 0,
+      variable_pay: data?.variable_pay || 0,
+    }]), [data, salaryComponents, calculations, offerCTC]);
+ 
 
   const handleSubmit = async (status) => {
 
@@ -799,14 +610,10 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
             <button onClick={onClose} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-all disabled:opacity-50">
               Cancel
             </button>
-            <button onClick={handlePreviewPDF} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 transition-all flex items-center gap-1 disabled:opacity-50">
+                <button onClick={() => setShowStackUpPreview(true)} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 transition-all flex items-center gap-1 disabled:opacity-50">
               <span className="text-xs">📄</span>
              Preview PDF
             </button>
-            {/* <button onClick={() => handleSubmit('rejected')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-all flex items-center gap-1 disabled:opacity-50">
-              <span className="text-xs">❌</span>
-              Reject
-            </button> */}
             <button onClick={() => handleSubmit('pending')} disabled={isSubmitting} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all flex items-center gap-1 disabled:opacity-50">
               <span className="text-xs">✔️</span>
               Approve
@@ -814,6 +621,19 @@ const SalaryStackDetailsModal = ({ open, onClose, data, onStatusChange }) => {
           </div>
         </div>
       </div>
+        {showStackUpPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[94vh] overflow-y-auto shadow-2xl relative p-4">
+            <button
+              onClick={() => setShowStackUpPreview(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-full p-1.5 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <SalaryStackUpSheet salaryData={stackUpSalaryData} plantType={plantType} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

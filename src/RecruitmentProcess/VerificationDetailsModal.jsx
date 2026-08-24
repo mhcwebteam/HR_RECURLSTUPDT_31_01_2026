@@ -9,7 +9,8 @@ import {
   ThumbsUp, ThumbsDown, MessageCircle, UserCheck, PenTool, Map, Flag,
   CreditCard as CreditCardIcon, Book, PhoneCall, Info,
   Edit,
-  DownloadCloud
+  DownloadCloud,
+  RotateCcw
 } from 'lucide-react';
 import { API_BASE_URL, API_BASE_URLss } from '../Config/Config';
 import axios from 'axios';
@@ -97,6 +98,7 @@ const formatDateDDMMYYYY = (dateStr) => {
         UAN_DocId: 'UAN_Status',
         Tenth_DocId: 'Tenth_Status',
         Inter_DocId: 'Inter_Status',
+        Dip_DocId: 'Dip_Status',
         grad_DocId: 'Grad_Status',
         pg_DocId: 'Pg_Status',
         PHD_DocId: 'PHD_Status',
@@ -1028,7 +1030,13 @@ const handleDownloadDocument = (url, label) => {
               <p className="text-blue-100 text-sm">
                 {data?.EMAIL || 'N/A'} | {data?.PHONE_NUMBER || 'N/A'}
               </p>
+           
             </div>
+      {data?.STATUS === "Edit" && (
+  <span className="text-sm font-bold text-blue-100">
+    Resend to Candidate
+  </span>
+)}
             <div className="flex items-center gap-2">
               <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 hover:bg-blue-500 rounded-lg">
                 <Maximize2 size={18} />
@@ -1515,6 +1523,40 @@ const handleDownloadDocument = (url, label) => {
                           </td>
                         </tr>
 
+
+
+        <tr style={{ background: '#f9f9f9' }}>
+                          <td style={{ padding: '6px' }}>
+                            <span style={{ padding: '4px 8px', background: '#e0edff', borderRadius: '16px', fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                              Diploma *
+                            </span>
+                          </td>
+                          <td style={{ padding: '6px' }}>{data?.DIP_COLLEGE_NAME || 'N/A'}</td>
+                          <td style={{ padding: '6px' }}>{data?.DIP_BOARD || 'N/A'}</td>
+                          <td style={{ padding: '6px', textAlign: 'center' }}>{data?.DIP_MARKS || 'N/A'}</td>
+                          <td style={{ padding: '6px' }}>{formatDateDDMMYYYY(data?.DIP_PASSED_YEAR || 'N/A')}</td>
+                          <td style={{ padding: '6px', textAlign: 'center' }}>
+                            {data?.documents?.Dip_certi ? (
+                              <button onClick={() => handleViewDocument(data.documents.Dip_certi, 'Intermediate Certificate')}
+                                style={{ padding: '4px 8px', background: '#dbeafe', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                <Eye size={14} />
+                              </button>
+                            ) : 'N/A'}
+                          </td>
+                          <td style={{ padding: '6px' }}>
+                            {data?.documents?.Dip_DocId && !approvedDocs[data.documents.Dip_DocId] && (
+                              <button onClick={() => handleApprove(data.documents.Dip_DocId, 'Intermediate Certificate', data.documents.Dip_certi)}
+                                style={{ padding: '4px 10px', background: '#10b981', border: 'none', borderRadius: '4px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
+                                Approve
+                              </button>
+                            )}
+                            {data?.documents?.Dip_DocId && approvedDocs[data.documents.Dip_DocId] && (
+                              <span style={{ color: '#10b981', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <CheckCircle size={14} /> Approved
+                              </span>
+                            )}
+                          </td>
+                        </tr>
                         {/* Graduation */}
                         <tr style={{ background: '#ffffff' }}>
                           <td style={{ padding: '6px' }}>
@@ -1885,8 +1927,8 @@ const handleDownloadDocument = (url, label) => {
   onClick={handleEditClick}
   className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition"
 >
-  <Edit className="w-4 h-4" />
-  Edit
+  <RotateCcw className="w-4 h-4" />
+  Resend
 </button>
 
 
@@ -1911,13 +1953,17 @@ const handleDownloadDocument = (url, label) => {
 
   {/* Right side button */}
   <div>
-    <button 
-      onClick={handleSubmit} 
-      disabled={loading}
-      className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
-    >
-      <CheckCircle size={16} /> {loading ? 'Submitting...' : 'Verify & Submit'}
-    </button>
+  
+{data?.STATUS?.toLowerCase() === 'submit' && (
+  <button
+    onClick={handleSubmit}
+    disabled={loading}
+    className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
+  >
+    <CheckCircle size={16} /> {loading ? 'Submitting...' : 'Verify & Submit'}
+  </button>
+)}
+
   </div>
 </div>
         </div>

@@ -36,7 +36,13 @@ import Button from "@mui/material/Button";
 import { API_BASE_URL } from "../Config/Config";
 import axiosInstance from "../Config/axiosConfig";
 import HRMView from "./HRMView";
-
+// ------------------------------------------added by rajakumari.m on 22-08-2026------------------------------
+import GroupsIcon from '@mui/icons-material/Groups';
+import PersonIcon from '@mui/icons-material/Person';
+import CloseIcon from '@mui/icons-material/Close';
+import EventIcon from '@mui/icons-material/Event';
+import BadgeIcon from '@mui/icons-material/Badge';
+// ---------------------------------------------------ended------------------------------------------------------
 
 /* ===================================================== */
 
@@ -58,7 +64,10 @@ const NoteForApprovals = () => {
 const [flowModalOpen, setFlowModalOpen] = useState(false);
  const [ personalData,setPersonalData] = useState([]);
 
-
+// -----------------------added by rajakumari.m on 22-08-2026 ------------------------
+const [panelModalOpen, setPanelModalOpen] = useState(false);
+const [panelRow, setPanelRow] = useState(null);
+// ------------------------------------------------ended-------------------------------
 
 
 
@@ -247,6 +256,7 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
      DESIG: item.DESIG,
  CURRENT_USER: item.CURRENT_USER,  
     SUBMITTED_DATE: item.created_at,
+    PANEL_DATA: item.PANEL_DATA || item.PANEL_MEMBERS || [], // added by rajakumari.m on 22-08-2026-----------
   }));
 }, [noteAprvlData, searchTerm, statusFilter, token?.Emp_Category]);
 
@@ -617,6 +627,50 @@ RECRUIT_CYCLE: item?.RECRUIT_CYCLE,
       renderCell: (params) => getStatusChip(params.value),
     },
    
+// ------------------------------------added by rajakumari.m on 22-08-2026-------------------------------------------------------
+{
+  field: "PanelData",
+  headerName: "Panel Data",
+  flex: 1,
+  minWidth: 130,
+  sortable: false,
+  renderCell: (params) => (
+    <Button
+      variant="outlined"
+      size="small"
+      startIcon={<GroupsIcon sx={{ fontSize: 16 }} />}
+      onClick={() => {
+        setPanelRow(params.row);
+        setPanelModalOpen(true);
+      }}
+      sx={{
+        textTransform: 'none',
+        fontSize: '10px',
+        fontWeight: 600,
+        borderColor: '#14b8a6',
+        color: '#0f766e',
+        padding: '4px 10px',
+        borderRadius: '6px',
+        backgroundColor: '#f0fdfa',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          backgroundColor: '#0f766e',
+          color: 'white',
+          borderColor: '#0f766e',
+          transform: 'translateY(-1px)',
+          boxShadow: '0 4px 10px rgba(15, 118, 110, 0.4)',
+        },
+      }}
+    >
+      Click Here
+    </Button>
+  ),
+},
+
+// -------------------------------------------------------ended------------------------------------------------------------
+
+
+
 
     // Add this column to your columns array in NoteForApprovals.js
 
@@ -965,7 +1019,267 @@ token?.Emp_Category === "HR" && {
     </Button>
   </DialogActions>
 </Dialog>
+{/* -------------------- Panel Data Modal added by rajakumari.m on 22-08-2026 -------------------- */}
+{/* -------------------- Panel Data Modal (Enhanced) -------------------- */}
+<Dialog
+  open={panelModalOpen}
+  onClose={() => setPanelModalOpen(false)}
+  fullWidth
+  maxWidth="sm"
+  PaperProps={{
+    sx: {
+      borderRadius: '16px',
+      boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+      overflow: 'hidden',
+      animation: 'modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      '@keyframes modalPop': {
+        from: { opacity: 0, transform: 'scale(0.94)' },
+        to: { opacity: 1, transform: 'scale(1)' },
+      },
+    },
+  }}
+>
+ <DialogTitle
+  sx={{
+    background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    py: 1,        // reduced from 1.8
+    px: 2,        // reduced from 2.5
+    minHeight: 'auto',
+  }}
+>
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box
+      sx={{
+        width: 30,          // reduced from 38
+        height: 30,         // reduced from 38
+        borderRadius: '9px',
+        bgcolor: 'rgba(255,255,255,0.16)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <GroupsIcon sx={{ fontSize: 16 }} />
+    </Box>
+    <Box>
+      <Typography sx={{ fontWeight: 700, fontSize: '13px', lineHeight: 1.15 }}>
+        Interview Panel
+      </Typography>
+      <Typography sx={{ fontSize: '10px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.2 }}>
+        Case ID: <span style={{ color: '#ccfbf1', fontWeight: 600 }}>{panelRow?.CHILD_CASEID || 'N/A'}</span>
+      </Typography>
+    </Box>
+  </Box>
 
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+    {Array.isArray(panelRow?.PANEL_DATA) && panelRow.PANEL_DATA.length > 0 && (
+      <Chip
+        size="small"
+        label={`${panelRow.PANEL_DATA.length} Member${panelRow.PANEL_DATA.length > 1 ? 's' : ''}`}
+        sx={{
+          height: 19,       // reduced from 22
+          fontSize: 9.5,
+          fontWeight: 700,
+          bgcolor: 'rgba(255,255,255,0.16)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.3)',
+        }}
+      />
+    )}
+    <IconButton
+      onClick={() => setPanelModalOpen(false)}
+      size="small"
+      sx={{
+        color: '#fff',
+        width: 26,          // added compact sizing
+        height: 26,
+        bgcolor: 'rgba(255,255,255,0.14)',
+        '&:hover': { bgcolor: 'rgba(255,255,255,0.26)' },
+      }}
+    >
+      <CloseIcon sx={{ fontSize: 15 }} />
+    </IconButton>
+  </Box>
+</DialogTitle>
+
+  {/* BODY */}
+ <DialogContent
+  dividers={false}
+  sx={{
+    pt: '16px !important',   // forces gap even if MUI resets it
+    pb: 2,
+    px: 2,
+    bgcolor: '#f8fafc',
+    maxHeight: '60vh',
+    '&::-webkit-scrollbar': { width: '5px' },
+    '&::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: '6px' },
+  }}
+>
+    {Array.isArray(panelRow?.PANEL_DATA) && panelRow.PANEL_DATA.length > 0 ? (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {panelRow.PANEL_DATA.map((member, idx) => {
+          const initials = (member?.panel_name || '?')
+            .trim()
+            .split(' ')
+            .slice(0, 2)
+            .map((w) => w[0]?.toUpperCase())
+            .join('');
+
+          return (
+            <Box
+              key={idx}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.4,
+                bgcolor: '#fff',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                px: 1.6,
+                py: 1.2,
+                opacity: 0,
+                animation: `fadeSlideIn 0.35s ease ${idx * 0.08}s forwards`,
+                transition: 'all 0.2s ease',
+                '@keyframes fadeSlideIn': {
+                  from: { opacity: 0, transform: 'translateY(8px)' },
+                  to: { opacity: 1, transform: 'translateY(0)' },
+                },
+                '&:hover': {
+                  borderColor: '#14b8a6',
+                  boxShadow: '0 6px 18px rgba(20, 184, 166, 0.18)',
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              {/* Avatar with gradient + initials */}
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(15, 118, 110, 0.3)',
+                }}
+              >
+                {initials || <PersonIcon fontSize="small" />}
+              </Box>
+
+              {/* Name + meta */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: '#1e293b',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {member?.panel_name || 'N/A'}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.3, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    <BadgeIcon sx={{ fontSize: 12, color: '#0f766e' }} />
+                    <Typography sx={{ fontSize: 11, color: '#475569', fontWeight: 500 }}>
+                      {member?.designation || '—'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Department pill */}
+              <Chip
+                size="small"
+                label={member?.department || 'N/A'}
+                sx={{
+                  height: 22,
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  bgcolor: '#f0fdfa',
+                  color: '#0f766e',
+                  border: '1px solid #99f6e4',
+                  flexShrink: 0,
+                  '& .MuiChip-label': { px: 1 },
+                }}
+              />
+            </Box>
+          );
+        })}
+      </Box>
+    ) : (
+      <Box
+        sx={{
+          textAlign: 'center',
+          py: 5,
+          color: '#9ca3af',
+          animation: 'fadeSlideIn 0.3s ease forwards',
+        }}
+      >
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: '14px',
+            bgcolor: '#f1f5f9',
+            border: '2px dashed #cbd5e1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto',
+            mb: 1.5,
+          }}
+        >
+          <GroupsIcon sx={{ fontSize: 26, opacity: 0.5 }} />
+        </Box>
+        <Typography sx={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>
+          No Panel Assigned
+        </Typography>
+        <Typography sx={{ fontSize: 11.5, color: '#94a3b8', mt: 0.3 }}>
+          Panel details for this case haven't been added yet.
+        </Typography>
+      </Box>
+    )}
+  </DialogContent>
+
+  {/* FOOTER */}
+  <DialogActions sx={{ px: 2.5, py: 1.4, bgcolor: '#fff', borderTop: '1px solid #e2e8f0' }}>
+    <Button
+      onClick={() => setPanelModalOpen(false)}
+      size="small"
+      sx={{
+        px: 2.5,
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontWeight: 700,
+        textTransform: 'none',
+        background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+        color: '#fff',
+        boxShadow: '0 3px 12px rgba(15,118,110,0.35)',
+        '&:hover': {
+          boxShadow: '0 5px 16px rgba(15,118,110,0.5)',
+          transform: 'translateY(-1px)',
+        },
+        transition: 'all 0.18s',
+      }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+{/* --------------------------------------------ended--------------------------------------------- */}
       <CandidateStackDetailsModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -975,7 +1289,9 @@ token?.Emp_Category === "HR" && {
          personalData = {personalData}
       />
     </Box>
+    
   );
+  
 };
 
 export default NoteForApprovals;

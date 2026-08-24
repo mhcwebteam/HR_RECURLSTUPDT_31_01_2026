@@ -6,17 +6,10 @@ import logo from "../../src/asset/imagesmy.png";
 const JoiningReportForm = ({ rowData, onClose }) => {
   
 
+
   if (!rowData) return null;
 
-//   const joiningDate = rowData.joining_date
-//     ? new Date(rowData.joining_date).toLocaleDateString('en-IN', {
-//         day: '2-digit', month: 'long', year: 'numeric'
-//       })
-//     : '';
-// const today = new Date().toLocaleDateString('en-IN', {
-//   day: '2-digit', month: 'long', year: 'numeric'
-// });
-  
+
   const InputField = ({ defaultValue = '', width = '130px', readOnly = false }) => (
   <input
     type="text"

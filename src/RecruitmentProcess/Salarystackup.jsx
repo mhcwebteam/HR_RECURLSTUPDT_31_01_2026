@@ -47,6 +47,52 @@ const Salarystackup = () => {
 
  
 
+// const fetchAllData = async () => {
+//   if (!token?.token) return;
+
+//   setLoading(true);
+//   try {
+//     const deptRes = await axiosInstance.get(`${API_BASE_URL}/employee-dept`, {
+//       headers: {
+//         "Content-Type": "application/json",
+//         Accept: "application/json",
+//         Authorization: `Bearer ${token.token}`,
+//       },
+//     });
+
+//     const designations =
+//       deptRes.data?.employeeData?.map(item => item.DESIGNATION) || [];
+
+//     setDesig(designations);
+
+//     const salaryRes = await axiosInstance.get(
+//       `${API_BASE_URL}/salaryStackGetData`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Accept: "application/json",
+//           Authorization: `Bearer ${token.token}`,
+//         },
+//       }
+//     );
+
+
+
+
+//     setStackupData(salaryRes.data);
+//   } catch (error) {
+//     console.error("Error fetching data:", error);
+//     setSnackbar({
+//       open: true,
+//       message: "Failed to load data",
+//       severity: "error",
+//     });
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
 const fetchAllData = async () => {
   if (!token?.token) return;
 
@@ -60,10 +106,16 @@ const fetchAllData = async () => {
       },
     });
 
-    const designations =
-      deptRes.data?.employeeData?.map(item => item.DESIGNATION) || [];
+const designations =
+  deptRes.data?.employeeData
+    ?.map(item => item.DESIGNATION?.trim())
+    ?.filter(d => d);
 
-    setDesig(designations);
+const sortedDesignations = [...new Set(designations)].sort((a, b) =>
+  a.localeCompare(b)
+);
+
+setDesig(sortedDesignations);
 
     const salaryRes = await axiosInstance.get(
       `${API_BASE_URL}/salaryStackGetData`,
@@ -75,9 +127,6 @@ const fetchAllData = async () => {
         },
       }
     );
-
-
-
 
     setStackupData(salaryRes.data);
   } catch (error) {
@@ -92,10 +141,12 @@ const fetchAllData = async () => {
   }
 };
 
-
 useEffect(() => {
   fetchAllData();
 }, [token?.token]);
+
+
+
 
 
 

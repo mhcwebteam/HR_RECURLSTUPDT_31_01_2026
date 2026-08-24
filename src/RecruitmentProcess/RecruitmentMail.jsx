@@ -12,13 +12,15 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 
 import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaChartPie } from 'react-icons/fa';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend, } from 'chart.js';
 import DataFlow from "../Components/DataFlow.jsx"
-import { ArrowLeftIcon, Bot, BotMessageSquare, BriefcaseIcon, RefreshCw } from 'lucide-react';
+import { ArrowLeftIcon, Bot, BotMessageSquare, BriefcaseIcon, FileCheck, FolderKanban, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { API_BASE_URL } from '../Config/Config.jsx';
+import { API_BASE_URL, API_BASE_URLss } from '../Config/Config.jsx';
 import ManPowerView from '../Components/ManPowerView.jsx';
 import axiosInstance from '../Config/axiosConfig.jsx';
 import ChatIcon from '@mui/icons-material/Chat';
 import AIChat from '../AIchat';
+import { Visibility } from '@mui/icons-material';
+import Description from '@mui/icons-material/Description';//added by rajakumari.m on 22-08-2026
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -286,28 +288,9 @@ const RecruitmentMail = () => {
     setSelectedRowData(null);
   };
 
-  // Open chat with specific candidate
-  const openChatWithCandidate = (caseId, email) => {
-    setSelectedCaseId(caseId);
-    setSelectedCandidateEmail(email);
-    setChatOpen(true);
-  };
 
-  // Open general chat (for all candidates)
-  const openGeneralChat = () => {
-    // If there are candidates, open chat with first candidate
-    if (filteredData.length > 0) {
-      const firstCandidate = filteredData[0];
-      const email = emailInputs[firstCandidate.CHILD_CASEID] || firstCandidate.savedEmail || '';
-      setSelectedCaseId(firstCandidate.CHILD_CASEID);
-      setSelectedCandidateEmail(email || 'Candidate');
-    } else {
-      // If no candidates, open with a default case
-      setSelectedCaseId('general');
-      setSelectedCandidateEmail('HR Chat');
-    }
-    setChatOpen(true);
-  };
+
+
 
   const statusCounts = useMemo(() => {
     const counts = {
@@ -443,7 +426,7 @@ const RecruitmentMail = () => {
       field: 'RAISER',
       headerName: 'Raiser',
       flex: 1,
-      minWidth: 90,
+      minWidth: 160,
       renderCell: (params) => (
         <Box sx={{ color: '#374151' }}>
           {params.value}
@@ -470,6 +453,126 @@ const RecruitmentMail = () => {
         );
       }
     },
+
+    //added by ajith 20/8/2026
+
+// {
+//     field: 'View',
+//     headerName: 'Evaluation File',
+//     width: 110, // reduced column width
+//     sortable: false,
+//     filterable: false,
+
+//     renderCell: (params) => {
+//         const fileName = params.row.hrEvaluationFile;
+
+//         return (
+//             <Tooltip
+//              title={"Evaluation File"}
+//                 arrow
+//             >
+//                 <span>
+//                     <IconButton
+//                         size="small"
+//                         disabled={!fileName}
+//                         onClick={() => {
+//                             if (!fileName) return;
+
+//                             const fileUrl =
+//                                 `${API_BASE_URLss}/verification_files/${encodeURIComponent(fileName)}`;
+
+//                             window.open(fileUrl, "_blank");
+//                         }}
+//                         sx={{
+//                             width: 32,
+//                             height: 32,
+//                             padding: '4px',
+
+//                             color: fileName
+//                                 ? '#528ceb'
+//                                 : '#9ca3af',
+
+//                             '&:hover': {
+//                                 backgroundColor:
+//                                     'rgba(59, 130, 246, 0.1)',
+//                             },
+//                         }}
+//                     >
+//                         <FolderKanban 
+//                             sx={{
+//                                 fontSize: 18,
+//                             }}
+//                         />
+//                     </IconButton>
+//                 </span>
+//             </Tooltip>
+//         );
+//     },
+// },
+
+// -----------------added by ajith--------------------------------------------------
+{
+    field: 'View',
+    headerName: 'Evaluation File',
+    width: 130,
+    sortable: false,
+    filterable: false,
+
+    renderCell: (params) => {
+        const fileName = params.row.hrEvaluationFile;
+
+        return (
+            <Tooltip
+                title={fileName ? "View Evaluation File" : "No file uploaded"}
+                arrow
+            >
+                <span>
+                    <Button
+                        size="small"
+                        disabled={!fileName}
+                        startIcon={<Description sx={{ fontSize: 15 }} />}
+                        onClick={() => {
+                            if (!fileName) return;
+
+                            const fileUrl =
+                                `${API_BASE_URLss}/verification_files/${encodeURIComponent(fileName)}`;
+
+                            window.open(fileUrl, "_blank");
+                        }}
+                        sx={{
+                            textTransform: 'none',
+                            fontSize: '10.5px',
+                            fontWeight: 600,
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            minWidth: 'auto',
+                            border: '1px solid',
+                            borderColor: fileName ? '#5eead4' : '#e5e7eb',
+                            color: fileName ? '#0f766e' : '#9ca3af',
+                            backgroundColor: fileName ? '#f0fdfa' : '#f9fafb',
+                            transition: 'all 0.25s ease',
+                            '&:hover': {
+                                backgroundColor: fileName ? '#0f766e' : '#f9fafb',
+                                borderColor: fileName ? '#0f766e' : '#e5e7eb',
+                                color: fileName ? '#fff' : '#9ca3af',
+                                transform: fileName ? 'translateY(-1px)' : 'none',
+                                boxShadow: fileName ? '0 4px 12px rgba(15, 118, 110, 0.35)' : 'none',
+                            },
+                            '&.Mui-disabled': {
+                                color: '#9ca3af',
+                                borderColor: '#e5e7eb',
+                                backgroundColor: '#f9fafb',
+                            },
+                        }}
+                    >
+                        Click Here
+                    </Button>
+                </span>
+            </Tooltip>
+        );
+    },
+},
+// ---------------------------------------------------ended------------------------------------------------------
     {
       field: 'ACTION_STATUS',
       headerName: 'Status',
@@ -527,6 +630,18 @@ const RecruitmentMail = () => {
         );
       },
     },
+
+
+
+
+
+
+
+
+
+
+
+
     {
       field: 'USER_EMAIL',
       headerName: 'User Email',
@@ -637,46 +752,7 @@ const RecruitmentMail = () => {
       },
     },
 
-   {
-      field: 'AI Assistance',
-      headerName: 'AI Assistance',
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Box sx={{ color: '#374151' }}>
-         <Tooltip title="Chat with Candidate">
-<Button
-  variant="outlined"
-  size="small"
-  onClick={() => openChatWithCandidate(params.row.CHILD_CASEID, emailInputs[params.row.CHILD_CASEID] || '')}
-  disabled={!emailInputs[params.row.CHILD_CASEID]}
-  sx={{
-    minWidth: '30px',
-    minHeight: '28px',
-    padding: 0,
-    borderRadius: '50%',
-    borderColor: '#050416',
-    color: '#46455b',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 0,
-    '&:hover': {
-      backgroundColor: '#e0e7ff',
-      borderColor: '#4f46e5',
-    },
-    '&:disabled': {
-      borderColor: '#d1d5db',
-      color: '#d1d5db',
-    }
-  }}
->
-  <BotMessageSquare size={20} strokeWidth={2} fill="none" style={{ display: 'block' }} />
-</Button>
-            </Tooltip>
-        </Box>
-      ),
-    }
+
   ];
 
   const modalStyle = {
